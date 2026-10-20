@@ -1,40 +1,30 @@
-import { Magnetic } from './Magnetic'
+import { resume } from '../content'
+import { Container, RailLayout, SectionHead } from './Section'
 
 export function Resume() {
   return (
-    <section id="resume" className="mx-auto max-w-5xl px-4 py-24 sm:px-6 sm:py-32">
-      <div className="mb-10 flex items-baseline gap-4">
-        <span className="tech-label text-acid-deep">§ 03</span>
-        <h2 className="font-grotesk text-sm font-bold uppercase tracking-[0.2em]">
-          Résumé
-        </h2>
-      </div>
-
-      <div className="glass halftone-acid rounded-3xl p-8 sm:p-12">
-        <div className="flex flex-col items-start justify-between gap-8 sm:flex-row sm:items-center">
-          <div className="max-w-xl">
-            <h3 className="font-grotesk text-2xl font-black uppercase tracking-tight sm:text-3xl">
-              The short version
-            </h3>
-            <p className="mt-4 leading-relaxed text-ink-soft">
-              Product designer and design engineer. Sole-designer internship at
-              mymizu (Japan); design-engineered and shipped an academic
-              dashboard end-to-end at Minerva. Trained across six cities on
-              four continents. Comfortable from research to Figma to the
-              terminal.
-            </p>
+    <section id="resume" className="relative py-24 sm:py-32">
+      <Container>
+        <SectionHead n="03" title="Résumé" />
+        <RailLayout rail={<p>The short version, and the full PDF.</p>}>
+          <div className="glass rounded-card p-6 sm:p-8">
+            <div className="flex flex-col items-start justify-between gap-8 md:flex-row md:items-end">
+              <div className="max-w-xl">
+                <h3 className="text-title">{resume.title}</h3>
+                <p className="mt-4 text-body text-ink-muted">{resume.summary}</p>
+              </div>
+              {/* [LINK: résumé PDF] — point this at the real file */}
+              <a
+                href={resume.pdfHref}
+                title={resume.pdfNote}
+                className="glass-dark inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-full px-5 text-secondary text-white transition-colors duration-[260ms] hover:bg-pressed"
+              >
+                {resume.downloadLabel}
+              </a>
+            </div>
           </div>
-          <Magnetic strength={0.3}>
-            {/* [LINK: résumé PDF] — point this at the real file */}
-            <a
-              href="#"
-              className="glass-dark inline-block whitespace-nowrap rounded-full px-8 py-4 font-grotesk font-bold uppercase tracking-wide text-acid transition-transform hover:scale-105"
-            >
-              Résumé PDF ↓
-            </a>
-          </Magnetic>
-        </div>
-      </div>
+        </RailLayout>
+      </Container>
     </section>
   )
 }

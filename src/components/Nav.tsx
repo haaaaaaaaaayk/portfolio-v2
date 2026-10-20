@@ -1,46 +1,51 @@
-import { useClock } from '../hooks/useClock'
-import { Magnetic } from './Magnetic'
+import { useActiveSection } from '../hooks/useActiveSection'
 
 const LINKS = [
-  { label: 'Work', href: '#work' },
-  { label: 'About', href: '#about' },
-  { label: 'Résumé', href: '#resume' },
-  { label: 'Contact', href: '#contact' },
+  { id: 'work', label: 'Work' },
+  { id: 'about', label: 'About' },
+  { id: 'resume', label: 'Résumé' },
 ]
 
+/**
+ * Floating navigation — the 24th System's bottom pill: a glass segment
+ * for the sections, with the current one raised, and a dark "Let’s talk".
+ */
 export function Nav() {
-  const time = useClock()
+  const active = useActiveSection(['top', 'work', 'about', 'resume', 'contact'])
+
   return (
-    <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-3 pt-3 sm:px-6 sm:pt-5">
-      <nav
-        aria-label="Primary"
-        className="glass flex w-full max-w-5xl items-center justify-between gap-2 rounded-full py-2 pl-5 pr-2"
-      >
-        <a
-          href="#top"
-          className="font-grotesk text-sm font-bold uppercase tracking-tight"
-        >
-          Hayk&nbsp;S.
-        </a>
-        <div className="flex items-center gap-0.5 sm:gap-1">
-          {LINKS.map((l) => (
-            <Magnetic key={l.href} strength={0.2}>
+    <nav
+      aria-label="Primary"
+      className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 sm:bottom-6"
+    >
+      <div className="flex items-center gap-2">
+        <div className="glass flex items-center gap-1 rounded-full p-1.5">
+          {LINKS.map((l) => {
+            const current = active === l.id
+            return (
               <a
-                href={l.href}
-                className="rounded-full px-2.5 py-1.5 text-[13px] font-medium text-ink-soft transition-colors hover:bg-ink hover:text-bone sm:px-3.5"
+                key={l.id}
+                href={`#${l.id}`}
+                aria-current={current ? 'location' : undefined}
+                className={`inline-flex h-8 items-center rounded-full px-3.5 text-compact transition-[background-color,color,box-shadow] duration-[260ms] ease-(--ease-close) sm:px-4 ${
+                  current
+                    ? 'bg-white text-ink shadow-[0_1px_2px_rgb(22_22_22/8%)]'
+                    : 'text-ink-muted hover:text-ink'
+                }`}
               >
                 {l.label}
               </a>
-            </Magnetic>
-          ))}
-          <span
-            className="tech-label ml-1 hidden rounded-full bg-ink px-3 py-2 text-acid tabular-nums sm:block"
-            title="Local time"
-          >
-            {time}
-          </span>
+            )
+          })}
         </div>
-      </nav>
-    </header>
+        <a
+          href="#contact"
+          aria-current={active === 'contact' ? 'location' : undefined}
+          className="glass-dark inline-flex h-11 items-center rounded-full px-5 text-compact text-white transition-colors duration-[260ms] hover:bg-pressed"
+        >
+          Let’s talk
+        </a>
+      </div>
+    </nav>
   )
 }

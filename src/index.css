@@ -1,40 +1,156 @@
 @import 'tailwindcss';
 
+/* ============================================================
+   24th System — design tokens (updated set).
+   Defaults are cleared so only system values are available.
+   Everything is one weight (400); hierarchy comes from size,
+   spacing and color only.
+   ============================================================ */
 @theme {
-  /* ---- color tokens ---- */
-  --color-bone: #f4f3ee;
-  --color-bone-2: #ecebe3;
-  --color-ink: #161613;
-  --color-ink-soft: #4a4a44;
-  --color-acid: #c6f04a;
-  --color-acid-deep: #9fd41f;
-  --color-pink: #ff4fa3;
-  --color-blu: #2e5cff;
-  --color-orange: #ff6b2c;
+  /* ---- color ---- */
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-ink: #161616;
+  --color-ink-muted: #666666;
+  --color-ink-active: #111111;
+  --color-pressed: #333333;
+  --color-surface: #ffffff;
+  --color-paper: #fafafa;
+  --color-hover: #f3f3f3;
+  --color-canvas: #eeeef0;
+  --color-control: #ededed;
+  --color-control-hover: #e3e3e3;
+  --color-accent: #1aedc5;
+  --color-media: #3786ff;
+  --color-error: #b3261e;
+  --color-success: #276738;
+  --color-disabled-ink: #8a8a8a;
+  --color-disabled: #f2f2f2;
+  --color-field-border: rgb(0 0 0 / 18%);
+  --color-rule: rgb(0 0 0 / 10%);
+  --color-rule-soft: rgb(0 0 0 / 7%);
 
-  /* ---- font tokens ---- */
-  --font-grotesk: 'Archivo', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-serif: 'Instrument Serif', Georgia, serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* ---- type: one family (switchable at runtime), one weight ---- */
+  --font-*: initial;
+  --font-sans: var(--font-sans-active);
+  --font-display: var(--font-display-active);
+  --font-mono: Menlo, ui-monospace, monospace;
 
+  --text-*: initial;
+  --text-caption: 12px;
+  --text-caption--line-height: 20px;
+  --text-compact: 14px;
+  --text-compact--line-height: 20px;
+  --text-secondary: 16px;
+  --text-secondary--line-height: 24px;
+  --text-body: 18px;
+  --text-body--line-height: 28px;
+  --text-heading: 20px;
+  --text-heading--line-height: 28px;
+  --text-title: 24px;
+  --text-title--line-height: 32px;
+  /* presentation sizes (functional role 32, specimen 48, display 96) */
+  --text-role: 32px;
+  --text-role--line-height: 40px;
+  --text-specimen: 48px;
+  --text-specimen--line-height: 56px;
+  --text-display: 96px;
+  --text-display--line-height: 104px;
+
+  /* ---- spacing: 4px unit; paragraph 16, module 32, section 64 ---- */
+  --spacing: 4px;
+  --spacing-paragraph: 16px;
+  --spacing-module: 32px;
+  --spacing-section: 64px;
+  --spacing-control: 44px;
+  --spacing-field: 36px;
+  --spacing-compact: 32px;
+  --spacing-form: 420px;
+
+  /* ---- radius: 2 for tiny marks, 12 media, 20 cards, full for controls ---- */
+  --radius-*: initial;
+  --radius-mark: 2px;
+  --radius-surface: 2px;
+  --radius-media: 12px;
+  --radius-card: 20px;
+  --radius-control: 9999px;
+
+  /* ---- motion ---- */
+  --ease-open: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-close: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-reading: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ---- liquid glass depth ---- */
+  --shadow-*: initial;
   --shadow-glass:
-    0 1px 1px rgb(22 22 19 / 4%), 0 8px 24px -8px rgb(22 22 19 / 14%),
-    0 24px 64px -24px rgb(22 22 19 / 18%);
+    0 1px 2px rgb(22 22 22 / 4%), 0 8px 16px -8px rgb(22 22 22 / 12%),
+    0 24px 64px -24px rgb(22 22 22 / 16%);
   --shadow-glass-lift:
-    0 2px 2px rgb(22 22 19 / 5%), 0 16px 40px -12px rgb(22 22 19 / 20%),
-    0 40px 96px -32px rgb(22 22 19 / 24%);
+    0 2px 2px rgb(22 22 22 / 5%), 0 16px 32px -12px rgb(22 22 22 / 18%),
+    0 40px 96px -32px rgb(22 22 22 / 22%);
+}
 
-  --animate-marquee: marquee 28s linear infinite;
+/* ============================================================
+   FONTS — three stacks, switched at runtime via <html data-font>.
+   sf             SF Pro system stack (never bundled)
+   haas           Alte Haas Grotesk, −4% tracking
+   helvetica-now  Helvetica Now (proprietary, falls back to Helvetica)
+   ============================================================ */
+@font-face {
+  font-family: 'Alte Haas Grotesk';
+  src: url('/fonts/AlteHaasGroteskRegular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
-  @keyframes marquee {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-50%);
-    }
-  }
+@font-face {
+  font-family: 'Helvetica Now Text';
+  src: local('Helvetica Now Text'), local('HelveticaNowText-Regular'), local('Helvetica Now');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: local('Helvetica Now Display'), local('HelveticaNowDisplay-Regular'), local('Helvetica Now');
+  font-weight: 400;
+  font-style: normal;
+}
+
+:root,
+html[data-font='sf'] {
+  --font-sans-active:
+    'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui,
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-display-active:
+    'SF Pro Display', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui,
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --tracking: 0em;
+}
+
+html[data-font='haas'] {
+  --font-sans-active: 'Alte Haas Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-display-active: 'Alte Haas Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --tracking: -0.04em;
+}
+
+html[data-font='helvetica-now'] {
+  --font-sans-active:
+    'Helvetica Now Text', 'Helvetica Now Display', 'HelveticaNowText-Regular',
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-display-active:
+    'Helvetica Now Display', 'Helvetica Now Text', 'HelveticaNowText-Regular',
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --tracking: 0em;
+}
+
+/* runtime-tunable glass (the Lab variant drives these) */
+:root {
+  --glass-blur: 16px;
+  --glass-saturate: 1.4;
+  --glass-tint: 255 255 255;
 }
 
 html {
@@ -48,53 +164,115 @@ html {
 }
 
 body {
-  background: var(--color-bone);
+  background: var(--color-surface);
   color: var(--color-ink);
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
+  font-size: var(--text-secondary);
+  line-height: var(--text-secondary--line-height);
+  font-weight: 400;
+  letter-spacing: var(--tracking);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
 
-::selection {
-  background: var(--color-acid);
+/* One weight throughout: emphasis comes from color, never weight. */
+strong,
+b,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+dt,
+th,
+button,
+input,
+textarea,
+select {
+  font-weight: inherit;
+}
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+strong,
+b {
   color: var(--color-ink);
 }
 
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 /* ============================================================
-   LIQUID GLASS — signature panel treatment.
-   Frosted blur + inner border highlight + soft drop shadow.
+   LIQUID GLASS — the one carried-over concept.
+   Frosted blur + inner border highlight + soft drop shadow,
+   refracting the liquid field that sits behind the page.
    ============================================================ */
 .glass {
   position: relative;
   background: linear-gradient(
     135deg,
-    rgb(255 255 255 / 62%),
-    rgb(255 255 255 / 34%)
+    rgb(var(--glass-tint) / 66%),
+    rgb(var(--glass-tint) / 38%)
   );
-  -webkit-backdrop-filter: blur(14px) saturate(1.35);
-  backdrop-filter: blur(14px) saturate(1.35);
-  border: 1px solid rgb(255 255 255 / 65%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid rgb(255 255 255 / 70%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 85%),
-    inset 0 -1px 0 rgb(22 22 19 / 4%),
+    inset 0 1px 0 rgb(255 255 255 / 90%),
+    inset 0 -1px 0 rgb(22 22 22 / 4%),
     var(--shadow-glass);
 }
 
 .glass-dark {
+  position: relative;
   background: linear-gradient(
     135deg,
-    rgb(22 22 19 / 88%),
-    rgb(22 22 19 / 78%)
+    rgb(22 22 22 / 90%),
+    rgb(22 22 22 / 80%)
   );
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
   border: 1px solid rgb(255 255 255 / 14%);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 12%),
     var(--shadow-glass);
 }
 
-/* sheen sweep on hover — used by glass cards */
+/* specular edge: a thin refracted highlight along the top-left rim */
+.glass-edge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    160deg,
+    rgb(255 255 255 / 70%) 0%,
+    rgb(255 255 255 / 0%) 28%,
+    rgb(255 255 255 / 0%) 72%,
+    rgb(255 255 255 / 35%) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+}
+
+/* light sweep across glass on hover */
 .sheen {
   overflow: hidden;
 }
@@ -105,11 +283,11 @@ body {
   background: linear-gradient(
     105deg,
     transparent 40%,
-    rgb(255 255 255 / 50%) 50%,
+    rgb(255 255 255 / 55%) 50%,
     transparent 60%
   );
   transform: translateX(-120%);
-  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 720ms var(--ease-open);
   pointer-events: none;
 }
 .sheen:hover::after {
@@ -122,120 +300,164 @@ body {
 }
 
 /* ============================================================
-   TEXTURES — halftone dots, dither, paper grain
+   24th controls (ported): shared field + button primitives.
+   Single-line controls are full radius; multi-line fields 20px.
    ============================================================ */
-.halftone {
-  background-image: radial-gradient(
-    circle at center,
-    rgb(22 22 19 / 16%) 1px,
-    transparent 1.5px
-  );
-  background-size: 10px 10px;
-}
-.halftone-acid {
-  background-image: radial-gradient(
-    circle at center,
-    color-mix(in srgb, var(--color-acid-deep) 55%, transparent) 1.2px,
-    transparent 1.7px
-  );
-  background-size: 9px 9px;
-}
-.dither {
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      rgb(22 22 19 / 5%) 0 1px,
-      transparent 1px 3px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgb(22 22 19 / 5%) 0 1px,
-      transparent 1px 3px
-    );
-}
-
-/* full-page paper grain overlay (SVG feTurbulence noise, tiled) */
-.grain::before {
-  content: '';
-  position: fixed;
-  inset: -50%;
-  width: 200%;
-  height: 200%;
-  pointer-events: none;
-  z-index: 90;
-  opacity: 0.5;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* ============================================================
-   HERO NAME — chromatic neon glow behind crisp black type.
-   Pure CSS filters; intensity driven by --glow (0..1) custom
-   property set from JS on pointer proximity.
-   ============================================================ */
-.hero-name {
-  --glow: 1;
-  position: relative;
-  display: inline-block;
-}
-.hero-name .layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  user-select: none;
-}
-.hero-name .layer-acid {
-  color: var(--color-acid-deep);
-  filter: blur(calc(6px + var(--glow) * 14px));
-  opacity: calc(0.5 + var(--glow) * 0.5);
-  transform: translate(calc(var(--glow) * -6px), calc(var(--glow) * 3px));
-}
-.hero-name .layer-pink {
-  color: var(--color-pink);
-  filter: blur(calc(8px + var(--glow) * 18px));
-  opacity: calc(0.3 + var(--glow) * 0.45);
-  transform: translate(calc(var(--glow) * 7px), calc(var(--glow) * -3px));
-}
-.hero-name .layer-blu {
-  color: var(--color-blu);
-  filter: blur(calc(10px + var(--glow) * 22px));
-  opacity: calc(0.22 + var(--glow) * 0.4);
-  transform: translate(calc(var(--glow) * -3px), calc(var(--glow) * -6px));
-}
-.hero-name .layer-ink {
-  position: relative;
+.ctl {
+  box-sizing: border-box;
+  height: var(--spacing-control);
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-control);
   color: var(--color-ink);
-  filter: blur(calc(var(--glow) * 2.5px));
+  background: var(--color-control);
+  font-size: var(--text-compact);
+  line-height: var(--text-compact--line-height);
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+@media (min-width: 640px) and (pointer: fine) {
+  .ctl {
+    height: var(--spacing-field);
+  }
+  .ctl[data-size='compact'] {
+    height: var(--spacing-compact);
+    padding: 0 12px;
+  }
+}
+.ctl:disabled {
+  color: var(--color-disabled-ink);
+  background: var(--color-disabled);
+  cursor: not-allowed;
+}
+.ctl-field {
+  width: 100%;
+  min-width: 0;
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-field-border);
+}
+.ctl-field:hover:enabled {
+  background: var(--color-paper);
+}
+.ctl-field:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+.ctl-field[aria-invalid='true'] {
+  box-shadow: inset 0 0 0 1px var(--color-error);
+}
+.ctl-area {
+  height: auto;
+  min-height: 112px;
+  padding: 12px 16px;
+  border-radius: var(--radius-card);
+  resize: vertical;
+}
+.ctl-primary {
+  color: var(--color-white);
+  background: var(--color-ink);
+  cursor: pointer;
+}
+.ctl-primary:hover:enabled {
+  background: var(--color-ink-muted);
+}
+.ctl-primary:active:enabled {
+  background: var(--color-pressed);
+}
+.ctl-secondary {
+  cursor: pointer;
+}
+.ctl-secondary:hover:enabled {
+  background: var(--color-control-hover);
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-name {
-    --glow: 0.35 !important;
+  .ctl {
+    transition: none;
   }
 }
 
-/* ============================================================
-   CUSTOM CURSOR — small ring, desktop pointer devices only
-   ============================================================ */
-@media (pointer: fine) {
-  .cursor-ring {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 28px;
-    height: 28px;
-    margin: -14px 0 0 -14px;
-    border: 1.5px solid var(--color-ink);
-    border-radius: 9999px;
-    pointer-events: none;
-    z-index: 100;
-    mix-blend-mode: exclusion;
-    border-color: #e9e9dc;
-  }
+/* utility: hide scrollbars without disabling scroll */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-/* mono technical label */
-.tech-label {
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+/* token range (Lab knobs) — 44px hit area, 4px track */
+.token-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  cursor: pointer;
+  background: transparent;
+}
+.token-slider:focus-visible {
+  outline: none;
+}
+.token-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+.token-slider:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+.token-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--color-ink) 0 var(--slider-progress, 0%),
+    var(--color-control) var(--slider-progress, 0%) 100%
+  );
+}
+.token-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 2px solid var(--color-surface);
+  border-radius: 9999px;
+  background: var(--color-ink);
+  box-shadow: 0 1px 2px rgb(22 22 22 / 20%);
+}
+.token-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-control);
+}
+.token-slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-ink);
+}
+.token-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-surface);
+  border-radius: 9999px;
+  background: var(--color-ink);
+  box-shadow: 0 1px 2px rgb(22 22 22 / 20%);
+}
+
+/* editorial skills marquee */
+@keyframes marquee-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee-x 42s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
 }

@@ -1,8 +1,74 @@
 # Hayk Sargsyan — Portfolio
 
 Single-page portfolio. React + TypeScript + Vite, Tailwind CSS v4, Framer Motion.
-All texture effects are Canvas 2D / CSS — no WebGL yet (Phase 2 seam is marked
-in `src/components/Hero.tsx`, search for `PHASE 2`).
+Five distinct layouts share one content source and the **24th System** tokens.
+The only carry-over from the previous version is liquid glass (`.glass`,
+`.glass-dark`, `.sheen`) floating over `LiquidField`.
+
+## Design tokens
+
+All tokens live in the `@theme` block of `src/index.css`. One weight (400);
+hierarchy is size, spacing, and color.
+
+- **Color** — ink `#161616` (muted `#666666`, active `#111111`, pressed `#333333`);
+  surfaces `#FFFFFF` / `#FAFAFA` / `#F3F3F3` (canvas `#EEEEF0`, control `#EDEDED`,
+  control-hover `#E3E3E3`); accent `#1AEDC5`; field border `rgb(0 0 0 / .18)`,
+  focus = accent, error `#B3261E`, success `#276738`, disabled `#8A8A8A` on `#F2F2F2`;
+  media `#3786FF`; rules `rgb(0 0 0 / .10)` and `.07`.
+- **Type** — `caption 12/20 · compact 14/20 · secondary 16/24 · body 18/28 ·
+  heading 20/28 · title 24/32 · role 32/40 · specimen 48/56 · display 96/104`.
+- **Spacing** — 4px unit; paragraph 16, module 32, section 64. Controls 44 / 36 / 32.
+  Form width 420px.
+- **Radius** — cards and multi-line fields 20; single-line controls and alerts full;
+  tiny marks 2; media 12.
+- **Motion** — open 360 ms `ease-open`, close 260 ms `ease-close`;
+  everything respects `prefers-reduced-motion`.
+
+## Fonts
+
+Switchable via `data-font` on `<html>`, persisted to `localStorage`, and set from
+`?font=`. All three stacks are weight 400.
+
+1. **sf** (default) — SF Pro system stack. Not bundled.
+2. **haas** — Alte Haas Grotesk Regular from `public/fonts/AlteHaasGroteskRegular.ttf`.
+   Applies `letter-spacing: -0.04em` globally while active.
+3. **helvetica-now** — `local()` Helvetica Now, falling back to Helvetica Neue.
+   Not bundled.
+
+## Query params
+
+| Param | Values | Default |
+| --- | --- | --- |
+| `?v=` | `1` … `5` | `1` (or last `localStorage` value) |
+| `?font=` | `sf` · `haas` · `helvetica-now` | `sf` |
+| `?ui=0` | hides the floating switcher | switcher visible |
+
+The floating glass switcher (variant 1–5 + font) is 44px, full radius, keyboard
+accessible (Enter/Space opens, Esc closes). URL and `localStorage` stay in sync
+so a link can be shared.
+
+## Variants
+
+1. **Desktop OS** (`src/variants/v1-desktop-os`) — A desktop metaphor: glass
+   windows with z-order and a draggable title bar, a dock, a menu-bar clock
+   (`useClock`), and a ⌘K / Ctrl+K command palette. On small screens the same
+   apps become stacked sheets above the dock.
+
+2. **Index** (`src/variants/v2-index`) — Text-first numbered list on a 64px
+   rhythm. Hovering a case (fine pointer) shows a cursor-following glass
+   preview; click expands the case sheet inline.
+
+3. **Spatial canvas** (`src/variants/v3-spatial-canvas`) — A pan/zoom moodboard
+   of glass cards (work, about, cities, résumé, contact). Minimap and Fit all
+   frame the board; click a card to focus, then open a case overlay.
+
+4. **Editorial** (`src/variants/v4-editorial`) — Magazine pacing: display-size
+   type, a sticky glass masthead that compresses on scroll, horizontal snap
+   case studies with `useScroll` progress, and a skills marquee.
+
+5. **Lab** (`src/variants/v5-lab`) — Live knobs for glass blur / saturate / tint
+   and the pointer-reactive liquid field, a 24th controls specimen filled with
+   Hayk’s content, token swatches, and an FPS readout.
 
 ## Run locally
 
@@ -32,7 +98,4 @@ The Vite config already uses `base: './'`, so the build works from any sub-path.
 
 - **Images** — search the codebase for `[IMAGE:` (all in `ImageSlot` usages).
   Replace each slot with a real `<img>`; keep the wrapper for layout.
-- **Links** — search for `[LINK:` (résumé PDF in `Resume.tsx`, socials in
-  `Contact.tsx`).
-- **Mascot** — search for `MASCOT:` in `src/components/Mascot.tsx` to swap in
-  final bear art.
+- **Links** — search for `[LINK:` (résumé PDF, socials in content).
