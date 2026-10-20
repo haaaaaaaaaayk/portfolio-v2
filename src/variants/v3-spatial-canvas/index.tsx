@@ -179,7 +179,7 @@ export default function SpatialCanvas() {
               className={`absolute ${focused === card.id ? 'z-10' : ''}`}
             >
               <div
-                className={`glass glass-edge sheen h-full w-full rounded-card p-4 text-left ${
+                className={`glass glass-edge sheen h-full w-full overflow-hidden rounded-card p-4 text-left ${
                   focused === card.id ? 'shadow-glass-lift' : ''
                 }`}
                 onClick={() => focusCard(card)}

@@ -22,12 +22,12 @@ const APPS: { id: WinId; label: string; hint: string }[] = [
 ]
 
 const DEFAULT_POS: Record<WinId, { x: number; y: number; w: number }> = {
-  work: { x: 32, y: 64, w: 640 },
-  about: { x: 420, y: 96, w: 480 },
-  resume: { x: 80, y: 280, w: 520 },
-  contact: { x: 560, y: 320, w: 460 },
-  mymizu: { x: 48, y: 56, w: 720 },
-  minerva: { x: 120, y: 72, w: 720 },
+  work: { x: 28, y: 20, w: 560 },
+  about: { x: 620, y: 36, w: 440 },
+  resume: { x: 72, y: 80, w: 500 },
+  contact: { x: 560, y: 64, w: 440 },
+  mymizu: { x: 40, y: 16, w: 680 },
+  minerva: { x: 96, y: 28, w: 680 },
 }
 
 const INITIAL_OPEN: WinId[] = ['work', 'about']
@@ -170,10 +170,13 @@ export default function DesktopOs() {
 
 function MenuBar({ time, onPalette }: { time: string; onPalette: () => void }) {
   return (
-    <header className="glass glass-edge relative z-[50] flex h-11 items-center justify-between gap-4 px-3 pr-36 sm:px-4 sm:pr-52">
-      <span className="truncate text-compact">
-        {profile.name}
-        <span className="hidden text-ink-muted sm:inline"> · {profile.roleShort}</span>
+    <header className="glass glass-edge relative z-[50] flex h-11 items-center justify-between gap-3 px-3 pr-[11.5rem] sm:px-4 sm:pr-52">
+      <span className="min-w-0 truncate text-compact">
+        <span className="sm:hidden">{profile.firstName}</span>
+        <span className="hidden sm:inline">
+          {profile.name}
+          <span className="text-ink-muted"> · {profile.roleShort}</span>
+        </span>
       </span>
       <div className="flex items-center gap-2 sm:gap-3">
         <span className="hidden items-center gap-2 rounded-full bg-white/50 px-3 text-compact sm:inline-flex">
@@ -183,11 +186,11 @@ function MenuBar({ time, onPalette }: { time: string; onPalette: () => void }) {
         <button
           type="button"
           onClick={onPalette}
-          className="inline-flex h-8 items-center rounded-full px-3 text-compact text-ink-muted hover:bg-white/60 hover:text-ink"
+          className="hidden h-8 items-center rounded-full px-3 text-compact text-ink-muted hover:bg-white/60 hover:text-ink sm:inline-flex"
         >
           ⌘K
         </button>
-        <span className="text-compact tabular-nums text-ink-muted">
+        <span className="hidden text-compact tabular-nums text-ink-muted md:inline">
           {profile.location} · {time}
         </span>
       </div>
@@ -228,7 +231,7 @@ function OsWindow({
       onPointerDown={onFocus}
       initial={{ x: pos.x, y: pos.y, opacity: reduced ? 1 : 0, scale: reduced ? 1 : 0.98 }}
       animate={{ opacity: 1, scale: 1, transition: open }}
-      className={`absolute top-0 left-0 flex max-h-[min(72svh,720px)] flex-col overflow-hidden rounded-card ${
+      className={`absolute top-0 left-0 flex max-h-[min(58svh,560px)] flex-col overflow-hidden rounded-card ${
         focused ? 'shadow-glass-lift' : ''
       } glass glass-edge`}
       style={{ zIndex: z, width: `min(${pos.w}px, calc(100vw - 24px))` }}

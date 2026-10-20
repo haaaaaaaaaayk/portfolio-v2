@@ -60,7 +60,7 @@ export default function Lab() {
               <h1 className="mt-1 text-title">{profile.firstName}’s controls</h1>
             </div>
             <span className="glass inline-flex h-11 items-center rounded-full px-3 text-compact tabular-nums">
-              {fps} fps
+              {fps === 0 ? '—' : fps} fps
             </span>
           </div>
           <p className="mt-3 text-compact text-ink-muted">
