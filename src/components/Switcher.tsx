@@ -6,8 +6,8 @@ import { Segmented } from './ui/Segmented'
 
 /**
  * Global floating glass switcher (top-right): a 44px pill showing the
- * current variant + font; opens into two segmented controls — variant 1–5
- * and font SF / Haas / Helvetica Now. Full radius, single weight,
+ * current variant + font; opens into a 1–10 variant pad and font
+ * SF / Haas / Helvetica Now. Full radius, single weight,
  * keyboard accessible (Enter/Space opens, Esc closes). Hidden with `?ui=0`.
  */
 export function Switcher() {
@@ -22,7 +22,8 @@ export function Switcher() {
       if (e.key === 'Escape') setExpanded(false)
     }
     const onDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setExpanded(false)
+      const t = e.target
+      if (!(t instanceof Node) || !rootRef.current?.contains(t)) setExpanded(false)
     }
     window.addEventListener('keydown', onKey)
     window.addEventListener('pointerdown', onDown)
@@ -71,16 +72,34 @@ export function Switcher() {
             initial={reduced ? false : { opacity: 0, y: -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1, transition: open }}
             exit={{ opacity: 0, y: -6, scale: 0.98, transition: close }}
-            className="glass glass-edge flex w-[calc(100vw-24px)] max-w-[360px] flex-col gap-4 rounded-card p-4 shadow-glass-lift sm:w-auto"
+            className="glass glass-edge flex w-[calc(100vw-24px)] max-w-[400px] flex-col gap-4 rounded-card p-4 shadow-glass-lift sm:w-auto"
           >
             <div className="flex flex-col gap-2">
               <span className="text-caption text-ink-muted">Variant</span>
-              <Segmented
-                label="Variant"
-                value={variant}
-                onChange={setVariant}
-                options={VARIANTS.map((v) => ({ value: v.id, label: String(v.id), title: v.name }))}
-              />
+              <div
+                role="radiogroup"
+                aria-label="Variant"
+                className="grid grid-cols-5 gap-1 rounded-card bg-black/[0.06] p-1"
+              >
+                {VARIANTS.map((v) => {
+                  const checked = v.id === variant
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={checked}
+                      title={v.name}
+                      onClick={() => setVariant(v.id)}
+                      className={`relative flex h-11 items-center justify-center rounded-full text-compact ${
+                        checked ? 'bg-white text-ink shadow-[0_1px_2px_rgb(22_22_22/10%)]' : 'text-ink-muted hover:text-ink'
+                      }`}
+                    >
+                      {v.id}
+                    </button>
+                  )
+                })}
+              </div>
               <span className="text-compact">{current?.name}</span>
             </div>
             <div className="flex flex-col gap-2">
@@ -100,7 +119,7 @@ export function Switcher() {
               </span>
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-rule pt-3 text-caption text-ink-muted">
-              <span>?v=1…5</span>
+              <span>?v=1…10</span>
               <span>?font=sf|haas|helvetica-now</span>
               <span>?ui=0 hides this</span>
             </div>

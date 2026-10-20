@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from 'react'
 
 /**
- * Global preferences: which variant (1–5) and which font stack is active.
+ * Global preferences: which variant (1–10) and which font stack is active.
  * Source order: URL (?v=, ?font=) → localStorage → default.
  * Both are mirrored back to the URL and localStorage so a link can be shared.
  * `?ui=0` hides the floating switcher.
@@ -19,6 +19,11 @@ export const VARIANTS = [
   { id: 3, slug: 'spatial-canvas', name: 'Spatial canvas' },
   { id: 4, slug: 'editorial', name: 'Editorial' },
   { id: 5, slug: 'lab', name: 'Lab' },
+  { id: 6, slug: 'fogged-glass', name: 'Fogged glass' },
+  { id: 7, slug: 'halftone', name: 'Halftone' },
+  { id: 8, slug: 'overtaken', name: 'Overtaken' },
+  { id: 9, slug: 'triptych', name: 'Triptych' },
+  { id: 10, slug: 'night-lab', name: 'Night lab' },
 ] as const
 export type VariantId = (typeof VARIANTS)[number]['id']
 
@@ -91,8 +96,26 @@ function set(next: Partial<Prefs>) {
   listeners.forEach((l) => l())
 }
 
+window.addEventListener('popstate', () => {
+  const params = new URLSearchParams(window.location.search)
+  const v = Number(params.get('v'))
+  const f = params.get('font')
+  const next: Partial<Prefs> = {}
+  if (isVariant(v) && v !== state.variant) next.variant = v
+  if (isFont(f) && f !== state.font) next.font = f
+  const showUi = params.get('ui') !== '0'
+  if (showUi !== state.showUi) next.showUi = showUi
+  if (Object.keys(next).length) set(next)
+})
+
 /** Call once before first paint so the right font is on <html>. */
 export function bootPrefs() {
+  const params = new URLSearchParams(window.location.search)
+  const v = Number(params.get('v'))
+  const f = params.get('font')
+  if (isVariant(v)) state.variant = v
+  if (isFont(f)) state.font = f
+  state.showUi = params.get('ui') !== '0'
   applyFont(state.font)
 }
 

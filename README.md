@@ -1,9 +1,11 @@
 # Hayk Sargsyan — Portfolio
 
 Single-page portfolio. React + TypeScript + Vite, Tailwind CSS v4, Framer Motion.
-Five distinct layouts share one content source and the **24th System** tokens.
+Ten distinct layouts share one content source and the **24th System** tokens.
 The only carry-over from the previous version is liquid glass (`.glass`,
-`.glass-dark`, `.sheen`) floating over `LiquidField`.
+`.glass-dark`, `.sheen`) floating over `LiquidField`. Variants 6–10 layer
+Hayk’s Fogged Glass, Halftone Specimen, and Overtaken experiments as WebGL
+atmospheres on top of that system.
 
 ## Design tokens
 
@@ -39,11 +41,11 @@ Switchable via `data-font` on `<html>`, persisted to `localStorage`, and set fro
 
 | Param | Values | Default |
 | --- | --- | --- |
-| `?v=` | `1` … `5` | `1` (or last `localStorage` value) |
+| `?v=` | `1` … `10` | `1` (or last `localStorage` value) |
 | `?font=` | `sf` · `haas` · `helvetica-now` | `sf` |
 | `?ui=0` | hides the floating switcher | switcher visible |
 
-The floating glass switcher (variant 1–5 + font) is 44px, full radius, keyboard
+The floating glass switcher (variant 1–10 + font) is 44px, full radius, keyboard
 accessible (Enter/Space opens, Esc closes). URL and `localStorage` stay in sync
 so a link can be shared.
 
@@ -69,6 +71,37 @@ so a link can be shared.
 5. **Lab** (`src/variants/v5-lab`) — Live knobs for glass blur / saturate / tint
    and the pointer-reactive liquid field, a 24th controls specimen filled with
    Hayk’s content, token swatches, and an FPS readout.
+
+6. **Fogged glass** (`src/variants/v6-fogged-glass`) — Fogged Glass as weather:
+   a full-viewport condensation shader (`Finger Wetness Fog`). Drag to wipe;
+   droplets bead, streak, and freeze if you hold still. Case studies sit as
+   glass panes behind the fog. Footer dock: Finger / Wetness / Fog sliders,
+   humidity / time, Snapshot, and “use your own photo”. Right-click or
+   long-press opens the original snapshot chrome.
+
+7. **Halftone** (`src/variants/v7-halftone`) — Halftone Specimen as the type
+   engine: CMYK plus accent `#1AEDC5` as a fifth ink. Body copy dissolves into
+   dots at rest and resolves on hover / scroll. Customize Effect, Color, Grid,
+   Tone, Source (defaults `180 : 190`). Footer is a live halftone strip of the
+   page source; scroll velocity drives dot size.
+
+8. **Overtaken** (`src/variants/v8-overtaken`) — “Hayk hates hiking.” The
+   organism starts as a footer and climbs as you move up the trail, scroll, or
+   sit idle. Clicking a case punches a hole and springs open a 24th-system
+   reading circle.
+
+9. **Triptych** (`src/variants/v9-triptych`) — One WebGL context, three stages
+   (Fogged / Halftone / Overtaken) mixed on a glass bus. Scroll crossfades;
+   pointer warps locally; keys `1` `2` `3` solo a shader. Footer is a mix-bus
+   waveform.
+
+10. **Night lab** (`src/variants/v10-night-lab`) — The three shaders are
+    instruments. Hold `F` / `H` / `O` (or `1` `2` `3`) to layer fog, halftone,
+    overtaken. Case studies are tracks. Optional pointer oscillator (Web Audio,
+    no files). DPR capped; pauses when the tab is hidden.
+
+Shader engine: `src/shaders/` (one context per variant). Experiments as copy:
+`src/shaders/copy.ts`.
 
 ## Run locally
 
