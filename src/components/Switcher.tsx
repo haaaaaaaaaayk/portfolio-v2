@@ -48,14 +48,14 @@ export function Switcher() {
         aria-expanded={expanded}
         aria-controls="variant-switcher-panel"
         onClick={() => setExpanded((e) => !e)}
-        className="glass glass-edge inline-flex h-11 items-center gap-2 rounded-full pl-4 pr-3 text-compact transition-[box-shadow] duration-[260ms] hover:shadow-glass-lift"
+        className="group glass glass-edge inline-flex h-11 items-center gap-2 rounded-full pl-4 pr-3 text-compact text-ink-muted transition-[box-shadow,color] duration-[260ms] hover:text-ink-active hover:shadow-glass-lift"
       >
         <span className="tabular-nums">
           {variant}
-          <span className="text-ink-muted"> · {current?.name}</span>
+          <span className="text-ink-muted group-hover:text-ink-active"> · {current?.name}</span>
         </span>
         <span aria-hidden className="h-4 w-px bg-rule" />
-        <span className="text-ink-muted">{currentFont?.label}</span>
+        <span className="text-ink-muted group-hover:text-ink-active">{currentFont?.label}</span>
         <span
           aria-hidden
           className={`ml-1 inline-block h-2 w-2 rounded-full transition-colors ${
@@ -92,7 +92,7 @@ export function Switcher() {
                       title={v.name}
                       onClick={() => setVariant(v.id)}
                       className={`relative flex h-11 items-center justify-center rounded-full text-compact ${
-                        checked ? 'bg-white text-ink shadow-[0_1px_2px_rgb(22_22_22/10%)]' : 'text-ink-muted hover:text-ink'
+                        checked ? 'bg-white text-ink shadow-[0_1px_2px_rgb(22_22_22/10%)]' : 'text-ink-muted hover:text-ink-active'
                       }`}
                     >
                       {v.id}

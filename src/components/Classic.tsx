@@ -9,7 +9,7 @@ import { Contact } from './Contact'
 /** The original single-page composition; used as a scaffold while a variant is built. */
 export function Classic() {
   return (
-    <div className="relative min-h-svh">
+    <div className="relative min-h-svh bg-paper">
       <LiquidField />
       <main className="relative z-10">
         <Hero />

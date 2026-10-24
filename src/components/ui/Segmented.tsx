@@ -50,7 +50,7 @@ export function Segmented<T extends string | number>({
               htmlFor={`${id}-${i}`}
               title={o.title}
               className={`relative flex min-w-8 cursor-pointer select-none items-center justify-center rounded-full px-3 text-compact transition-colors duration-[180ms] ${
-                checked ? 'text-ink' : 'text-ink-muted hover:text-ink'
+                checked ? 'text-ink' : 'text-ink-muted hover:text-ink-active'
               }`}
             >
               {checked && (

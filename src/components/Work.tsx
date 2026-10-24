@@ -137,7 +137,7 @@ export function Work() {
                   <div className="mt-16 flex justify-center">
                     <button
                       onClick={() => setOpenId(null)}
-                      className="glass inline-flex h-11 items-center rounded-full px-6 text-secondary transition-transform duration-[260ms] hover:-translate-y-0.5"
+                      className="glass inline-flex h-11 items-center rounded-full px-6 text-secondary text-ink-muted transition-transform duration-[260ms] hover:-translate-y-0.5 hover:text-ink-active"
                     >
                       ← Back to work
                     </button>

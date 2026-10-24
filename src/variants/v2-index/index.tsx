@@ -41,7 +41,7 @@ export default function IndexVariant() {
   }, [finePointer, reduced])
 
   return (
-    <div className="relative min-h-svh bg-surface">
+    <div className="relative min-h-svh bg-paper">
       <LiquidField intensity={0.7} />
       <main className="relative z-10 mx-auto w-full max-w-[1440px] px-4 py-16 sm:px-8 sm:py-16 lg:px-16">
         <header className="flex flex-col gap-16">
@@ -86,7 +86,7 @@ export default function IndexVariant() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-caption text-ink-muted">{row.kicker}</span>
-                    <span className="mt-1 block text-title sm:text-role">{row.title}</span>
+                    <span className="mt-1 block text-title text-ink sm:text-role">{row.title}</span>
                   </span>
                 </button>
                 <AnimatePresence initial={false}>
@@ -132,7 +132,7 @@ export default function IndexVariant() {
               label={projects.find((p) => p.id === hover)!.cardSlot.label}
               ratio={projects.find((p) => p.id === hover)!.cardSlot.ratio}
             />
-            <p className="mt-3 text-compact">{projects.find((p) => p.id === hover)!.name}</p>
+            <p className="mt-3 text-compact text-ink">{projects.find((p) => p.id === hover)!.name}</p>
           </div>
         </div>
       )}
@@ -148,7 +148,7 @@ function Expanded({ id }: { id: RowId }) {
   if (id === 'about') {
     return (
       <div className="flex flex-col gap-8">
-        <p className="max-w-3xl text-title">
+        <p className="max-w-3xl text-title text-ink">
           {about.lead} <span className="text-ink-muted">{about.tail}</span>
         </p>
         <p className="text-compact text-ink-muted">{about.railNote}</p>
@@ -177,7 +177,7 @@ function Expanded({ id }: { id: RowId }) {
         <ul className="space-y-4">
           {experience.map((row) => (
             <li key={row.id} className="border-t border-rule pt-4">
-              <div className="text-heading">{row.org}</div>
+              <div className="text-heading text-ink">{row.org}</div>
               <div className="text-compact text-ink-muted">{row.role}</div>
               <div className="text-caption text-ink-muted">{row.note}</div>
             </li>
@@ -195,7 +195,7 @@ function Expanded({ id }: { id: RowId }) {
   }
   return (
     <div className="flex flex-col gap-8">
-      <p className="text-title">
+      <p className="text-title text-ink">
         {profile.contactLine.lead}{' '}
         <span className="rounded-mark bg-accent px-1">{profile.contactLine.accent}</span>
         {profile.contactLine.end}
@@ -204,7 +204,7 @@ function Expanded({ id }: { id: RowId }) {
       <ul className="flex flex-wrap gap-2">
         {links.map((l) => (
           <li key={l.id}>
-            <a href={l.href} title={l.note} className="glass inline-flex h-11 items-center rounded-full px-4 text-compact">
+            <a href={l.href} title={l.note} className="glass inline-flex h-11 items-center rounded-full px-4 text-compact text-ink-muted hover:text-ink-active">
               {l.label} ↗
             </a>
           </li>

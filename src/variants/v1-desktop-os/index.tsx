@@ -105,7 +105,7 @@ export default function DesktopOs() {
   }, [palette, focused, closeWin, isMobile, sheet])
 
   return (
-    <div className="relative h-svh overflow-hidden overscroll-none bg-canvas">
+    <div className="relative h-svh overflow-hidden overscroll-none bg-paper">
       <LiquidField />
       <MenuBar time={time} onPalette={() => setPalette(true)} />
 
@@ -186,7 +186,7 @@ function MenuBar({ time, onPalette }: { time: string; onPalette: () => void }) {
         <button
           type="button"
           onClick={onPalette}
-          className="hidden h-8 items-center rounded-full px-3 text-compact text-ink-muted hover:bg-white/60 hover:text-ink sm:inline-flex"
+          className="hidden h-8 items-center rounded-full px-3 text-compact text-ink-muted hover:bg-white/60 hover:text-ink-active sm:inline-flex"
         >
           ⌘K
         </button>
@@ -245,7 +245,7 @@ function OsWindow({
           aria-label={`Close ${app.label}`}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={onClose}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-control text-ink-muted hover:bg-control-hover hover:text-ink"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-control text-ink-muted hover:bg-control-hover hover:text-ink-active"
         >
           <X size={14} />
         </button>
@@ -262,7 +262,7 @@ function OsWindow({
 function MobileDesk({ onOpen }: { onOpen: (id: WinId) => void }) {
   return (
     <div className="relative z-10 flex h-[calc(100svh-7.5rem)] flex-col justify-end px-4 pb-4 pt-4">
-      <p className="mb-auto font-display text-role">{profile.firstName} {profile.lastName}</p>
+      <p className="mb-auto font-display text-role text-ink">{profile.firstName} {profile.lastName}</p>
       <p className="mb-8 max-w-sm text-secondary text-ink-muted">{profile.intro}</p>
       <ul className="grid grid-cols-2 gap-2">
         {APPS.slice(0, 4).map((a) => (
@@ -270,7 +270,7 @@ function MobileDesk({ onOpen }: { onOpen: (id: WinId) => void }) {
             <button
               type="button"
               onClick={() => onOpen(a.id)}
-              className="glass sheen flex h-20 w-full flex-col items-start justify-end rounded-card p-3 text-left text-compact"
+              className="glass sheen flex h-20 w-full flex-col items-start justify-end rounded-card p-3 text-left text-compact text-ink-muted hover:text-ink-active"
             >
               {a.label}
             </button>
@@ -307,7 +307,7 @@ function Sheet({
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-8 items-center rounded-full bg-control px-3 text-compact"
+          className="inline-flex h-8 items-center rounded-full bg-control px-3 text-compact hover:bg-control-hover hover:text-ink-active"
         >
           Close
         </button>
@@ -373,7 +373,7 @@ function WindowBody({ id, onOpen }: { id: WinId; onOpen: (id: WinId) => void }) 
         <ul className="space-y-3">
           {experience.map((row) => (
             <li key={row.id} className="border-t border-rule pt-3">
-              <div className="text-secondary">{row.org}</div>
+              <div className="text-secondary text-ink">{row.org}</div>
               <div className="text-compact text-ink-muted">{row.role}</div>
               <div className="text-caption text-ink-muted">{row.note}</div>
             </li>
@@ -392,7 +392,7 @@ function WindowBody({ id, onOpen }: { id: WinId; onOpen: (id: WinId) => void }) 
   if (id === 'contact') {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-title">
+        <p className="text-title text-ink">
           {profile.contactLine.lead}{' '}
           <span className="rounded-mark bg-accent px-1">{profile.contactLine.accent}</span>
           {profile.contactLine.end}
@@ -404,7 +404,7 @@ function WindowBody({ id, onOpen }: { id: WinId; onOpen: (id: WinId) => void }) 
               <a
                 href={l.href}
                 title={l.note}
-                className="glass inline-flex h-11 items-center rounded-full px-4 text-compact"
+                className="glass inline-flex h-11 items-center rounded-full px-4 text-compact text-ink-muted hover:text-ink-active"
               >
                 {l.label} ↗
               </a>
@@ -445,7 +445,7 @@ function Dock({
               aria-pressed={isOpen}
               onClick={() => onToggle(a.id)}
               className={`inline-flex h-11 shrink-0 items-center rounded-full px-3 text-compact sm:px-4 ${
-                isFocused ? 'bg-white text-ink shadow-[0_1px_2px_rgb(22_22_22/10%)]' : 'text-ink-muted hover:text-ink'
+                isFocused ? 'bg-white text-ink shadow-[0_1px_2px_rgb(22_22_22/10%)]' : 'text-ink-muted hover:text-ink-active'
               }`}
             >
               {a.label}
@@ -542,7 +542,7 @@ function Palette({
               }
             }}
             placeholder="Open a window, jump to a case, or a link…"
-            className="h-11 flex-1 bg-transparent text-compact outline-none"
+            className="h-11 flex-1 bg-transparent text-compact text-ink outline-none"
             aria-autocomplete="list"
             aria-controls="palette-list"
           />

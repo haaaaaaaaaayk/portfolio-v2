@@ -10,7 +10,7 @@ export function Contact() {
       <Container>
         <SectionHead n="04" title="Contact" />
         <RailLayout rail={<p>{profile.looking}</p>}>
-          <p className="max-w-4xl font-display text-role sm:text-specimen xl:text-display">
+          <p className="max-w-4xl font-display text-role text-ink sm:text-specimen xl:text-display">
             {profile.contactLine.lead}{' '}
             <span className="rounded-mark bg-accent px-2">{profile.contactLine.accent}</span>
             {profile.contactLine.end}
@@ -22,7 +22,7 @@ export function Contact() {
                 <a
                   href={l.href}
                   title={l.note}
-                  className="glass inline-flex h-11 items-center rounded-full px-5 text-secondary transition-transform duration-[260ms] hover:-translate-y-0.5"
+                  className="glass inline-flex h-11 items-center rounded-full px-5 text-secondary text-ink-muted transition-transform duration-[260ms] hover:-translate-y-0.5 hover:text-ink-active"
                 >
                   {l.label} ↗
                 </a>
@@ -34,7 +34,7 @@ export function Contact() {
         <footer className="mt-24 flex flex-wrap items-center justify-between gap-4 border-t border-rule pt-4 text-caption text-ink-muted">
           <span>
             © {new Date().getFullYear()} {profile.name} · {profile.location} ·{' '}
-            <span className="text-ink tabular-nums">{time}</span> local
+            <span className="tabular-nums">{time}</span> local
           </span>
           <span>{profile.colophon}</span>
         </footer>

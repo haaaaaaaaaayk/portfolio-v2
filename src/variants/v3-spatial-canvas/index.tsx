@@ -160,7 +160,7 @@ export default function SpatialCanvas() {
   void tick
 
   return (
-    <div className="relative h-svh overflow-hidden bg-canvas">
+    <div className="relative h-svh overflow-hidden bg-paper">
       <LiquidField intensity={0.85} />
       <div
         ref={stageRef}
@@ -205,7 +205,7 @@ export default function SpatialCanvas() {
 
       <div className="pointer-events-none absolute top-3 left-3 z-20 sm:top-4 sm:left-4">
         <div className="pointer-events-auto glass glass-edge flex items-center gap-2 rounded-full p-1">
-          <button type="button" onClick={fitAll} className="inline-flex h-11 items-center rounded-full px-4 text-compact">
+          <button type="button" onClick={fitAll} className="inline-flex h-11 items-center rounded-full px-4 text-compact text-ink-muted hover:text-ink-active">
             Fit all
           </button>
           <span className="px-2 text-caption tabular-nums text-ink-muted">{Math.round(cam.z * 100)}%</span>
@@ -266,7 +266,7 @@ function CardFace({
     return (
       <div>
         <span className="text-caption text-ink-muted">About</span>
-        <p className="mt-2 text-secondary">
+        <p className="mt-2 text-secondary text-ink">
           {about.lead} <span className="text-ink-muted">{about.tail}</span>
         </p>
       </div>
@@ -311,7 +311,7 @@ function CardFace({
           <ul className="mt-3 space-y-2 text-compact">
             {experience.map((row) => (
               <li key={row.id}>
-                {row.org}
+                <span className="text-ink">{row.org}</span>
                 <span className="text-ink-muted"> — {row.role}</span>
               </li>
             ))}
@@ -323,7 +323,7 @@ function CardFace({
   return (
     <div>
       <span className="text-caption text-ink-muted">Contact</span>
-      <p className="mt-2 text-heading">
+      <p className="mt-2 text-heading text-ink">
         {profile.contactLine.lead} {profile.contactLine.accent}
         {profile.contactLine.end}
       </p>
@@ -336,7 +336,7 @@ function CardFace({
                 href={l.href}
                 title={l.note}
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex h-8 items-center rounded-full bg-control px-3 text-caption"
+                className="inline-flex h-8 items-center rounded-full bg-control px-3 text-caption hover:bg-control-hover hover:text-ink-active"
               >
                 {l.label}
               </a>

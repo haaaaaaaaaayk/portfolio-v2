@@ -49,7 +49,7 @@ export default function Lab() {
   )
 
   return (
-    <div className="relative min-h-svh bg-canvas" style={vars}>
+    <div className="relative min-h-svh bg-paper" style={vars}>
       <LiquidField pools={pools} intensity={intensity} pointerEase={follow} blur={fieldBlur} />
 
       <div className="relative z-10 mx-auto grid max-w-[1440px] gap-6 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(240px,360px)_1fr] lg:px-8">
@@ -127,7 +127,7 @@ export default function Lab() {
                 {profile.availability}
               </span>
             </div>
-            <p className="mt-6 max-w-2xl text-title">
+            <p className="mt-6 max-w-2xl text-title text-ink">
               {profile.statement.lead} <span className="text-ink-muted">{profile.statement.tail}</span>
             </p>
           </section>
@@ -164,7 +164,7 @@ export default function Lab() {
               )}
               {specimen === 'about' && (
                 <div className="flex flex-col gap-6">
-                  <p className="text-title">
+                  <p className="text-title text-ink">
                     {about.lead} <span className="text-ink-muted">{about.tail}</span>
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -230,7 +230,7 @@ export default function Lab() {
                   <ul className="mt-2 flex flex-wrap gap-2">
                     {links.map((l) => (
                       <li key={l.id}>
-                        <a href={l.href} title={l.note} className="glass inline-flex h-11 items-center rounded-full px-4 text-compact">
+                        <a href={l.href} title={l.note} className="glass inline-flex h-11 items-center rounded-full px-4 text-compact text-ink-muted hover:text-ink-active">
                           {l.label} ↗
                         </a>
                       </li>

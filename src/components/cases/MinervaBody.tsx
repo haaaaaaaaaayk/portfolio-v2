@@ -33,7 +33,7 @@ export function MinervaBody() {
           ]}
         />
         <div className="glass mt-8 inline-block rounded-card px-6 py-4">
-          <p className="text-heading">
+          <p className="text-heading text-ink">
             “The demand was already there — it was just being underserved.”
           </p>
         </div>

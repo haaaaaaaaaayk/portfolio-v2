@@ -30,7 +30,7 @@ export function Nav() {
                 className={`inline-flex h-8 items-center rounded-full px-3.5 text-compact transition-[background-color,color,box-shadow] duration-[260ms] ease-(--ease-close) sm:px-4 ${
                   current
                     ? 'bg-white text-ink shadow-[0_1px_2px_rgb(22_22_22/8%)]'
-                    : 'text-ink-muted hover:text-ink'
+                    : 'text-ink-muted hover:text-ink-active'
                 }`}
               >
                 {l.label}

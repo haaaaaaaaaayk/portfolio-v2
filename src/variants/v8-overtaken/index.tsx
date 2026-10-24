@@ -68,7 +68,7 @@ export default function Overtaken() {
   const project = caseId ? projectById(caseId) : null
 
   return (
-    <div className="relative min-h-svh bg-canvas">
+    <div className="relative min-h-svh bg-paper">
       <LiquidField intensity={0.45} />
       <Atmosphere
         ref={atmo}
@@ -132,7 +132,7 @@ export default function Overtaken() {
                 clipPath: `circle(0px at ${lens.x}px ${lens.y}px)`,
                 transition: { duration: 0.26 },
               }}
-              className="min-h-full bg-surface"
+              className="min-h-full bg-paper"
             >
               <div className="mx-auto max-w-5xl px-4 py-8 sm:px-8 sm:py-16">
                 <button

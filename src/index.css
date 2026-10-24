@@ -151,10 +151,13 @@ html[data-font='helvetica-now'] {
   --glass-blur: 16px;
   --glass-saturate: 1.4;
   --glass-tint: 255 255 255;
+  --underline-rest: 0.22;
+  --underline-focus: 0.45;
 }
 
 html {
   scroll-behavior: smooth;
+  background: var(--color-paper);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -164,8 +167,8 @@ html {
 }
 
 body {
-  background: var(--color-surface);
-  color: var(--color-ink);
+  background: var(--color-paper);
+  color: var(--color-ink-muted);
   font-family: var(--font-sans);
   font-size: var(--text-secondary);
   line-height: var(--text-secondary--line-height);
@@ -173,6 +176,18 @@ body {
   letter-spacing: var(--tracking);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+/* Headings stay ink. Utilities (text-ink-muted on an h2 used as a caption) can override. */
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--color-ink);
+  }
 }
 
 /* One weight throughout: emphasis comes from color, never weight. */
@@ -199,11 +214,6 @@ select {
   font-family: inherit;
   letter-spacing: inherit;
 }
-strong,
-b {
-  color: var(--color-ink);
-}
-
 ::selection {
   background: var(--color-accent);
   color: var(--color-ink);
@@ -212,6 +222,35 @@ b {
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+/* 24th reading links: muted rest, ink-active hover/focus, underline fades in.
+   Pill/glass/ctl anchors keep their own classes and do not use this. */
+.reading-link {
+  color: var(--color-ink-muted);
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: transparent;
+  transition:
+    text-decoration-color 180ms ease,
+    color 180ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .reading-link:hover {
+    color: var(--color-ink-active);
+    text-decoration-color: rgb(0 0 0 / var(--underline-rest));
+  }
+}
+.reading-link:focus-visible {
+  color: var(--color-ink-active);
+  text-decoration-color: rgb(0 0 0 / var(--underline-focus));
+}
+@media (prefers-reduced-motion: reduce) {
+  .reading-link {
+    transition: none;
+  }
 }
 
 /* ============================================================
@@ -302,78 +341,87 @@ b {
 /* ============================================================
    24th controls (ported): shared field + button primitives.
    Single-line controls are full radius; multi-line fields 20px.
+   In @layer components so utilities (text-white on glass-dark) can win.
    ============================================================ */
-.ctl {
-  box-sizing: border-box;
-  height: var(--spacing-control);
-  padding: 0 16px;
-  border: 0;
-  border-radius: var(--radius-control);
-  color: var(--color-ink);
-  background: var(--color-control);
-  font-size: var(--text-compact);
-  line-height: var(--text-compact--line-height);
-  transition:
-    background-color 180ms ease,
-    color 180ms ease;
-}
-@media (min-width: 640px) and (pointer: fine) {
+@layer components {
   .ctl {
-    height: var(--spacing-field);
+    box-sizing: border-box;
+    height: var(--spacing-control);
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--radius-control);
+    color: var(--color-ink-muted);
+    background: var(--color-control);
+    font-size: var(--text-compact);
+    line-height: var(--text-compact--line-height);
+    transition:
+      background-color 180ms ease,
+      color 180ms ease;
   }
-  .ctl[data-size='compact'] {
-    height: var(--spacing-compact);
-    padding: 0 12px;
+  @media (min-width: 640px) and (pointer: fine) {
+    .ctl {
+      height: var(--spacing-field);
+    }
+    .ctl[data-size='compact'] {
+      height: var(--spacing-compact);
+      padding: 0 12px;
+    }
   }
-}
-.ctl:disabled {
-  color: var(--color-disabled-ink);
-  background: var(--color-disabled);
-  cursor: not-allowed;
-}
-.ctl-field {
-  width: 100%;
-  min-width: 0;
-  background: var(--color-surface);
-  box-shadow: inset 0 0 0 1px var(--color-field-border);
-}
-.ctl-field:hover:enabled {
-  background: var(--color-paper);
-}
-.ctl-field:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--color-accent);
-}
-.ctl-field[aria-invalid='true'] {
-  box-shadow: inset 0 0 0 1px var(--color-error);
-}
-.ctl-area {
-  height: auto;
-  min-height: 112px;
-  padding: 12px 16px;
-  border-radius: var(--radius-card);
-  resize: vertical;
-}
-.ctl-primary {
-  color: var(--color-white);
-  background: var(--color-ink);
-  cursor: pointer;
-}
-.ctl-primary:hover:enabled {
-  background: var(--color-ink-muted);
-}
-.ctl-primary:active:enabled {
-  background: var(--color-pressed);
-}
-.ctl-secondary {
-  cursor: pointer;
-}
-.ctl-secondary:hover:enabled {
-  background: var(--color-control-hover);
-}
-@media (prefers-reduced-motion: reduce) {
-  .ctl {
-    transition: none;
+  .ctl:disabled {
+    color: var(--color-disabled-ink);
+    background: var(--color-disabled);
+    cursor: not-allowed;
+  }
+  .ctl-field {
+    width: 100%;
+    min-width: 0;
+    color: var(--color-ink);
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-field-border);
+  }
+  .ctl-field:hover:enabled {
+    background: var(--color-hover);
+  }
+  .ctl-field:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--color-accent);
+  }
+  .ctl-field[aria-invalid='true'] {
+    box-shadow: inset 0 0 0 1px var(--color-error);
+  }
+  .ctl-area {
+    height: auto;
+    min-height: 112px;
+    padding: 12px 16px;
+    border-radius: var(--radius-card);
+    resize: vertical;
+  }
+  .ctl-primary {
+    color: var(--color-white);
+    background: var(--color-ink);
+    cursor: pointer;
+  }
+  .ctl-primary:hover:enabled {
+    background: var(--color-ink-muted);
+  }
+  .ctl-primary:active:enabled {
+    background: var(--color-pressed);
+  }
+  .ctl-secondary {
+    cursor: pointer;
+  }
+  .ctl-secondary:hover:enabled {
+    color: var(--color-ink-active);
+    background: var(--color-control-hover);
+  }
+  .ctl-secondary:active:enabled {
+    color: var(--color-white);
+    background: var(--color-pressed);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ctl {
+      transition: none;
+    }
   }
 }
 

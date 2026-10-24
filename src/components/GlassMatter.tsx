@@ -33,7 +33,7 @@ export function AboutPane() {
   return (
     <section className="glass glass-edge rounded-card p-5 sm:p-8">
       <p className="text-caption text-ink-muted">About</p>
-      <p className="mt-4 text-heading">
+      <p className="mt-4 text-heading text-ink">
         {about.lead} <span className="text-ink-muted">{about.tail}</span>
       </p>
       <ul className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -64,7 +64,7 @@ export function ResumePane() {
       <ul className="mt-6 space-y-3">
         {experience.map((row) => (
           <li key={row.id} className="border-t border-rule pt-3">
-            <div className="text-compact">{row.org}</div>
+            <div className="text-compact text-ink">{row.org}</div>
             <div className="text-caption text-ink-muted">{row.role}</div>
           </li>
         ))}
@@ -80,7 +80,7 @@ export function ContactPane({ ink = false }: { ink?: boolean }) {
   return (
     <section className={`rounded-card p-5 sm:p-8 ${ink ? 'glass-dark text-white' : 'glass glass-edge'}`}>
       <p className={`text-caption ${ink ? 'text-white/60' : 'text-ink-muted'}`}>Contact</p>
-      <p className="mt-3 text-title">
+      <p className={`mt-3 text-title ${ink ? '' : 'text-ink'}`}>
         {profile.contactLine.lead}{' '}
         <span className="rounded-mark bg-accent px-1 text-ink">{profile.contactLine.accent}</span>
         {profile.contactLine.end}
@@ -93,7 +93,7 @@ export function ContactPane({ ink = false }: { ink?: boolean }) {
               href={l.href}
               title={l.note}
               className={`inline-flex h-11 items-center rounded-full px-4 text-compact ${
-                ink ? 'bg-white/10 text-white' : 'bg-control'
+                ink ? 'bg-white/10 text-white hover:bg-pressed' : 'bg-control hover:bg-control-hover hover:text-ink-active'
               }`}
             >
               {l.label} ↗

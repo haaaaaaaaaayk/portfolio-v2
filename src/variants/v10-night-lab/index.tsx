@@ -174,7 +174,7 @@ export default function NightLab() {
                 Hold F / H / O (or 1 / 2 / 3) to layer fog density, halftone frequency, overtaken gain. Case studies are tracks.
               </p>
             </div>
-            <span className="glass inline-flex h-11 items-center rounded-full px-3 text-compact tabular-nums text-ink">
+            <span className="glass inline-flex h-11 items-center rounded-full px-3 text-compact tabular-nums text-ink-muted">
               {fps === 0 ? '—' : fps} fps
             </span>
           </div>
@@ -218,7 +218,7 @@ export default function NightLab() {
           </div>
         </section>
 
-        <div className="mt-10 grid gap-6 text-ink lg:grid-cols-2">
+        <div className="mt-10 grid gap-6 text-ink-muted lg:grid-cols-2">
           <WorkPanes onOpen={(id) => setCaseId(id)} />
           <AboutPane />
           <ResumePane />

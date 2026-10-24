@@ -19,9 +19,9 @@ export function Button({
     variant === 'primary'
       ? 'ctl-primary'
       : variant === 'secondary'
-        ? 'ctl-secondary'
+        ? 'ctl-secondary hover:text-ink-active'
         : variant === 'glass'
-          ? 'glass !bg-none hover:!bg-white/40 cursor-pointer'
+          ? 'glass !bg-none text-ink-muted hover:!bg-white/40 hover:text-ink-active cursor-pointer'
           : 'glass-dark text-white hover:!bg-pressed cursor-pointer'
   return (
     <button
@@ -190,7 +190,7 @@ export function Alert({
           type="button"
           onClick={onDismiss}
           aria-label="Dismiss"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-black/[0.05] hover:text-ink"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-hover hover:text-ink-active"
         >
           <X size={16} />
         </button>

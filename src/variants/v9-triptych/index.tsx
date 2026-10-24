@@ -73,7 +73,7 @@ export default function Triptych() {
   const bars = useMemo(() => Array.from({ length: 32 }, (_, i) => i), [])
 
   return (
-    <div className="relative min-h-svh bg-canvas">
+    <div className="relative min-h-svh bg-paper">
       <LiquidField intensity={0.5} />
       <Atmosphere
         ref={atmo}
@@ -111,7 +111,7 @@ export default function Triptych() {
                 type="button"
                 onClick={() => setSolo(n)}
                 className={`inline-flex h-11 items-center rounded-full px-4 text-compact ${
-                  solo === n ? 'bg-ink text-white' : 'glass'
+                  solo === n ? 'bg-ink text-white' : 'glass text-ink-muted hover:text-ink-active'
                 }`}
               >
                 {n === 0 ? 'Mix' : n === 1 ? `1 · ${foggedCopy.title}` : n === 2 ? `2 · Halftone` : `3 · Overtaken`}

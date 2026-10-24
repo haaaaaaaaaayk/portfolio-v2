@@ -24,8 +24,8 @@ export function Hero() {
     <section id="top" className="relative flex min-h-svh flex-col">
       <Container className="flex min-h-svh flex-col">
         <header className="flex h-14 items-center justify-between border-b border-rule">
-          <a href="#top" className="text-secondary">
-            {profile.name} <span className="hidden text-ink-muted sm:inline">Portfolio</span>
+          <a href="#top" className="text-secondary text-ink-muted hover:text-ink-active">
+            {profile.name} <span className="hidden sm:inline">Portfolio</span>
           </a>
           <span className="text-compact text-ink-muted tabular-nums">
             {profile.location} · {time}
@@ -55,7 +55,7 @@ export function Hero() {
             </motion.h1>
             <motion.p
               {...reveal(0.2, reduced)}
-              className="mt-8 max-w-3xl text-title sm:text-role"
+              className="mt-8 max-w-3xl text-title text-ink sm:text-role"
             >
               {profile.statement.lead}{' '}
               <span className="text-ink-muted">{profile.statement.tail}</span>
@@ -65,7 +65,7 @@ export function Hero() {
 
         <a
           href="#work"
-          className="mb-24 w-fit text-compact text-ink-muted transition-colors hover:text-ink sm:mb-28"
+          className="reading-link mb-24 w-fit text-compact sm:mb-28"
         >
           Selected work ↓
         </a>
