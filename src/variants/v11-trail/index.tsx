@@ -112,7 +112,7 @@ export default function Trail() {
             </p>
           )}
           <motion.p {...fadeUp(0.2, reduced)} className="text-center text-caption text-ink-muted">
-            Move your mouse up the trail. Click me when I stop. I start strong.
+            Move your mouse up the trail. I have thoughts. Click me when I sit down.
           </motion.p>
           <Segmented
             label="Thought style"

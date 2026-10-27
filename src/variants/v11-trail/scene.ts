@@ -82,9 +82,27 @@ function splitTone(s,x,by,w,h,C,flip,px){
   g.addColorStop(0,C[2]);g.addColorStop(.5,C[1]);g.addColorStop(1,C[0]);s.fillStyle=g;s.fill();
 }
 
-/* ---------- thoughts: shown beside the cloud; the peak gets the last word ---------- */
-const THOUGHTS=['Hiking is not as fun as I thought.','I could be designing right now.','Why is everyone faster than me?','Why did I agree to this?'];
-const PEAK='I hate hiking.';
+/* ---------- thoughts: a storyline keyed to how far up he is, interrupted by what happens
+   on the way; each pool plays in order the first time, then shuffles. The peak gets the last word. ---------- */
+const STORY=[
+  [0,['Oh, I don’t think I like this.','Wait, is it uphill the whole way?','Nobody mentioned a slope in the brief.','Fresh air is overrated.']],
+  [.16,['I could be designing right now.','This trail has terrible onboarding.','Zero affordances. Not one handrail.','Who approved this many steps?','One escalator. That’s all I ask.']],
+  [.38,['Oh, my smoker lungs.','Is that my heart or a drum solo?','My lungs are typing an apology.','Every step is a breaking change.','I’d trade a kidney for a chairlift.']],
+  [.62,['My legs just filed a bug report.','Can I prototype the summit instead?','Somebody rate-limit this mountain.','I’m sweating in sixteen million colors.','Is that flag real or just a mockup?']],
+  [.86,['Almost there. Probably. Hopefully.','I can see the flag. It’s mocking me.','If I don’t make it, use an 8pt grid.']]];
+const ON={
+  pass:['Why is everyone faster than me?','Did that guy just jog past me?','Cool calves. Rude, though.','A grandma just lapped me.','They have poles. That’s cheating.','Show-off.'],
+  meet:['Lucky. They’re already going down.','How are you smiling?','Tell my family I tried.'],
+  rest:['Oh, my smoker lungs.','I’m not resting, I’m iterating.','Sitting is cardio, right?','Pausing for user research. On a rock.','My knees just unsubscribed.','Is there wifi on this rock?','Respawning…','Buffering. Please hold.'],
+  back:['Wait, downhill is so much nicer.','Strategic retreat.','Going back for my dignity.'],
+  idle:['Are we done? Can we go home?','Great, now the cursor quit too.','I live here now.'],
+  poke:['Okay, okay, I’m going.','Five more minutes. Please.','Don’t poke the designer.','Fine. Up. Ugh.'],
+  home:['Downhill. Finally, my sport.','Never again. Write that down.','I was promised pizza.']};
+const PEAK='Ugh, Hayk hates hiking.';
+/* back at the start after the walk down */
+const FINALE='Enough torture, now look at my projects.';
+/* seconds of silence between two lines */
+const GAP=1;
 /* 24th tokens used on the canvas */
 const INK='#161616',MUTED='#666666',PAPER='#fafafa',ACCENT='#1aedc5';
 /* thought styles that keep the rain cloud: 1 in-cloud, 4 subtitle, 5 narrator */
@@ -94,7 +112,7 @@ const MEAS=document.createElement('canvas').getContext('2d');
 /* ---------- the scene ---------- */
 const scene={
   p:0,t:0,cam:0,v:0,fatigue:0,rest:0,sit:0,cloud:0,done:false,home:false,ring:null,ptr:null,hikers:[],puffs:[],drops:[],next:3,walk:0,
-  thought:-1,thoughtT:0,cloudy:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
+  talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
   resize(W,H){this.W=W;this.H=H;this.readType();this.build()},
   build(){
     const W=this.W,H=this.H,sd=2.3;
@@ -152,38 +170,67 @@ const scene={
   /* difficulty: starts at hiker pace, falls off as I climb */
   speed(a){return lerp(.036,.0075,Math.pow(a,1.35))},
   targetFrom(ry){return(this.yS-(this.cam+ry))/(this.yS-this.yT)},
-  move(x,y){this.ptr={x,y};if(!this.ring)this.ring={x,y}},
-  nextThought(){this.thought=(this.thought+1)%THOUGHTS.length;this.thoughtT=0;this.readType()},
+  move(x,y){this.ptr={x,y};if(!this.ring)this.ring={x,y};this.idle=0;this.idled=false},
+  /* first unseen line in order, then any line but the one just said */
+  /* nothing repeats in one climb: a used-up pool stays quiet */
+  from(pool){const fresh=pool.find(l=>!this.seen.has(l));if(fresh)this.seen.add(fresh);return fresh??null},
+  /* this stage first, then anything left over from the stages below */
+  story(){let s=0;while(s+1<STORY.length&&this.p>=STORY[s+1][0])s++;for(;s>=0;s--){const l=this.from(STORY[s][1]);if(l)return l}return null},
+  /* an event line jumps the queue; `now` skips the cooldown so it isn't lost */
+  cue(pool,now){if(!now&&(this.cued||this.t-this.cueAt<5))return;this.cued=this.from(pool);this.cueAt=this.t},
+  nextThought(){const l=this.cued||(this.home?null:this.story());this.cued=null;if(!l)return;this.line=l;this.thoughtT=0;this.dur=1.5+this.line.length*.045;this.readType()},
   /* follow the site's live font switch (family + tracking, as em) */
   readType(){const cs=getComputedStyle(document.body);this.font=cs.fontFamily||'system-ui, sans-serif';this.track=(parseFloat(cs.letterSpacing)||0)/(parseFloat(cs.fontSize)||16)},
   /* clicking Hayk gets him back on his feet with a fresh complaint */
   down(x,y){
     const b=this.hBox;
-    if(b&&!this.done&&!this.home&&x>=b.x0&&x<=b.x1&&y>=b.y0&&y<=b.y1){this.rest=0;this.fatigue=0;this.poke=2.5;this.cloudy=true;this.nextThought();this.ptr={x,y};return}
-    this.move(x,y);if(this.done&&!this.home)this.home=true},
+    if(b&&!this.done&&!this.home&&x>=b.x0&&x<=b.x1&&y>=b.y0&&y<=b.y1){this.rest=0;this.fatigue=0;this.poke=2.5;this.talk=1;this.cue(ON.poke,true);this.ptr={x,y};return}
+    this.move(x,y);if(this.done&&!this.home){this.home=true;this.line=PEAK;this.dur=this.thoughtT+.3;this.cue(ON.home,true)}},
   update(dt){
     this.t+=dt;const a=this.p,prev=this.p;
     if(this.ptr){const f=1-Math.exp(-lerp(18,2,Math.pow(a,1.3))*dt);this.ring.x+=(this.ptr.x-this.ring.x)*f;this.ring.y+=(this.ptr.y-this.ring.y)*f}
     this.rest=Math.max(0,this.rest-dt);
-    if(this.home){this.p=Math.max(0,this.p-dt*.14);if(this.p<=0){this.home=false;this.done=false;this.fatigue=0;this.ring=this.ptr=null}}
+    if(this.home){this.p=Math.max(0,this.p-dt*.14);if(this.p<=0){this.home=false;this.done=false;this.fatigue=0;this.ring=this.ptr=null;this.landed=true}}
     else if(!this.done&&this.ring&&this.rest<=0){
       const tp=clamp(this.targetFrom(this.ring.y),0,1),cap=this.speed(a)*dt;
       this.p=clamp(this.p+clamp(tp-this.p,-cap*1.5,cap),0,1);
-      if(this.p>prev&&a>.3){this.fatigue+=dt*(a-.3)*.45;if(this.fatigue>=1){this.fatigue=0;this.rest=1.4+a*3}}
-      if(this.p>=.995){this.p=1;this.done=true;this.thoughtT=0}
+      if(this.p>prev&&a>.3){this.fatigue+=dt*(a-.3)*.45;if(this.fatigue>=1){this.fatigue=0;this.rest=1.4+a*3;this.cue(ON.rest,true)}}
+      if(this.p>=.995){this.p=1;this.done=true}
     }
     this.v=(this.p-prev)/Math.max(dt,1e-3);
     const mv=Math.min(1,Math.abs(this.v)/.02);this.walk+=dt*lerp(10,5.5,a)*mv;
     const sitting=this.rest>0||this.done;this.sit+=((sitting?1:0)-this.sit)*Math.min(1,dt*5);
     this.poke=Math.max(0,this.poke-dt);
-    const wantCloud=this.done?1:this.poke>0||sitting&&a>.3?.85:a>.55?.5:0;this.cloud+=(wantCloud-this.cloud)*Math.min(1,dt*2);
-    const cloudy=this.cloud>.5;if(cloudy&&!this.cloudy)this.nextThought();this.cloudy=cloudy;
-    if(cloudy&&(this.thoughtT+=dt)>3.5&&!this.done)this.nextThought();
-    this.text=this.done?PEAK:this.thought>=0?THOUGHTS[this.thought]:null;
-    const said=cloudy?this.text:null;if(said!==this.said){this.said=said;opts.onThought?.(said)}
+    /* one second after the cursor starts moving, he narrates on his own, no click needed */
+    if(this.ring&&this.talk<1)this.talk+=dt;
+    const live=this.talk>=1,peak=this.done&&!this.home;
+    this.idle+=dt;this.thoughtT+=dt;
+    /* back at the bottom: finish the current line, pause, say the finale, then start over fresh */
+    if(this.landed){
+      if(this.line!==FINALE&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=FINALE;this.thoughtT=0;this.dur=5}
+      else if(this.line===FINALE&&this.thoughtT>this.dur+GAP){this.landed=false;this.talk=0;this.line=this.cued=null;this.seen.clear()}
+    }
+    else if(live&&!peak){
+      this.back=this.v<-.004?this.back+dt:0;if(this.v>.002)this.wentBack=false;
+      if(this.back>.6&&!this.wentBack){this.wentBack=true;this.cue(ON.back)}
+      if(this.idle>4&&!this.idled&&this.rest<=0){this.idled=true;this.cue(ON.idle)}
+      /* lines always finish, then a pause; interruptions wait their turn. No new line starts if he
+         is about to sit down before it could finish, so the rest line comes in clean. */
+      const tired=this.rest<=0&&a>.3&&this.v>0&&(1-this.fatigue)/((a-.3)*.45)<4.5;
+      if((!this.line||this.thoughtT>this.dur+GAP)&&!tired)this.nextThought();
+    }
+    /* at the top the last line still finishes and pauses, then the peak line takes over for good */
+    else if(peak&&this.line!==PEAK&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=PEAK;this.thoughtT=0;this.dur=1e9}
+    const wantCloud=peak?1:live||this.poke>0?.85:0;this.cloud+=(wantCloud-this.cloud)*Math.min(1,dt*5);
+    this.text=(live||peak)&&this.thoughtT<this.dur?this.line:null;
+    this.fade=clamp(this.thoughtT/.25,0,1)*clamp((this.dur-this.thoughtT)/.3,0,1);
+    const said=this.cloud>.5?this.text:null;if(said!==this.said){this.said=said;opts.onThought?.(said)}
     const tc=clamp(this.yw(this.p)-this.H*.68,0,this.WH-this.H);this.cam+=(tc-this.cam)*(1-Math.exp(-dt*3));
     this.next-=dt;if(this.next<=0){this.next=5+Math.random()*4;this.spawn()}
-    for(const h of this.hikers)h.p+=h.dir*h.v*dt;
+    for(const h of this.hikers){
+      const was=h.p;h.p+=h.dir*h.v*dt;
+      if(live&&!peak&&(was<this.p)!==(h.p<this.p))this.cue(h.dir>0?ON.pass:ON.meet);
+    }
     this.hikers=this.hikers.filter(h=>h.p>=0&&h.p<=1&&h.p>this.p-.2&&h.p<this.p+.42);
     if(this.sit>.6&&Math.random()<dt*2)this.puffs.push({x:(Math.random()-.5)*4,y:0,l:1});
     for(const q of this.puffs){q.y-=dt*12;q.x+=dt*6;q.l-=dt*.9}this.puffs=this.puffs.filter(q=>q.l>0);
@@ -223,7 +270,7 @@ const scene={
   },
   /* thoughts are drawn on the crisp UI layer in 24th type; style 5 lives in the page instead */
   drawThought(ctx,W,H){
-    const al=clamp((this.cloud-.45)/.35,0,1),text=this.text,m=opts.mode;
+    const al=clamp((this.cloud-.45)/.35,0,1)*this.fade,text=this.text,m=opts.mode;
     if(al<=0||!text||!this.hBox||m===5)return;
     const type=(size,color)=>{ctx.font=`${size}px ${this.font}`;ctx.letterSpacing=`${this.track*size}px`;ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle'};
     /* paper keyline so type stays legible over the meadow without a container */
