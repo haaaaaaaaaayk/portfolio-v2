@@ -266,7 +266,7 @@ function CardFace({
     return (
       <div>
         <span className="text-caption text-ink-muted">About</span>
-        <p className="mt-2 text-secondary text-ink">
+        <p className="mt-2 text-secondary text-ink-muted">
           {about.lead} <span className="text-ink-muted">{about.tail}</span>
         </p>
       </div>
@@ -323,7 +323,7 @@ function CardFace({
   return (
     <div>
       <span className="text-caption text-ink-muted">Contact</span>
-      <p className="mt-2 text-heading text-ink">
+      <p className="mt-2 text-heading text-ink-muted">
         {profile.contactLine.lead} {profile.contactLine.accent}
         {profile.contactLine.end}
       </p>

@@ -79,7 +79,7 @@ export function Switcher() {
               <div
                 role="radiogroup"
                 aria-label="Variant"
-                className="grid grid-cols-5 gap-1 rounded-card bg-black/[0.06] p-1"
+                className="grid grid-cols-6 gap-1 rounded-card bg-black/[0.06] p-1"
               >
                 {VARIANTS.map((v) => {
                   const checked = v.id === variant

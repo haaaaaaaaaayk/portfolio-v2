@@ -55,7 +55,7 @@ export function Hero() {
             </motion.h1>
             <motion.p
               {...reveal(0.2, reduced)}
-              className="mt-8 max-w-3xl text-title text-ink sm:text-role"
+              className="mt-8 max-w-3xl text-title text-ink-muted sm:text-role"
             >
               {profile.statement.lead}{' '}
               <span className="text-ink-muted">{profile.statement.tail}</span>

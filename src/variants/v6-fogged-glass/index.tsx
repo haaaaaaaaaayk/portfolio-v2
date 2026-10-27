@@ -88,7 +88,7 @@ export default function FoggedGlass() {
         >
           <p className="text-caption text-ink-muted">{foggedCopy.mode}</p>
           <h1 className="mt-2 font-display text-role sm:text-specimen">{foggedCopy.title}</h1>
-          <p className="mt-4 text-heading text-ink">{foggedCopy.draw}</p>
+          <p className="mt-4 text-heading text-ink-muted">{foggedCopy.draw}</p>
           <p className="mt-2 text-compact text-ink-muted">
             {profile.name} · {profile.location} · cursor heat clears the pane; lift off and it beads again.
           </p>

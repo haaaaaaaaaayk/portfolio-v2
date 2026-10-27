@@ -10,7 +10,7 @@ export function Contact() {
       <Container>
         <SectionHead n="04" title="Contact" />
         <RailLayout rail={<p>{profile.looking}</p>}>
-          <p className="max-w-4xl font-display text-role text-ink sm:text-specimen xl:text-display">
+          <p className="max-w-4xl font-display text-role text-ink-muted sm:text-specimen xl:text-display">
             {profile.contactLine.lead}{' '}
             <span className="rounded-mark bg-accent px-2">{profile.contactLine.accent}</span>
             {profile.contactLine.end}

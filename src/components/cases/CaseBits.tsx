@@ -18,7 +18,7 @@ export function StatBand({ stats }: { stats: { value: string; label: string }[] 
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((s) => (
         <div key={s.label} className="border-l-2 border-accent pl-4">
-          <div className="font-display text-specimen tabular-nums text-ink">{s.value}</div>
+          <div className="font-display text-specimen tabular-nums text-ink-muted">{s.value}</div>
           <div className="mt-2 text-compact text-ink-muted">{s.label}</div>
         </div>
       ))}
@@ -36,7 +36,7 @@ export function PullQuote({
 }) {
   return (
     <figure className="py-2">
-      <blockquote className="max-w-3xl text-title text-ink sm:text-role">
+      <blockquote className="max-w-3xl text-title text-ink-muted sm:text-role">
         <span aria-hidden className="text-ink-muted">“</span>
         {children}
         <span aria-hidden className="text-ink-muted">”</span>

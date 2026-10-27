@@ -148,7 +148,7 @@ function Expanded({ id }: { id: RowId }) {
   if (id === 'about') {
     return (
       <div className="flex flex-col gap-8">
-        <p className="max-w-3xl text-title text-ink">
+        <p className="max-w-3xl text-title text-ink-muted">
           {about.lead} <span className="text-ink-muted">{about.tail}</span>
         </p>
         <p className="text-compact text-ink-muted">{about.railNote}</p>
@@ -195,7 +195,7 @@ function Expanded({ id }: { id: RowId }) {
   }
   return (
     <div className="flex flex-col gap-8">
-      <p className="text-title text-ink">
+      <p className="text-title text-ink-muted">
         {profile.contactLine.lead}{' '}
         <span className="rounded-mark bg-accent px-1">{profile.contactLine.accent}</span>
         {profile.contactLine.end}

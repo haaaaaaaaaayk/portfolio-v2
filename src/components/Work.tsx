@@ -66,7 +66,7 @@ export function Work() {
           {openCase && (
             <motion.div
               key="overlay"
-              className="fixed inset-0 z-[60] overflow-y-auto bg-canvas/50 p-2 backdrop-blur-xl sm:p-4 lg:p-8"
+              className="fixed inset-0 z-[60] overflow-y-auto bg-paper/50 p-2 backdrop-blur-xl sm:p-4 lg:p-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1, transition: { duration: 0.36 } }}
               exit={{ opacity: 0, transition: { duration: 0.26 } }}

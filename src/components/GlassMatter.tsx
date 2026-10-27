@@ -33,7 +33,7 @@ export function AboutPane() {
   return (
     <section className="glass glass-edge rounded-card p-5 sm:p-8">
       <p className="text-caption text-ink-muted">About</p>
-      <p className="mt-4 text-heading text-ink">
+      <p className="mt-4 text-heading text-ink-muted">
         {about.lead} <span className="text-ink-muted">{about.tail}</span>
       </p>
       <ul className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -80,9 +80,9 @@ export function ContactPane({ ink = false }: { ink?: boolean }) {
   return (
     <section className={`rounded-card p-5 sm:p-8 ${ink ? 'glass-dark text-white' : 'glass glass-edge'}`}>
       <p className={`text-caption ${ink ? 'text-white/60' : 'text-ink-muted'}`}>Contact</p>
-      <p className={`mt-3 text-title ${ink ? '' : 'text-ink'}`}>
+      <p className={`mt-3 text-title ${ink ? '' : 'text-ink-muted'}`}>
         {profile.contactLine.lead}{' '}
-        <span className="rounded-mark bg-accent px-1 text-ink">{profile.contactLine.accent}</span>
+        <span className={`rounded-mark bg-accent px-1 ${ink ? 'text-ink' : ''}`}>{profile.contactLine.accent}</span>
         {profile.contactLine.end}
       </p>
       <p className={`mt-3 text-compact ${ink ? 'text-white/70' : 'text-ink-muted'}`}>{profile.looking}</p>

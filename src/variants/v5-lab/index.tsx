@@ -127,7 +127,7 @@ export default function Lab() {
                 {profile.availability}
               </span>
             </div>
-            <p className="mt-6 max-w-2xl text-title text-ink">
+            <p className="mt-6 max-w-2xl text-title text-ink-muted">
               {profile.statement.lead} <span className="text-ink-muted">{profile.statement.tail}</span>
             </p>
           </section>
@@ -164,7 +164,7 @@ export default function Lab() {
               )}
               {specimen === 'about' && (
                 <div className="flex flex-col gap-6">
-                  <p className="text-title text-ink">
+                  <p className="text-title text-ink-muted">
                     {about.lead} <span className="text-ink-muted">{about.tail}</span>
                   </p>
                   <div className="flex flex-wrap gap-2">

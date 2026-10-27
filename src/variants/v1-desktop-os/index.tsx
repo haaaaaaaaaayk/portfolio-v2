@@ -392,7 +392,7 @@ function WindowBody({ id, onOpen }: { id: WinId; onOpen: (id: WinId) => void }) 
   if (id === 'contact') {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-title text-ink">
+        <p className="text-title text-ink-muted">
           {profile.contactLine.lead}{' '}
           <span className="rounded-mark bg-accent px-1">{profile.contactLine.accent}</span>
           {profile.contactLine.end}

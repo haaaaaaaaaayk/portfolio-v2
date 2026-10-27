@@ -108,7 +108,7 @@ export default function Overtaken() {
         {project && (
           <motion.div
             key={project.id}
-            className="fixed inset-0 z-[60] overflow-y-auto bg-canvas/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] overflow-y-auto bg-paper/40 backdrop-blur-sm"
             initial={reduced ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

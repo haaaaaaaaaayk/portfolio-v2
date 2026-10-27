@@ -84,7 +84,7 @@ export default function Editorial() {
 
         <section className="mx-auto max-w-[1440px] px-4 py-16 sm:px-8 lg:px-16">
           <p className="text-compact text-ink-muted">About</p>
-          <p className="mt-8 max-w-4xl text-role text-ink sm:text-specimen">
+          <p className="mt-8 max-w-4xl text-role text-ink-muted sm:text-specimen">
             {about.lead} <span className="text-ink-muted">{about.tail}</span>
           </p>
           <ul className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -130,7 +130,7 @@ export default function Editorial() {
 
         <section className="mx-auto max-w-[1440px] px-4 py-16 sm:px-8 lg:px-16">
           <p className="text-compact text-ink-muted">Contact</p>
-          <p className="mt-8 max-w-5xl font-display text-[clamp(40px,12vw,96px)] leading-[1.08] text-ink">
+          <p className="mt-8 max-w-5xl font-display text-[clamp(40px,12vw,96px)] leading-[1.08] text-ink-muted">
             {profile.contactLine.lead}{' '}
             <span className="rounded-mark bg-accent px-2">{profile.contactLine.accent}</span>
             {profile.contactLine.end}

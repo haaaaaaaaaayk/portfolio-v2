@@ -40,7 +40,7 @@ export function CaseDialog({
       {project && (
         <motion.div
           key="case-overlay"
-          className="fixed inset-0 z-[70] overflow-y-auto bg-canvas/50 p-2 backdrop-blur-xl sm:p-4 lg:p-8"
+          className="fixed inset-0 z-[70] overflow-y-auto bg-paper/50 p-2 backdrop-blur-xl sm:p-4 lg:p-8"
           initial={reduced ? false : { opacity: 0 }}
           animate={{ opacity: 1, transition: open }}
           exit={{ opacity: 0, transition: close }}

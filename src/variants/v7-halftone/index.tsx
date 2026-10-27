@@ -86,7 +86,7 @@ export default function HalftoneSpecimen() {
       <main className="relative z-10 mx-auto grid max-w-[1440px] gap-6 px-4 pb-36 pt-16 sm:px-8 lg:grid-cols-[minmax(240px,320px)_1fr]">
         <aside data-chrome className="glass glass-edge h-fit rounded-card p-5 lg:sticky lg:top-4">
           <p className="text-caption text-ink-muted">{halftoneCopy.title}</p>
-          <p className="mt-1 font-display text-title tabular-nums text-ink">{halftoneCopy.ratio}</p>
+          <p className="mt-1 font-display text-title tabular-nums text-ink-muted">{halftoneCopy.ratio}</p>
           <p className="mt-3 text-compact">{halftoneCopy.move}</p>
           <h2 className="mt-8 text-caption text-ink-muted">{halftoneCopy.customize}</h2>
           <div className="mt-4 flex flex-col gap-5">

@@ -29,7 +29,7 @@ export function About() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 0.72, ease: [0.22, 0.61, 0.36, 1] }}
-            className="max-w-3xl text-title text-ink sm:text-role"
+            className="max-w-3xl text-title text-ink-muted sm:text-role"
           >
             {about.lead} <span className="text-ink-muted">{about.tail}</span>
           </motion.p>
