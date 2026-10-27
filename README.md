@@ -1,7 +1,7 @@
 # Hayk Sargsyan — Portfolio
 
 Single-page portfolio. React + TypeScript + Vite, Tailwind CSS v4, Framer Motion.
-Ten distinct layouts share one content source and the **24th System** tokens.
+Eleven distinct layouts share one content source and the **24th System** tokens.
 The only carry-over from the previous version is liquid glass (`.glass`,
 `.glass-dark`, `.sheen`) floating over `LiquidField`. Variants 6–10 layer
 Hayk’s Fogged Glass, Halftone Specimen, and Overtaken experiments as WebGL
@@ -41,11 +41,11 @@ Switchable via `data-font` on `<html>`, persisted to `localStorage`, and set fro
 
 | Param | Values | Default |
 | --- | --- | --- |
-| `?v=` | `1` … `10` | `1` (or last `localStorage` value) |
+| `?v=` | `1` … `11` | `1` (or last `localStorage` value) |
 | `?font=` | `sf` · `haas` · `helvetica-now` | `sf` |
 | `?ui=0` | hides the floating switcher | switcher visible |
 
-The floating glass switcher (variant 1–10 + font) is 44px, full radius, keyboard
+The floating glass switcher (variant 1–11 + font) is 44px, full radius, keyboard
 accessible (Enter/Space opens, Esc closes). URL and `localStorage` stay in sync
 so a link can be shared.
 
@@ -99,6 +99,11 @@ so a link can be shared.
     instruments. Hold `F` / `H` / `O` (or `1` `2` `3`) to layer fog, halftone,
     overtaken. Case studies are tracks. Optional pointer oscillator (Web Audio,
     no files). DPR capped; pauses when the tab is hidden.
+
+11. **Trail** (`src/variants/v11-trail`) — Opens on the "Hayk hates hiking"
+    scene (ported verbatim from the artifact into `scene.ts`), centered with
+    feathered edges. Scroll for the pitch, then the projects; a project opens
+    in `CaseDialog`.
 
 Shader engine: `src/shaders/` (one context per variant). Experiments as copy:
 `src/shaders/copy.ts`.

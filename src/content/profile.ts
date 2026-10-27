@@ -17,6 +17,11 @@ export const profile = {
     lead: 'I’m a product designer with high curiosity',
     tail: 'and zero baked-in process.',
   },
+  /** Trail variant pitch: lead + muted tail. Draft copy — rewrite in your own words. */
+  pitch: {
+    lead: 'I’m a design engineer who designs the product and ships the code,',
+    tail: 'and I want to do it with a small team at an early-stage startup.',
+  },
   looking: 'Currently looking for product design roles at startups in San Francisco.',
   contactLine: { lead: 'Let’s build something people', accent: 'trust', end: '.' },
   colophon: 'Designed and built by hand, and a little AI.',
