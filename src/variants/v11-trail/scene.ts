@@ -212,7 +212,7 @@ const MEAS=document.createElement('canvas').getContext('2d');
 /* ---------- the scene ---------- */
 const scene={
   p:0,t:0,cam:0,v:0,fatigue:0,rest:0,sit:0,cloud:0,done:false,home:false,ring:null,ptr:null,hikers:[],puffs:[],drops:[],next:3,walk:0,
-  stepN:0,talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
+  stepN:0,hov:0,halo:0,talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
   props:[],decor:[],flies:[],flock:[],birdT:3,met:new Set(),keys:0,anchor:null,
   /** the stage listens here for moments worth a ripple or a sound */
   fx:null,
@@ -455,9 +455,17 @@ const scene={
     ctx.clearRect(0,0,W,H);
     this.drawThought(ctx,W,H);
     if(!this.ring||!this.ptr||this.done||this.home)return;
-    const a=this.p;ctx.save();ctx.strokeStyle=`rgba(31,52,36,${.2+a*.3})`;ctx.setLineDash([3,4]);ctx.lineWidth=1.2;
+    /* while he sits he can be poked: a breathing accent halo on him, and the ring fills in when it's over him */
+    const b=this.hBox,resting=this.rest>0,over=resting&&b&&this.ptr.x>=b.x0&&this.ptr.x<=b.x1&&this.ptr.y>=b.y0&&this.ptr.y<=b.y1;
+    this.hov+=((over?1:0)-this.hov)*.25;this.halo+=((resting&&!over?1:0)-this.halo)*.12;
+    const a=this.p,hv=this.hov;ctx.save();
+    if(this.halo>.01){const br=.5+.5*Math.sin(this.t*4);ctx.strokeStyle=rgba(ACCENT,this.halo*(.35+.4*br));ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(this.hx,this.hy,this.figH*(.42+.06*br),0,7);ctx.stroke()}
+    ctx.strokeStyle=`rgba(31,52,36,${(.2+a*.3)*(1-hv)})`;ctx.setLineDash([3,4]);ctx.lineWidth=1.2;
     ctx.beginPath();ctx.moveTo(this.hx,this.hy);ctx.lineTo(this.ring.x,this.ring.y);ctx.stroke();ctx.setLineDash([]);
-    ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(this.ring.x,this.ring.y,7+a*9,0,7);ctx.stroke();
+    const r=lerp(7+a*9,13,hv);
+    if(hv>.01){ctx.fillStyle=rgba(ACCENT,.3*hv);ctx.beginPath();ctx.arc(this.ring.x,this.ring.y,r,0,7);ctx.fill()}
+    ctx.strokeStyle=hv>.5?rgba(ACCENT,.95):'rgba(255,255,255,.95)';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(this.ring.x,this.ring.y,r,0,7);ctx.stroke();
     ctx.fillStyle='rgba(31,52,36,.45)';ctx.beginPath();ctx.arc(this.ptr.x,this.ptr.y,2.2,0,7);ctx.fill();ctx.restore();
   }
 };
