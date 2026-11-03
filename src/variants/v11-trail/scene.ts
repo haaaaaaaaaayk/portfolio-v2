@@ -456,13 +456,15 @@ const scene={
 
 /* ---------- shader: two layers, each with its own gaussian pixel scatter, then grain + matte ---------- */
 const VS='attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}';
-const FSbody=`varying vec2 uv;uniform sampler2D bg;uniform sampler2D fg;uniform vec2 res;uniform float t;uniform float sigBg;uniform float sigFg;uniform float amt;
+/* bgv maps screen v into the bg texture: (1, 0) for a viewport-sized bg, or a window onto the whole baked valley */
+const FSbody=`varying vec2 uv;uniform sampler2D bg;uniform sampler2D fg;uniform vec2 res;uniform float t;uniform float sigBg;uniform float sigFg;uniform float amt;uniform vec2 bgv;
 float hash12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
 vec2 gauss(vec2 s,float sig){float u1=max(hash12(s),1e-4),u2=hash12(s+vec2(19.19,7.73));float r=sqrt(-2.*log(u1))*sig,a=6.2831853*u2;return vec2(cos(a),sin(a))*r;}
 void main(){
   vec2 f=floor(gl_FragCoord.xy);float tt=mod(floor(t*12.),997.);
   vec2 s=f+vec2(tt*37.17,tt*91.31);
-  vec3 b=texture2D(bg,uv+gauss(s,sigBg)/res).rgb;
+  vec2 q=uv+gauss(s,sigBg)/res;
+  vec3 b=texture2D(bg,vec2(q.x,q.y*bgv.x+bgv.y)).rgb;
   vec4 p=texture2D(fg,uv+gauss(s+vec2(41.3,17.9),sigFg)/res);
   vec3 c=p.rgb+b*(1.-p.a);
   c+=(hash12(s*1.37+vec2(5.1,2.3))-.5)*amt*.2;
@@ -484,18 +486,31 @@ function setupGL(cv){
   const tBg=mk(0),tFg=mk(1);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);
   const u=n=>gl.getUniformLocation(p,n);gl.uniform1i(u('bg'),0);gl.uniform1i(u('fg'),1);
-  return{gl,tBg,tFg,res:u('res'),t:u('t'),sigBg:u('sigBg'),sigFg:u('sigFg'),amt:u('amt')};
+  /* the whole valley can live on the GPU only if it fits and v has the precision to address it */
+  return{gl,tBg,tFg,res:u('res'),t:u('t'),sigBg:u('sigBg'),sigFg:u('sigFg'),amt:u('amt'),bgv:u('bgv'),
+    max:gl.getParameter(gl.MAX_TEXTURE_SIZE),hp:!!(hp&&hp.precision>0)};
 }
 
 /* ---------- stage ---------- */
 const uctx=ui.getContext('2d');
 const cBg=document.createElement('canvas'),xBg=cBg.getContext('2d'),cFg=document.createElement('canvas'),xFg=cFg.getContext('2d');
-const g=setupGL(cv);let flat=null;
+let g=setupGL(cv),flat=null,lost=false;
 if(!g){flat=cv.getContext('2d')}
 let W=0,H=0,visible=true;
+/* the valley is baked once per resize; upload it whole and scroll it with a uniform, so a frame only
+   re-uploads the moving layer instead of copying and re-sending a full screen of meadow too */
+let whole=false;
+function uploadWorld(){
+  const w=scene.world;whole=!!(g&&w&&g.hp&&w.width<=g.max&&w.height<=g.max);if(!whole)return;
+  const{gl}=g;gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,g.tBg);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,w);
+}
 const ro=new ResizeObserver(()=>{const r=el.getBoundingClientRect(),w=Math.round(r.width),h=Math.round(r.height);if(!w||!h||(w===W&&h===H))return;
-  W=w;H=h;for(const c of[cBg,cFg,cv,ui]){c.width=Math.round(W*DPR);c.height=Math.round(H*DPR)}scene.resize(W,H)});ro.observe(el);
-const io=new IntersectionObserver(es=>{visible=es[0].isIntersecting});io.observe(el);
+  W=w;H=h;for(const c of[cBg,cFg,cv,ui]){c.width=Math.round(W*DPR);c.height=Math.round(H*DPR)}scene.resize(W,H);uploadWorld();wake()});ro.observe(el);
+const io=new IntersectionObserver(es=>{visible=es[0].isIntersecting;wake()},{rootMargin:'200px'});io.observe(el);
+/* a lost context draws nothing until it comes back, then gets its program and valley again */
+const onLost=e=>{e.preventDefault();lost=true};
+const onRestored=()=>{g=setupGL(cv);lost=false;uploadWorld();wake()};
+cv.addEventListener('webglcontextlost',onLost);cv.addEventListener('webglcontextrestored',onRestored);
 const pt=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
 const onDown=e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}scene.down(...pt(e))};
 const onMove=e=>{if(e.pointerType==='mouse'||e.buttons)scene.move(...pt(e))};
@@ -511,26 +526,34 @@ const onKey=e=>{
 const onBlur=()=>scene.key(0);
 cv.addEventListener('keydown',onKey);cv.addEventListener('keyup',onKey);cv.addEventListener('blur',onBlur);
 
+/* the loop only runs while the stage is near the viewport and the tab is showing */
 let last=performance.now(),raf=0;
+const running=()=>visible&&!document.hidden&&W>0;
+function wake(){if(!raf&&running()){last=performance.now();raf=requestAnimationFrame(frame)}}
 function frame(now){
+  raf=0;if(!running())return;
   const dt=Math.min(.05,(now-last)/1000);last=now;
-  if(visible&&W){
-    scene.update(dt);
-    for(const x of[xBg,xFg,uctx]){x.setTransform(DPR,0,0,DPR,0,0);x.globalAlpha=1}
-    scene.drawBg(xBg,W,H);scene.drawFg(xFg,W,H);scene.drawUI(uctx,W,H);
-    if(g){const{gl}=g;gl.viewport(0,0,cv.width,cv.height);
-      gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,g.tBg);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cBg);
-      gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,g.tFg);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cFg);
-      gl.uniform2f(g.res,cv.width,cv.height);gl.uniform1f(g.t,REDUCED?0:now/1000);
-      gl.uniform1f(g.sigBg,SOFT_BG*10*DPR);gl.uniform1f(g.sigFg,SOFT_FG*10*DPR);gl.uniform1f(g.amt,GRAIN);gl.drawArrays(gl.TRIANGLES,0,6)}
-    else{flat.setTransform(1,0,0,1,0,0);flat.drawImage(cBg,0,0);flat.drawImage(cFg,0,0)}
-  }
+  scene.update(dt);
+  for(const x of[xFg,uctx]){x.setTransform(DPR,0,0,DPR,0,0);x.globalAlpha=1}
+  if(!whole){xBg.setTransform(DPR,0,0,DPR,0,0);scene.drawBg(xBg,W,H)}
+  scene.drawFg(xFg,W,H);scene.drawUI(uctx,W,H);
+  if(g&&!lost){const{gl}=g;gl.viewport(0,0,cv.width,cv.height);
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,g.tBg);
+    if(whole){const WH=scene.WH;gl.uniform2f(g.bgv,H/WH,1-(scene.cam+H)/WH)}
+    else{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cBg);gl.uniform2f(g.bgv,1,0)}
+    gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,g.tFg);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cFg);
+    gl.uniform2f(g.res,cv.width,cv.height);gl.uniform1f(g.t,REDUCED?0:now/1000);
+    gl.uniform1f(g.sigBg,SOFT_BG*10*DPR);gl.uniform1f(g.sigFg,SOFT_FG*10*DPR);gl.uniform1f(g.amt,GRAIN);gl.drawArrays(gl.TRIANGLES,0,6)}
+  else if(flat){flat.setTransform(1,0,0,1,0,0);flat.drawImage(cBg,0,0);flat.drawImage(cFg,0,0)}
   raf=requestAnimationFrame(frame);
 }
-raf=requestAnimationFrame(frame);
+document.addEventListener('visibilitychange',wake);
+wake();
 
 return()=>{
   cancelAnimationFrame(raf);ro.disconnect();io.disconnect();
+  document.removeEventListener('visibilitychange',wake);
+  cv.removeEventListener('webglcontextlost',onLost);cv.removeEventListener('webglcontextrestored',onRestored);
   cv.removeEventListener('pointerdown',onDown);cv.removeEventListener('pointermove',onMove);
   cv.removeEventListener('keydown',onKey);cv.removeEventListener('keyup',onKey);cv.removeEventListener('blur',onBlur);
 };
