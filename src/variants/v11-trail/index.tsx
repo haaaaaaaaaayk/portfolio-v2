@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { CaseDialog } from '../../components/CaseDialog'
 import { ProjectPane } from '../../components/GlassMatter'
+import { Switch } from '../../components/ui/Controls'
 import { Segmented } from '../../components/ui/Segmented'
 import { profile, projects } from '../../content'
 import type { CaseId } from '../../content/projects'
@@ -19,6 +20,16 @@ const STYLES = [
   { value: 4, label: 'Subtitle', title: 'Cloud stays — heading 20 subtitle along the bottom' },
   { value: 5, label: 'Narrator', title: 'Cloud stays — title 24/32 narrated under the scene' },
 ] as const satisfies readonly { value: ThoughtStyle; label: string; title: string }[]
+
+/* sound is on unless this visitor turned it off before */
+const SOUND_KEY = 'trail-sound'
+function initialSound() {
+  try {
+    return window.localStorage.getItem(SOUND_KEY) !== 'off'
+  } catch {
+    return true
+  }
+}
 
 function initialStyle(): ThoughtStyle {
   const q = Number(new URLSearchParams(window.location.search).get('thought'))
@@ -74,11 +85,20 @@ export default function Trail() {
   const [caseId, setCaseId] = useState<CaseId | null>(null)
   const [style, setStyle] = useState<ThoughtStyle>(initialStyle)
   const [said, setSaid] = useState<string | null>(null)
-  /* one live object the scene reads every frame, so switching style never remounts it */
-  const opts = useRef<TrailOptions>({ mode: style, onThought: setSaid })
+  const [sound, setSound] = useState(initialSound)
+  /* one live object the scene reads every frame, so switching style or sound never remounts it */
+  const opts = useRef<TrailOptions>({ mode: style, onThought: setSaid, sound })
   useEffect(() => {
     opts.current.mode = style
   }, [style])
+  useEffect(() => {
+    opts.current.sound = sound
+    try {
+      window.localStorage.setItem(SOUND_KEY, sound ? 'on' : 'off')
+    } catch {
+      /* private mode etc. */
+    }
+  }, [sound])
 
   const pickStyle = (v: ThoughtStyle) => {
     setStyle(v)
@@ -126,14 +146,10 @@ export default function Trail() {
           <motion.p {...fadeUp(0.2, reduced)} className="text-center text-caption text-ink-muted">
             Move your mouse up the trail, or click it and hold ↑. I have thoughts. Click me, or press Space, when I sit down.
           </motion.p>
-          <Segmented
-            label="Thought style"
-            value={style}
-            onChange={pickStyle}
-            options={STYLES}
-            size="compact"
-            className="mt-2"
-          />
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <Segmented label="Thought style" value={style} onChange={pickStyle} options={STYLES} size="compact" />
+            <Switch label="Sound" checked={sound} onChange={setSound} />
+          </div>
           <a href="#pitch" className="reading-link mt-6 text-compact">
             Scroll ↓
           </a>

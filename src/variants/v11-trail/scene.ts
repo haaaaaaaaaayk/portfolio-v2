@@ -7,12 +7,16 @@ export interface TrailOptions {
   mode: 1 | 2 | 3 | 4 | 5
   /** style 5 renders the thought in the page; called whenever it changes (null = none) */
   onThought?: (text: string | null) => void
+  /** synthesized sound effects on or off */
+  sound?: boolean
 }
 
 /**
  * Mounts the hiking scene into `stage` (which holds the two canvases) and
  * returns a cleanup that stops the loop and detaches every listener.
  */
+import { play } from './sound'
+
 export function mountTrail(
   el: HTMLElement,
   cv: HTMLCanvasElement,
@@ -208,7 +212,7 @@ const MEAS=document.createElement('canvas').getContext('2d');
 /* ---------- the scene ---------- */
 const scene={
   p:0,t:0,cam:0,v:0,fatigue:0,rest:0,sit:0,cloud:0,done:false,home:false,ring:null,ptr:null,hikers:[],puffs:[],drops:[],next:3,walk:0,
-  talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
+  stepN:0,talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
   props:[],decor:[],flies:[],flock:[],birdT:3,met:new Set(),keys:0,anchor:null,
   /** the stage listens here for moments worth a ripple or a sound */
   fx:null,
@@ -293,8 +297,8 @@ const scene={
   /* follow the site's live font switch (family + tracking, as em) */
   readType(){const cs=getComputedStyle(document.body);this.font=cs.fontFamily||'system-ui, sans-serif';this.track=(parseFloat(cs.letterSpacing)||0)/(parseFloat(cs.fontSize)||16)},
   /* clicking Hayk gets him back on his feet with a fresh complaint */
-  nudge(){this.rest=0;this.fatigue=0;this.poke=2.5;this.talk=1;this.cue(ON.poke,true)},
-  goHome(){this.home=true;this.line=PEAK;this.dur=this.thoughtT+.3;this.cue(ON.home,true)},
+  nudge(){this.fx?.('poke');this.rest=0;this.fatigue=0;this.poke=2.5;this.talk=1;this.cue(ON.poke,true)},
+  goHome(){this.fx?.('home');this.home=true;this.line=PEAK;this.dur=this.thoughtT+.3;this.cue(ON.home,true)},
   down(x,y){
     const b=this.hBox;
     if(b&&!this.done&&!this.home&&x>=b.x0&&x<=b.x1&&y>=b.y0&&y<=b.y1){this.nudge();this.ptr={x,y};return}
@@ -313,10 +317,12 @@ const scene={
       const tp=clamp(this.targetFrom(this.ring.y),0,1),cap=this.speed(a)*dt;
       this.p=clamp(this.p+clamp(tp-this.p,-cap*1.5,cap),0,1);
       if(this.p>prev&&a>.3){this.fatigue+=dt*(a-.3)*.45;if(this.fatigue>=1){this.fatigue=0;this.rest=1.4+a*3;this.cue(ON.rest,true);this.fx?.('sit')}}
-      if(this.p>=.995){this.p=1;this.done=true}
+      if(this.p>=.995){this.p=1;this.done=true;this.fx?.('peak')}
     }
     this.v=(this.p-prev)/Math.max(dt,1e-3);
     const mv=Math.min(1,Math.abs(this.v)/.02);this.walk+=dt*lerp(10,5.5,a)*mv;
+    /* a footfall each time the bob touches down */
+    const step=Math.floor(this.walk/Math.PI);if(step!==this.stepN){this.stepN=step;if(mv>.3&&this.sit<.3)this.fx?.('step',step%2)}
     const sitting=this.rest>0||this.done;this.sit+=((sitting?1:0)-this.sit)*Math.min(1,dt*5);
     this.poke=Math.max(0,this.poke-dt);
     /* one second after the cursor starts moving, he narrates on his own, no click needed */
@@ -325,7 +331,7 @@ const scene={
     this.idle+=dt;this.thoughtT+=dt;
     /* back at the bottom: finish the current line, pause, say the finale, then start over fresh */
     if(this.landed){
-      if(this.line!==FINALE&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=FINALE;this.thoughtT=0;this.dur=5}
+      if(this.line!==FINALE&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=FINALE;this.thoughtT=0;this.dur=5;this.fx?.('finale')}
       else if(this.line===FINALE&&this.thoughtT>this.dur+GAP){this.landed=false;this.talk=0;this.line=this.cued=null;this.seen.clear();this.met.clear()}
     }
     else if(live&&!peak){
@@ -339,7 +345,7 @@ const scene={
     }
     /* at the top the last line still finishes and pauses, then the peak line takes over for good */
     else if(peak&&this.line!==PEAK&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=PEAK;this.thoughtT=0;this.dur=1e9}
-    if(live&&!peak&&!this.home)for(const o of this.props)if(!this.met.has(o)&&Math.abs(o.p-this.p)<.025){this.met.add(o);this.cue(ON[o.kind],!this.cued)}
+    if(live&&!peak&&!this.home)for(const o of this.props)if(!this.met.has(o)&&Math.abs(o.p-this.p)<.025){this.met.add(o);this.cue(ON[o.kind],!this.cued);this.fx?.('sight',o.kind)}
     const hy0=this.yw(this.p);
     for(const b of this.props){if(b.kind!=='coyote')continue;
       b.next-=dt;const near=Math.abs(hy0-b.y)<this.figH*1.4;if(!near)b.fled=false;
@@ -355,7 +361,7 @@ const scene={
     this.next-=dt;if(this.next<=0){this.next=5+Math.random()*4;this.spawn()}
     for(const h of this.hikers){
       const was=h.p;h.p+=h.dir*h.v*dt;
-      if(live&&!peak&&(was<this.p)!==(h.p<this.p))this.cue(h.dir>0?ON.pass:ON.meet);
+      if(live&&!peak&&(was<this.p)!==(h.p<this.p)){this.cue(h.dir>0?ON.pass:ON.meet);this.fx?.(h.dir>0?'pass':'meet')}
     }
     this.hikers=this.hikers.filter(h=>h.p>=0&&h.p<=1&&h.p>this.p-.2&&h.p<this.p+.42);
     if(this.sit>.6&&Math.random()<dt*2)this.puffs.push({x:(Math.random()-.5)*4,y:0,l:1});
@@ -535,12 +541,20 @@ cv.addEventListener('webglcontextlost',onLost);cv.addEventListener('webglcontext
 const rips=[],ripU=new Float32Array(24);
 const ripple=(x,y,amp)=>{if(REDUCED)return;rips.push({x:x*DPR,y:(H-y)*DPR,age:0,amp:amp*DPR});if(rips.length>6)rips.shift()};
 const feet=()=>[scene.lane(scene.yw(scene.p),.2),scene.yw(scene.p)-scene.cam];
-scene.fx=kind=>{if(kind==='sit')ripple(...feet(),3.5)};
+/* each sight has its own sound; steps alternate feet and get heavier as he climbs */
+const SIGHT_SOUND={pond:'water',fall:'water',house:'chime',sign:'chime',flowers:'sparkle',fly:'sparkle',coyote:'rustle'};
+const sfx=(name,o)=>{if(opts.sound)play(name,o)};
+scene.fx=(kind,arg)=>{
+  if(kind==='sit')ripple(...feet(),3.5);
+  if(kind==='step')sfx('step',{volume:lerp(.55,.9,scene.p),pitch:(arg?1.06:.94)*lerp(1,.82,scene.p)*(.95+Math.random()*.1)});
+  else if(kind==='sight')sfx(SIGHT_SOUND[arg]??'chime');
+  else sfx(kind);
+};
 /* the scene develops in the first time it comes into view */
 let born=-1;
 const pt=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
 const onDown=e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}const[x,y]=pt(e),b=scene.hBox,onHim=b&&x>=b.x0&&x<=b.x1&&y>=b.y0&&y<=b.y1;
-  scene.down(x,y);ripple(x,y,onHim?4:7)};
+  scene.down(x,y);ripple(x,y,onHim?4:7);if(!onHim)sfx('tap')};
 const onMove=e=>{if(e.pointerType==='mouse'||e.buttons)scene.move(...pt(e))};
 cv.addEventListener('pointerdown',onDown);
 cv.addEventListener('pointermove',onMove);
