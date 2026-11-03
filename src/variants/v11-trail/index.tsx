@@ -1,4 +1,4 @@
-/** Trail — the hiking scene opens the page, then the pitch, then the work. */
+/** Trail — the hiking scene opens the page, then the pitch, then the work. Mouse, touch or keyboard. */
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { CaseDialog } from '../../components/CaseDialog'
@@ -46,18 +46,25 @@ function TrailStage({ opts }: { opts: RefObject<TrailOptions> }) {
     return mountTrail(stage.current, scene.current, ui.current, !!reduced, opts.current)
   }, [reduced, opts])
 
+  /* the feather mask would clip a focus ring, so the ring sits on a wrapper outside it */
   return (
-    <div
-      ref={stage}
-      className="relative h-[52svh] w-[min(92vw,100%)] max-h-[760px] max-w-[1120px] overflow-hidden sm:h-[72svh] sm:w-[min(80vw,100%)]"
-      style={FEATHER}
-    >
-      <canvas
-        ref={scene}
-        aria-label="A winding trail through a soft valley of hills. Move the pointer up the trail to pull Hayk along while other hikers pass him."
-        className="absolute inset-0 block h-full w-full cursor-none touch-none"
-      />
-      <canvas ref={ui} aria-hidden className="pointer-events-none absolute inset-0 block h-full w-full" />
+    <div className="h-[52svh] w-[min(92vw,100%)] max-h-[760px] max-w-[1120px] rounded-card outline-offset-4 has-[canvas:focus-visible]:outline-2 has-[canvas:focus-visible]:outline-ink sm:h-[72svh] sm:w-[min(80vw,100%)]">
+      <div
+        ref={stage}
+        className="relative h-full w-full overflow-hidden"
+        style={FEATHER}
+      >
+        <canvas
+          ref={scene}
+          tabIndex={0}
+          role="application"
+          aria-roledescription="hiking scene"
+          aria-label="A winding trail through a valley of hills, past houses, waterfalls, a pond, coyotes and butterflies. Hold the up arrow to walk Hayk up the trail and the down arrow to walk him back. Press Space or Enter to get him back on his feet, and at the top, to send him home."
+          aria-keyshortcuts="ArrowUp ArrowDown Space Enter"
+          className="absolute inset-0 block h-full w-full cursor-none touch-none outline-none"
+        />
+        <canvas ref={ui} aria-hidden className="pointer-events-none absolute inset-0 block h-full w-full" />
+      </div>
     </div>
   )
 }
@@ -95,6 +102,11 @@ export default function Trail() {
           <motion.div {...fadeUp(0.1, reduced)} className="flex w-full justify-center">
             <TrailStage opts={opts} />
           </motion.div>
+          {style !== 5 && (
+            <p aria-live="polite" className="sr-only">
+              {said}
+            </p>
+          )}
           {style === 5 && (
             <p aria-live="polite" className="flex min-h-16 max-w-3xl items-center justify-center text-center text-title text-ink-muted sm:min-h-20 sm:text-role">
               <AnimatePresence mode="wait" initial={false}>
@@ -112,7 +124,7 @@ export default function Trail() {
             </p>
           )}
           <motion.p {...fadeUp(0.2, reduced)} className="text-center text-caption text-ink-muted">
-            Move your mouse up the trail. I have thoughts. Click me when I sit down.
+            Move your mouse up the trail, or click it and hold ↑. I have thoughts. Click me, or press Space, when I sit down.
           </motion.p>
           <Segmented
             label="Thought style"

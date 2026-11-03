@@ -1,6 +1,6 @@
-// @ts-nocheck — verbatim port of Hayk's "Overtaken" hiking artifact. The scene and
-// shader are kept as written so the look matches the original exactly; only the
-// mount/unmount wrapper is new.
+// @ts-nocheck — port of Hayk's "Overtaken" hiking artifact. The valley and shader
+// are kept as written so the look matches the original; the sights along the trail
+// (houses, waterfalls, critters) and keyboard control are additions.
 
 /** Live options, read every frame: `mode` picks the thought style (1–5). */
 export interface TrailOptions {
@@ -66,6 +66,95 @@ function toy(s,sc,P,pack){
 }
 const toySprite=(hgt,P,pack)=>{const sc=hgt/100;return sprite(40*sc,100*sc,0,s=>toy(s,sc,P,pack))};
 
+/* ---------- sights along the trail: where they sit (p up the trail, side, distance out in
+   trail widths) and, through ON[kind], what he says walking past ---------- */
+const SIGHTS=[
+  {p:.07,kind:'pond',side:1,o:1.2},
+  {p:.15,kind:'house',side:-1,o:1.3,roof:'#e0563c',wall:'#fdf6e4'},
+  {p:.25,kind:'coyote',side:1,o:.95,col:'#c99a68'},
+  {p:.34,kind:'fall',side:-1,o:1.45},
+  {p:.45,kind:'house',side:1,o:1.35,roof:'#2c4c9e',wall:'#f4ecd8'},
+  {p:.53,kind:'flowers',side:-1,o:1},
+  {p:.57,kind:'fly',side:1,o:.85},
+  {p:.64,kind:'fall',side:1,o:1.5,rainbow:true},
+  {p:.72,kind:'sign',side:-1,o:.72},
+  {p:.8,kind:'house',side:-1,o:1.25,roof:'#3f8d62',wall:'#fdf6e4',hut:true},
+  {p:.9,kind:'coyote',side:1,o:.9,col:'#a98f74'}];
+const BLOOM=['#e47aa8','#f3e23a','#ffffff','#e0563c','#9d7fd1'];
+const WINGS=['#e47aa8','#f2b544','#6fe0c4','#3156a6','#e0563c'];
+const shade=(s,x,y,rx,ry)=>{s.fillStyle='rgba(43,59,44,.14)';s.beginPath();s.ellipse(x,y,rx,ry,0,0,7);s.fill()};
+/* static parts as sprites, w×h with the base on the bottom edge; live parts are drawn per frame */
+const PROP={
+  house(F,o){const w=F*1.7,h=F*1.7,k=o.hut?.8:1;return sprite(w,h,0,s=>{
+    const cx=w/2,by=h-F*.06,bw=F*1.15*k,wh=F*.62*k,ry=by-wh-wh*.95;
+    shade(s,cx,by,bw*.65,F*.08);
+    s.fillStyle='#7a5a3a';s.fillRect(cx+bw*.18,by-wh-wh*.85,bw*.13,wh*.6);
+    s.fillStyle=o.wall;s.beginPath();s.roundRect(cx-bw/2,by-wh,bw,wh,3);s.fill();
+    s.fillStyle=s.strokeStyle=o.roof;s.lineJoin='round';s.lineWidth=F*.06;s.beginPath();s.moveTo(cx-bw*.62,by-wh+1);s.lineTo(cx,ry);s.lineTo(cx+bw*.62,by-wh+1);s.closePath();s.fill();s.stroke();
+    s.fillStyle='#7a5a3a';s.beginPath();s.roundRect(cx-bw*.1,by-wh*.62,bw*.2,wh*.62,[bw*.1,bw*.1,0,0]);s.fill();
+    s.fillStyle='#f3e23a';for(const sx of[-1,1]){s.beginPath();s.roundRect(cx+sx*bw*.3-bw*.08,by-wh*.74,bw*.16,bw*.16,2);s.fill()}
+    s.fillStyle='#ffffff';s.beginPath();s.arc(cx,ry+wh*.42,wh*.11,0,7);s.fill();
+    if(o.hut){s.fillStyle='#5a4636';s.fillRect(cx-1,ry-F*.36,2,F*.36);s.fillStyle='#e0563c';s.beginPath();s.moveTo(cx+1,ry-F*.36);s.lineTo(cx+1+F*.22,ry-F*.29);s.lineTo(cx+1,ry-F*.22);s.closePath();s.fill()}
+    for(let i=0;i<4;i++){s.fillStyle=BLOOM[i%BLOOM.length];s.beginPath();s.arc(cx-bw*.55+i*bw*.12,by-F*.04,F*.035,0,7);s.fill()}
+  })},
+  fall(F,o){const w=F*2.8,h=F*2.3;return sprite(w,h,0,s=>{
+    const cx=w/2,by=h-F*.12,rw=F*2.2,rh=F*1.7,top=by-F*.12-rh;
+    shade(s,cx,by,rw*.6,F*.1);
+    const g=s.createLinearGradient(cx-rw/2,0,cx+rw/2,0);g.addColorStop(0,'#9db3cc');g.addColorStop(.55,'#7d9fc0');g.addColorStop(1,'#6d6873');s.fillStyle=g;
+    bell(s,cx-rw/2,by-F*.12,rw,rh,.5);s.fill();bell(s,cx-rw*.62,by-F*.12,rw*.5,rh*.62,.6);s.fill();
+    s.fillStyle='#a6cf5a';s.beginPath();s.ellipse(cx,top+F*.1,rw*.2,F*.12,0,0,7);s.fill();
+    s.fillStyle='#c8f5e6';s.beginPath();s.roundRect(cx-rw*.07,top+F*.12,rw*.14,rh-F*.12,rw*.05);s.fill();
+    s.fillStyle='#4fa3c9';s.beginPath();s.ellipse(cx,by-F*.08,rw*.46,F*.2,0,0,7);s.fill();
+    s.fillStyle='#7fe6cf';s.beginPath();s.ellipse(cx,by-F*.12,rw*.32,F*.1,0,0,7);s.fill();
+    if(o.rainbow){s.lineWidth=F*.06;['#e0563c','#f2b544','#f3e23a','#a6cf5a','#4fa3c9','#9d7fd1'].forEach((c,i)=>{s.strokeStyle=rgba(c,.45);s.beginPath();s.arc(cx+rw*.3,by-F*.15,F*(1-i*.06),Math.PI*1.08,Math.PI*1.72);s.stroke()})}
+  })},
+  pond(F){const w=F*2.3,h=F*.95;return sprite(w,h,0,s=>{
+    const cx=w/2,cy=h*.58;
+    s.fillStyle='#7fe6cf';s.beginPath();s.ellipse(cx,cy,w*.47,h*.38,0,0,7);s.fill();
+    s.fillStyle='#4fa3c9';s.beginPath();s.ellipse(cx,cy+h*.03,w*.42,h*.31,0,0,7);s.fill();
+    for(const[x,y,r]of[[.25,.62,.09],[.68,.72,.07],[.78,.5,.06]]){s.fillStyle='#3f8d62';s.beginPath();s.ellipse(w*x,h*y,F*r*1.3,F*r*.7,0,.5,6.6);s.lineTo(w*x,h*y);s.fill()}
+    s.fillStyle='#e47aa8';s.beginPath();s.arc(w*.25,h*.6,F*.03,0,7);s.fill();
+    s.strokeStyle='#3f8d62';s.lineWidth=1.6;s.lineCap='round';
+    for(let i=0;i<4;i++){const x=w*.06+i*F*.06;s.beginPath();s.moveTo(x,cy);s.lineTo(x+(i-1.5)*2,cy-F*(.3+(i%2)*.12));s.stroke()}
+    s.fillStyle='#7a5a3a';for(let i=0;i<2;i++){s.beginPath();s.ellipse(w*.06+(i*2+1)*F*.06-1,cy-F*(.34+i*.12),F*.025,F*.06,0,0,7);s.fill()}
+  })},
+  sign(F){const w=F*1,h=F*1.15;return sprite(w,h,0,s=>{
+    const cx=w/2,by=h-F*.06;shade(s,cx,by,F*.2,F*.05);
+    s.fillStyle='#7a5a3a';s.fillRect(cx-F*.04,by-F*.85,F*.08,F*.85);
+    s.fillStyle='#c49a6c';s.beginPath();s.roundRect(cx-F*.4,by-F*1.05,F*.8,F*.34,F*.06);s.fill();
+    s.fillStyle='#5a4636';s.beginPath();s.moveTo(cx-F*.22,by-F*.78);s.lineTo(cx-F*.08,by-F*.98);s.lineTo(cx+F*.04,by-F*.84);s.lineTo(cx+F*.12,by-F*.92);s.lineTo(cx+F*.26,by-F*.78);s.closePath();s.fill();
+    s.fillStyle='#e0563c';s.fillRect(cx-F*.09,by-F*1.0,F*.08,F*.05);
+    s.fillStyle='#9db3cc';for(const[x,r]of[[-.22,.07],[.2,.05]]){s.beginPath();s.ellipse(cx+F*x,by-F*.02,F*r*1.4,F*r,0,0,7);s.fill()}
+  })},
+  flowers(F){const w=F*1.5,h=F*.5;return sprite(w,h,0,s=>{
+    for(let i=0;i<16;i++){const x=w*(.06+h1(i*3.3)*.88),y=h*(.5+h1(i*7.7)*.42),r=F*(.03+h1(i*1.9)*.025);
+      s.strokeStyle='#3f8d62';s.lineWidth=1.2;s.beginPath();s.moveTo(x,y+F*.06);s.lineTo(x,y);s.stroke();
+      s.fillStyle=BLOOM[i%BLOOM.length];for(let k=0;k<5;k++){const a=k*1.2566;s.beginPath();s.arc(x+Math.cos(a)*r,y+Math.sin(a)*r,r*.75,0,7);s.fill()}
+      s.fillStyle='#f2b544';s.beginPath();s.arc(x,y,r*.55,0,7);s.fill()}
+  })},
+};
+const decorSprite=(F0,i)=>{const F=F0*1.5;return i%4===3
+  ?sprite(F*.34,F*.26,0,s=>{for(const[x,k]of[[.3,1],[.7,.75]]){const cx=F*.34*x,by=F*.24,r=F*.08*k;s.fillStyle='#f4ecd8';s.fillRect(cx-r*.3,by-r*1.1,r*.6,r*1.1);s.fillStyle='#e0563c';s.beginPath();s.ellipse(cx,by-r*1.1,r,r*.75,0,Math.PI,0);s.fill();s.fillStyle='#ffffff';s.beginPath();s.arc(cx-r*.35,by-r*1.4,r*.16,0,7);s.arc(cx+r*.3,by-r*1.5,r*.13,0,7);s.fill()}})
+  :sprite(F*.36,F*.3,0,s=>{for(let k=0;k<3;k++){const x=F*(.08+k*.1),y=F*(.12+(k%2)*.06),r=F*.028;s.strokeStyle='#3f8d62';s.lineWidth=1.1;s.beginPath();s.moveTo(x,F*.28);s.lineTo(x,y);s.stroke();s.fillStyle=BLOOM[(i+k)%BLOOM.length];s.beginPath();s.arc(x,y,r*1.4,0,7);s.fill();s.fillStyle='#f2b544';s.beginPath();s.arc(x,y,r*.6,0,7);s.fill()}})};
+function coyote(c,x,y,F0,dir,g,col){const F=F0*1.6;
+  const E=(px,py,rx,ry,cl,rot=0)=>{c.fillStyle=cl;c.beginPath();c.ellipse(px,py,rx,ry,rot,0,7);c.fill()};
+  const T=(ax,ay,bx,by,cx,cy,cl)=>{c.fillStyle=cl;c.beginPath();c.moveTo(ax,ay);c.lineTo(bx,by);c.lineTo(cx,cy);c.closePath();c.fill()};
+  const dark='#'+[1,3,5].map(i=>Math.round(parseInt(col.slice(i,i+2),16)*.62).toString(16).padStart(2,'0')).join(''),pale='#f1e6d0',sw=Math.sin(g*Math.PI*4)*F*.035;
+  c.globalAlpha=.14;E(x,y,F*.2,F*.035,'#2b3b2c');c.globalAlpha=1;y-=Math.abs(Math.sin(g*Math.PI*2))*F*.025;
+  c.strokeStyle=dark;c.lineWidth=Math.max(1.5,F*.028);c.lineCap='round';c.beginPath();
+  for(const[lx,s]of[[-.11,1],[-.07,-1],[.08,-1],[.12,1]]){c.moveTo(x+dir*F*lx,y-F*.15);c.lineTo(x+dir*F*lx+s*sw,y-F*.005)}c.stroke();
+  E(x-dir*F*.24,y-F*.15,F*.1,F*.032,col,dir*.55);E(x-dir*F*.31,y-F*.1,F*.035,F*.022,dark,dir*.55);
+  E(x,y-F*.19,F*.16,F*.065,col);E(x+dir*F*.01,y-F*.16,F*.11,F*.03,pale);
+  E(x+dir*F*.15,y-F*.25,F*.05,F*.07,col,dir*-.5);E(x+dir*F*.19,y-F*.3,F*.065,F*.05,col);
+  E(x+dir*F*.26,y-F*.285,F*.05,F*.022,pale,dir*.15);E(x+dir*F*.305,y-F*.29,F*.014,F*.012,'#1a1414');
+  T(x+dir*F*.14,y-F*.32,x+dir*F*.18,y-F*.335,x+dir*F*.15,y-F*.4,dark);T(x+dir*F*.18,y-F*.33,x+dir*F*.22,y-F*.335,x+dir*F*.205,y-F*.405,col);
+  E(x+dir*F*.215,y-F*.31,F*.01,F*.011,'#1a1414');
+}
+function butterfly(c,x,y,F0,flap,col){const F=F0*1.7;
+  c.fillStyle=col;for(const sx of[-1,1]){c.beginPath();c.ellipse(x+sx*F*.045*flap,y-F*.015,F*.045*flap,F*.04,0,0,7);c.fill();c.beginPath();c.ellipse(x+sx*F*.032*flap,y+F*.03,F*.03*flap,F*.026,0,0,7);c.fill()}
+  c.strokeStyle='#2b3b2c';c.lineWidth=1.4;c.beginPath();c.moveTo(x,y-F*.04);c.lineTo(x,y+F*.045);c.stroke();
+}
+
 /* ---------- palette: Ridge colors plus aquamarine; split-tone hills ---------- */
 const SETS=[
   ['#2c4c9e','#3f8d62','#a6cf5a'],
@@ -97,7 +186,14 @@ const ON={
   back:['Wait, downhill is so much nicer.','Strategic retreat.','Going back for my dignity.'],
   idle:['Are we done? Can we go home?','Great, now the cursor quit too.','I live here now.'],
   poke:['Okay, okay, I’m going.','Five more minutes. Please.','Don’t poke the designer.','Fine. Up. Ugh.'],
-  home:['Downhill. Finally, my sport.','Never again. Write that down.','I was promised pizza.']};
+  home:['Downhill. Finally, my sport.','Never again. Write that down.','I was promised pizza.'],
+  house:['Is that an Airbnb? Can I check in?','Someone lives up here. On purpose.','I bet that house has a couch.'],
+  fall:['A waterfall. Finally, some motion design.','Nice easing on that water.','Even the water knows downhill is better.'],
+  coyote:['That coyote has better cardio than me.','Hi, coyote. I’m mostly bones and snacks.','It trots. I trudge. Same trail.'],
+  pond:['A pond. I’m not swimming. Don’t ask.','Very calming. Still uphill, though.'],
+  flowers:['Okay, the flowers are nice. Don’t tell anyone.','Great palette. Terrible trail.'],
+  fly:['A butterfly. Lighter than my backpack.','Even the bugs have wings. Unfair.'],
+  sign:['A sign. Finally, some wayfinding.','“Summit, this way.” Wow, very helpful.']};
 const PEAK='Ugh, Hayk hates hiking.';
 /* back at the start after the walk down */
 const FINALE='Enough torture, now look at my projects.';
@@ -113,6 +209,7 @@ const MEAS=document.createElement('canvas').getContext('2d');
 const scene={
   p:0,t:0,cam:0,v:0,fatigue:0,rest:0,sit:0,cloud:0,done:false,home:false,ring:null,ptr:null,hikers:[],puffs:[],drops:[],next:3,walk:0,
   talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
+  props:[],decor:[],flies:[],flock:[],birdT:3,met:new Set(),keys:0,anchor:null,
   resize(W,H){this.W=W;this.H=H;this.readType();this.build()},
   build(){
     const W=this.W,H=this.H,sd=2.3;
@@ -147,6 +244,14 @@ const scene={
         }
       }
     }
+    /* sights get a clearing: drop any hill that would sit on or behind one */
+    const F=this.figH;
+    this.props=SIGHTS.map((o,i)=>{const y=this.yw(o.p);return{...o,i,y,x:clamp(this.cx(y)+o.side*pw*o.o,F*.9,W-F*.9),dx:0,hop:-1,next:1+h1(i)*3,dir:-o.side,sp:PROP[o.kind]?.(F,o)}});
+    const box=(x,y,hw,h,m)=>({x0:x-hw-m,x1:x+hw+m,y0:y-h-m,y1:y+m});
+    const clear=this.props.map(o=>{const hw=o.sp?o.sp.w/2:o.kind==='coyote'?F*2:F*.8,h=o.sp?o.sp.h:F*1.1;return box(o.x,o.y,hw,h,F*.25)});
+    const hits=(r,list)=>list.some(c=>r.x0<c.x1&&r.x1>c.x0&&r.y0<c.y1&&r.y1>c.y0);
+    const hillBox=it=>({x0:it.x,x1:it.x+it.w,y0:it.by-it.h,y1:it.by+it.h*.06});
+    for(let i=items.length-1;i>=0;i--)if(hits(hillBox(items[i]),clear))items.splice(i,1);
     items.sort((a,b)=>a.by-b.by);
     for(const it of items){if(FILTER)s.filter='none';soft(it.x+it.w*.5,it.by+it.h*.03,it.w*.5,'#2b3b2c',.09);splitTone(s,it.x,it.by,it.w,it.h,it.C,it.flip,it.px)}
     if(FILTER)s.filter='none';
@@ -154,6 +259,10 @@ const scene={
     const fx=this.cx(this.yT)+pw*.08,fy=this.yT;s.fillStyle='#5a4636';s.fillRect(fx,fy-H*.07,2,H*.07);
     s.fillStyle='#e0563c';s.beginPath();s.moveTo(fx+2,fy-H*.07);s.lineTo(fx+2+H*.04,fy-H*.058);s.lineTo(fx+2,fy-H*.046);s.closePath();s.fill();
     this.world=c;
+    const hb=items.map(hillBox),ds=[0,1,2,3,4,5,6,7].map(i=>decorSprite(F,i));
+    this.decor=Array.from({length:Math.round(WH/H*18)},(_,i)=>{const y=lerp(this.yT,this.yS,h1(i*4.7)),side=h1(i*2.9)>.5?1:-1;return{y,x:this.cx(y)+side*pw*(.62+h1(i*6.1)*.45),sp:ds[i%ds.length]}})
+      .filter(d=>{const r=box(d.x,d.y,d.sp.w/2,d.sp.h,2);return!hits(r,clear)&&!hits(r,hb)});
+    this.flies=Array.from({length:9},(_,i)=>{const y=lerp(this.yT,this.yS,(i+.5)/9),side=i%2?1:-1;return{y,x:this.cx(y)+side*pw*(.5+h1(i*7.3)*.4),col:WINGS[i%WINGS.length]}});
     this.hk=toySprite(this.figH,HAYK);
     this.hs=HIKERS.map((h,i)=>toySprite(this.figH*(.95+h1(i)*.1),h,i%2?'#3b3b3b':'#7a5a3a'));
     this.cloudS=sprite(this.figH*.9,this.figH*.42,1.2,s=>{const w=this.figH*.9,h=this.figH*.42;s.fillStyle='#6d6873';
@@ -170,7 +279,7 @@ const scene={
   /* difficulty: starts at hiker pace, falls off as I climb */
   speed(a){return lerp(.036,.0075,Math.pow(a,1.35))},
   targetFrom(ry){return(this.yS-(this.cam+ry))/(this.yS-this.yT)},
-  move(x,y){this.ptr={x,y};if(!this.ring)this.ring={x,y};this.idle=0;this.idled=false},
+  move(x,y){this.anchor=null;this.ptr={x,y};if(!this.ring)this.ring={x,y};this.idle=0;this.idled=false},
   /* first unseen line in order, then any line but the one just said */
   /* nothing repeats in one climb: a used-up pool stays quiet */
   from(pool){const fresh=pool.find(l=>!this.seen.has(l));if(fresh)this.seen.add(fresh);return fresh??null},
@@ -182,12 +291,19 @@ const scene={
   /* follow the site's live font switch (family + tracking, as em) */
   readType(){const cs=getComputedStyle(document.body);this.font=cs.fontFamily||'system-ui, sans-serif';this.track=(parseFloat(cs.letterSpacing)||0)/(parseFloat(cs.fontSize)||16)},
   /* clicking Hayk gets him back on his feet with a fresh complaint */
+  nudge(){this.rest=0;this.fatigue=0;this.poke=2.5;this.talk=1;this.cue(ON.poke,true)},
+  goHome(){this.home=true;this.line=PEAK;this.dur=this.thoughtT+.3;this.cue(ON.home,true)},
   down(x,y){
     const b=this.hBox;
-    if(b&&!this.done&&!this.home&&x>=b.x0&&x<=b.x1&&y>=b.y0&&y<=b.y1){this.rest=0;this.fatigue=0;this.poke=2.5;this.talk=1;this.cue(ON.poke,true);this.ptr={x,y};return}
-    this.move(x,y);if(this.done&&!this.home){this.home=true;this.line=PEAK;this.dur=this.thoughtT+.3;this.cue(ON.home,true)}},
+    if(b&&!this.done&&!this.home&&x>=b.x0&&x<=b.x1&&y>=b.y0&&y<=b.y1){this.nudge();this.ptr={x,y};return}
+    this.move(x,y);if(this.done&&!this.home)this.goHome()},
+  /* keyboard: hold ↑/↓ to walk, Space/Enter does what a click on him does */
+  key(dir){this.keys=dir;this.idle=0;this.idled=false;this.anchor=dir||!this.ring?null:this.yw(this.p)},
+  act(){this.idle=0;this.idled=false;if(this.done&&!this.home)this.goHome();else if(!this.home){if(!this.ring){const y=this.yw(this.p)-this.cam;this.ring={x:this.lane(this.yw(this.p),.2),y};this.ptr={...this.ring};this.anchor=this.yw(this.p)}this.nudge()}},
   update(dt){
     this.t+=dt;const a=this.p,prev=this.p;
+    if(this.anchor!=null&&this.ring){const y=this.anchor-this.cam;this.ring.y=y;this.ptr={x:this.ring.x,y}}
+    if(this.keys){const sy=this.yw(this.p)-this.cam,x=this.lane(this.yw(this.p),.2);this.ptr={x,y:sy-this.keys*this.H*.35};if(!this.ring)this.ring={x,y:sy};this.idle=0}
     if(this.ptr){const f=1-Math.exp(-lerp(18,2,Math.pow(a,1.3))*dt);this.ring.x+=(this.ptr.x-this.ring.x)*f;this.ring.y+=(this.ptr.y-this.ring.y)*f}
     this.rest=Math.max(0,this.rest-dt);
     if(this.home){this.p=Math.max(0,this.p-dt*.14);if(this.p<=0){this.home=false;this.done=false;this.fatigue=0;this.ring=this.ptr=null;this.landed=true}}
@@ -208,7 +324,7 @@ const scene={
     /* back at the bottom: finish the current line, pause, say the finale, then start over fresh */
     if(this.landed){
       if(this.line!==FINALE&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=FINALE;this.thoughtT=0;this.dur=5}
-      else if(this.line===FINALE&&this.thoughtT>this.dur+GAP){this.landed=false;this.talk=0;this.line=this.cued=null;this.seen.clear()}
+      else if(this.line===FINALE&&this.thoughtT>this.dur+GAP){this.landed=false;this.talk=0;this.line=this.cued=null;this.seen.clear();this.met.clear()}
     }
     else if(live&&!peak){
       this.back=this.v<-.004?this.back+dt:0;if(this.v>.002)this.wentBack=false;
@@ -221,6 +337,14 @@ const scene={
     }
     /* at the top the last line still finishes and pauses, then the peak line takes over for good */
     else if(peak&&this.line!==PEAK&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=PEAK;this.thoughtT=0;this.dur=1e9}
+    if(live&&!peak&&!this.home)for(const o of this.props)if(!this.met.has(o)&&Math.abs(o.p-this.p)<.025){this.met.add(o);this.cue(ON[o.kind],!this.cued)}
+    const hy0=this.yw(this.p);
+    for(const b of this.props){if(b.kind!=='coyote')continue;
+      b.next-=dt;const near=Math.abs(hy0-b.y)<this.figH*1.4;if(!near)b.fled=false;
+      if(b.hop<0&&(b.next<=0||near&&!b.fled)){b.hop=0;if(near){b.fled=true;b.dir=b.side}else b.dir=Math.random()<.5?-1:1;b.next=2+Math.random()*4}
+      if(b.hop>=0){b.hop+=dt*1.5;b.dx=clamp(b.dx+b.dir*dt*this.figH*1.3,-this.figH*1.3,this.figH*1.3);if(b.hop>=1)b.hop=-1}}
+    this.birdT-=dt;if(this.birdT<=0){this.birdT=7+Math.random()*7;this.flock.push({x:-40,y:this.H*(.06+Math.random()*.22),v:45+Math.random()*30,n:3+Math.floor(Math.random()*3),ph:Math.random()*6})}
+    for(const f of this.flock)f.x+=f.v*dt;this.flock=this.flock.filter(f=>f.x<this.W+120);
     const wantCloud=peak?1:live||this.poke>0?.85:0;this.cloud+=(wantCloud-this.cloud)*Math.min(1,dt*5);
     this.text=(live||peak)&&this.thoughtT<this.dur?this.line:null;
     this.fade=clamp(this.thoughtT/.25,0,1)*clamp((this.dur-this.thoughtT)/.3,0,1);
@@ -239,10 +363,15 @@ const scene={
   },
   drawBg(ctx,W,H){ctx.drawImage(this.world,0,this.cam*DPR,W*DPR,H*DPR,0,0,W,H)},
   drawFg(ctx,W,H){
-    ctx.clearRect(0,0,W,H);const cam=this.cam,a=this.p;
-    const actors=this.hikers.map(h=>({y:this.yw(h.p),h}));const hy=this.yw(this.p);actors.push({y:hy,me:true});actors.sort((p,q)=>p.y-q.y);
+    ctx.clearRect(0,0,W,H);const cam=this.cam,a=this.p,F=this.figH,t=this.t;
+    const seen=y=>y-cam>-F*3.2&&y-cam<H+F*.5;
+    for(const d of this.decor)if(seen(d.y))put(ctx,d.sp,d.x-d.sp.w/2,d.y-cam-d.sp.h);
+    const actors=this.hikers.map(h=>({y:this.yw(h.p),h}));const hy=this.yw(this.p);actors.push({y:hy,me:true});
+    for(const o of this.props)if(seen(o.y))actors.push({y:o.y,prop:o});
+    actors.sort((p,q)=>p.y-q.y);
     for(const o of actors){
-      if(o.me){
+      if(o.prop)this.drawProp(ctx,o.prop,o.prop.y-cam,F,t);
+      else if(o.me){
         const x=this.lane(hy,.2),sy=hy-cam,mv=Math.min(1,Math.abs(this.v)/.02)*(1-this.sit);
         const bob=Math.abs(Math.sin(this.walk))*lerp(2.6,1.1,a)*mv,sp=this.hk;
         ctx.globalAlpha=.16;ctx.fillStyle='#2b3b2c';ctx.beginPath();ctx.ellipse(x,sy,sp.w*.55,this.figH*.04,0,0,7);ctx.fill();ctx.globalAlpha=1;
@@ -267,6 +396,27 @@ const scene={
         ctx.save();ctx.translate(x,sy-bob);ctx.rotate(Math.sin(this.t*5+h.ph)*.05);put(ctx,h.sp,-h.sp.w/2,-h.sp.h);ctx.restore();
       }
     }
+    for(const [i,f] of this.flies.entries())if(seen(f.y)){
+      const x=f.x+Math.sin(t*.6+i)*F*.9+Math.sin(t*1.7+i*3)*F*.2,y=f.y-cam-F*.5+Math.cos(t*.45+i*2)*F*.4+Math.sin(t*2.3+i)*F*.1;
+      butterfly(ctx,x,y,F,.25+.75*Math.abs(Math.sin(t*13+i)),f.col)}
+    ctx.strokeStyle='rgba(43,59,44,.6)';ctx.lineWidth=1.5;ctx.lineCap='round';
+    for(const f of this.flock)for(let j=0;j<f.n;j++){
+      const bx=f.x-j*16-(j%2)*6,by=f.y+(j%2)*9+j*2,fl=Math.sin(t*9+f.ph+j)*.7;
+      ctx.beginPath();ctx.moveTo(bx-7,by-4*fl);ctx.quadraticCurveTo(bx-3,by-1,bx,by);ctx.quadraticCurveTo(bx+3,by-1,bx+7,by-4*fl);ctx.stroke()}
+  },
+  /* the static sprite, then whatever moves on it: smoke, falling water, ripples, a coyote */
+  drawProp(ctx,o,sy,F,t){
+    if(o.sp)put(ctx,o.sp,o.x-o.sp.w/2,sy-o.sp.h);
+    if(o.kind==='house'){const k=o.hut?.8:1,bw=F*1.15*k,wh=F*.62*k,cx=o.x+bw*.245,cy=sy-F*.06-wh-wh*.85;
+      for(let j=0;j<5;j++){const ph=fr(t*.22+j/5);ctx.fillStyle=`rgba(255,255,255,${.6*(1-ph)})`;ctx.beginPath();ctx.arc(cx+Math.sin(ph*5+j)*F*.06+ph*F*.25,cy-ph*F*1.1,F*(.04+ph*.09),0,7);ctx.fill()}}
+    else if(o.kind==='fall'){const rw=F*2.2,rh=F*1.7,by=sy-F*.12,top=by-F*.12-rh;
+      ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.6;ctx.lineCap='round';ctx.beginPath();
+      for(let j=0;j<11;j++){const ph=fr(t*1.1+h1(j+o.i*13)),x=o.x+(h1(j*3.7+o.i)-.5)*rw*.11,y=top+F*.15+ph*(rh-F*.3);ctx.moveTo(x,y);ctx.lineTo(x,y+F*.16)}ctx.stroke();
+      for(let j=0;j<4;j++){const ph=fr(t*1.8+j*.27);ctx.fillStyle=`rgba(255,255,255,${.8*(1-ph)})`;ctx.beginPath();ctx.arc(o.x+(j-1.5)*F*.1,by-F*.12-ph*F*.16,F*(.03+ph*.03),0,7);ctx.fill()}}
+    else if(o.kind==='pond'){const w=F*2.3,cy=sy-F*.95*.42;
+      ctx.lineWidth=1.2;for(let j=0;j<3;j++){const ph=fr(t*.3+j/3);ctx.strokeStyle=`rgba(255,255,255,${.7*(1-ph)})`;ctx.beginPath();ctx.ellipse(o.x+(j-1)*w*.18,cy,w*(.04+ph*.14),w*(.015+ph*.05),0,0,7);ctx.stroke()}}
+    else if(o.kind==='coyote')coyote(ctx,clamp(o.x+o.dx,F*.5,this.W-F*.5),sy,F,o.dir||1,o.hop>=0?o.hop:0,o.col)
+    else if(o.kind==='fly'){for(let j=0;j<2;j++){const x=o.x+Math.sin(t*.9+j*2)*F*.5,y=sy-F*.45+Math.cos(t*.7+j*3)*F*.25;butterfly(ctx,x,y,F,.25+.75*Math.abs(Math.sin(t*14+j)),WINGS[j+1])}}
   },
   /* thoughts are drawn on the crisp UI layer in 24th type; style 5 lives in the page instead */
   drawThought(ctx,W,H){
@@ -351,6 +501,15 @@ const onDown=e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}scene.down(...p
 const onMove=e=>{if(e.pointerType==='mouse'||e.buttons)scene.move(...pt(e))};
 cv.addEventListener('pointerdown',onDown);
 cv.addEventListener('pointermove',onMove);
+const UP=new Set(['ArrowUp','w','W','ArrowRight','d','D']),DOWN=new Set(['ArrowDown','s','S','ArrowLeft','a','A']);
+const onKey=e=>{
+  if(e.altKey||e.metaKey||e.ctrlKey)return;
+  const dir=UP.has(e.key)?1:DOWN.has(e.key)?-1:0;
+  if(dir){e.preventDefault();if(e.type==='keydown')scene.key(dir);else if(scene.keys===dir)scene.key(0);return}
+  if(e.type==='keydown'&&(e.key===' '||e.key==='Enter')){e.preventDefault();if(!e.repeat)scene.act()}
+};
+const onBlur=()=>scene.key(0);
+cv.addEventListener('keydown',onKey);cv.addEventListener('keyup',onKey);cv.addEventListener('blur',onBlur);
 
 let last=performance.now(),raf=0;
 function frame(now){
@@ -373,5 +532,6 @@ raf=requestAnimationFrame(frame);
 return()=>{
   cancelAnimationFrame(raf);ro.disconnect();io.disconnect();
   cv.removeEventListener('pointerdown',onDown);cv.removeEventListener('pointermove',onMove);
+  cv.removeEventListener('keydown',onKey);cv.removeEventListener('keyup',onKey);cv.removeEventListener('blur',onBlur);
 };
 }

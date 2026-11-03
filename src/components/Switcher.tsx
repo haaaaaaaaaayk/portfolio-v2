@@ -119,7 +119,7 @@ export function Switcher() {
               </span>
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-rule pt-3 text-caption text-ink-muted">
-              <span>?v=1…10</span>
+              <span>?v=1…12</span>
               <span>?font=sf|haas|helvetica-now</span>
               <span>?ui=0 hides this</span>
             </div>

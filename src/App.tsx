@@ -2,7 +2,7 @@ import { lazy, Suspense, type ComponentType } from 'react'
 import { Switcher } from './components/Switcher'
 import { usePrefs, type VariantId } from './lib/prefs'
 
-/* Eleven portfolio concepts, code-split so only the active one loads. */
+/* Twelve portfolio concepts, code-split so only the active one loads. */
 const VARIANT_MODULES: Record<VariantId, () => Promise<{ default: ComponentType }>> = {
   1: () => import('./variants/v1-desktop-os'),
   2: () => import('./variants/v2-index'),
@@ -15,6 +15,7 @@ const VARIANT_MODULES: Record<VariantId, () => Promise<{ default: ComponentType 
   9: () => import('./variants/v9-triptych'),
   10: () => import('./variants/v10-night-lab'),
   11: () => import('./variants/v11-trail'),
+  12: () => import('./variants/v12-ink-trail'),
 }
 
 const LAZY = {
@@ -29,6 +30,7 @@ const LAZY = {
   9: lazy(VARIANT_MODULES[9]),
   10: lazy(VARIANT_MODULES[10]),
   11: lazy(VARIANT_MODULES[11]),
+  12: lazy(VARIANT_MODULES[12]),
 } satisfies Record<VariantId, ComponentType>
 
 export default function App() {

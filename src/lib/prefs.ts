@@ -25,6 +25,7 @@ export const VARIANTS = [
   { id: 9, slug: 'triptych', name: 'Triptych' },
   { id: 10, slug: 'night-lab', name: 'Night lab' },
   { id: 11, slug: 'trail', name: 'Trail' },
+  { id: 12, slug: 'ink-trail', name: 'Ink trail' },
 ] as const
 export type VariantId = (typeof VARIANTS)[number]['id']
 
