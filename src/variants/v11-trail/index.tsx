@@ -97,10 +97,12 @@ export default function Trail() {
   const [said, setSaid] = useState<string | null>(null)
   const [sound, setSound] = useState(initialSound)
   const [keyboard, setKeyboard] = useState(false)
+  /* once he's been up and back, his send-off becomes a real way to the work */
+  const [finished, setFinished] = useState(false)
   /* the thought-style picker is a design exploration, so presentation mode (?ui=0) hides it */
   const { showUi } = usePrefs()
   /* one live object the scene reads every frame, so switching style or sound never remounts it */
-  const opts = useRef<TrailOptions>({ mode: style, onThought: setSaid, sound })
+  const opts = useRef<TrailOptions>({ mode: style, onThought: setSaid, sound, onFinale: () => setFinished(true) })
   useEffect(() => {
     opts.current.mode = style
   }, [style])
@@ -174,6 +176,18 @@ export default function Trail() {
           <motion.p {...fadeUp(0.2, reduced)} className="text-center text-compact text-ink-muted">
             {keyboard ? KEY_HINT : HINT}
           </motion.p>
+          <AnimatePresence initial={false}>
+            {finished && (
+              <motion.a
+                href="#work"
+                initial={reduced ? false : { opacity: 0, y: 6, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)', transition: open }}
+                className="inline-flex h-11 items-center rounded-full bg-ink px-5 text-compact text-white hover:bg-pressed"
+              >
+                See the projects ↓
+              </motion.a>
+            )}
+          </AnimatePresence>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             {showUi && <Segmented label="Thought style" value={style} onChange={pickStyle} options={STYLES} size="compact" />}
             <Switch label="Sound" checked={sound} onChange={setSound} />

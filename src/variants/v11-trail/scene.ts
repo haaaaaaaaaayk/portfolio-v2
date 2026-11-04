@@ -9,6 +9,8 @@ export interface TrailOptions {
   onThought?: (text: string | null) => void
   /** synthesized sound effects on or off */
   sound?: boolean
+  /** called when he's back at the start and sends the visitor to the projects */
+  onFinale?: () => void
 }
 
 /**
@@ -356,7 +358,7 @@ const scene={
     this.idle+=dt;this.thoughtT+=dt;
     /* back at the bottom: finish the current line, pause, say the finale, then start over fresh */
     if(this.landed){
-      if(this.line!==FINALE&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=FINALE;this.thoughtT=0;this.dur=5;this.fx?.('finale')}
+      if(this.line!==FINALE&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=FINALE;this.thoughtT=0;this.dur=5;this.fx?.('finale');opts.onFinale?.()}
       else if(this.line===FINALE&&this.thoughtT>this.dur+GAP){this.landed=false;this.talk=0;this.line=this.cued=null;this.sights=[];this.seen.clear();this.met.clear()}
     }
     else if(live&&!peak){
