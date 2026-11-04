@@ -94,14 +94,15 @@ export function About() {
         transition: reveal,
       }
 
-  /* a centered column with wide margins either side; the text inside stays left-aligned to read well */
+  /* a centered column with wide margins either side; the text inside stays left-aligned to read well.
+     one size throughout: hierarchy comes from color and spacing, not scale */
   return (
     <section id="about" className="mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32">
       <motion.div {...inView}>
-        <p className="text-compact text-ink-muted">
+        <p className="text-title text-ink-muted">
           russian hill, sf <time className="ml-2 tabular-nums">{hisTime(now)}</time>
         </p>
-        <h1 className="mt-6 text-role text-ink sm:text-specimen">
+        <h1 className="mt-8 text-title text-ink">
           {greeting.map((g, i) => (
             <span key={LANGS[i]}>
               {/* each hello stays whole; lines only break after a comma */}
@@ -112,7 +113,7 @@ export function About() {
             </span>
           ))}
         </h1>
-        <p className="mt-10 text-title text-ink-muted">
+        <p className="mt-8 text-title text-ink-muted">
           I am{' '}
           <NameNote note="yes, you read it as hike, and after the above i know you will never forget my name.">
             hayk
