@@ -212,7 +212,7 @@ const MEAS=document.createElement('canvas').getContext('2d');
 /* ---------- the scene ---------- */
 const scene={
   p:0,t:0,cam:0,v:0,fatigue:0,rest:0,sit:0,cloud:0,done:false,home:false,ring:null,ptr:null,hikers:[],puffs:[],drops:[],next:3,walk:0,
-  stepN:0,hov:0,halo:0,talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
+  stepN:0,hov:0,halo:0,sights:[],storyLine:false,talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
   props:[],decor:[],flies:[],flock:[],birdT:3,met:new Set(),keys:0,anchor:null,
   /** the stage listens here for moments worth a ripple or a sound */
   fx:null,
@@ -292,8 +292,22 @@ const scene={
   /* this stage first, then anything left over from the stages below */
   story(){let s=0;while(s+1<STORY.length&&this.p>=STORY[s+1][0])s++;for(;s>=0;s--){const l=this.from(STORY[s][1]);if(l)return l}return null},
   /* an event line jumps the queue; `now` skips the cooldown so it isn't lost */
-  cue(pool,now){if(!now&&(this.cued||this.t-this.cueAt<5))return;this.cued=this.from(pool);this.cueAt=this.t},
-  nextThought(){const l=this.cued||(this.home?null:this.story());this.cued=null;if(!l)return;this.line=l;this.thoughtT=0;this.dur=1.5+this.line.length*.045;this.readType()},
+  cue(pool,now){if(!now&&(this.cued||this.t-this.cueAt<5))return;const l=this.from(pool);if(!l)return;this.cued=l;this.cueAt=this.t},
+  /* sights wait in their own queue, so ones that come into view together don't cancel each other
+     and an urgent line (sitting, poked) doesn't wipe them. Each is only worth a line while it's
+     clearly up ahead: the nearest goes first, and any he has reached or passed are dropped unsaid. */
+  cueSight(o){this.sights.push(o)},
+  ahead(o){return this.yw(this.p)-o.y},
+  /* he notices a sight once it's in view up the trail, not once he's on top of it or past it */
+  notice(){for(const o of this.props){const d=this.ahead(o);if(!this.met.has(o)&&this.v>=0&&d>this.H*.1&&d<this.H*.5){this.met.add(o);this.cueSight(o);this.fx?.('sight',o.kind)}}},
+  nextThought(){
+    if(!this.home&&!this.done)this.notice();
+    this.sights=this.sights.filter(o=>this.ahead(o)>this.H*.1);
+    let l=this.cued,sight=null;
+    if(!l&&this.sights.length){this.sights.sort((x,y)=>this.ahead(x)-this.ahead(y));sight=this.sights.shift();l=this.from(ON[sight.kind])}
+    if(!l&&!this.home)l=this.story();
+    this.storyLine=!this.cued&&!sight;this.cued=null;if(!l)return;
+    this.line=l;this.thoughtT=0;this.dur=1.5+this.line.length*.045;this.readType()},
   /* follow the site's live font switch (family + tracking, as em) */
   readType(){const cs=getComputedStyle(document.body);this.font=cs.fontFamily||'system-ui, sans-serif';this.track=(parseFloat(cs.letterSpacing)||0)/(parseFloat(cs.fontSize)||16)},
   /* a click while he sits gets him back on his feet with a fresh complaint */
@@ -334,7 +348,7 @@ const scene={
     /* back at the bottom: finish the current line, pause, say the finale, then start over fresh */
     if(this.landed){
       if(this.line!==FINALE&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=FINALE;this.thoughtT=0;this.dur=5;this.fx?.('finale')}
-      else if(this.line===FINALE&&this.thoughtT>this.dur+GAP){this.landed=false;this.talk=0;this.line=this.cued=null;this.seen.clear();this.met.clear()}
+      else if(this.line===FINALE&&this.thoughtT>this.dur+GAP){this.landed=false;this.talk=0;this.line=this.cued=null;this.sights=[];this.seen.clear();this.met.clear()}
     }
     else if(live&&!peak){
       this.back=this.v<-.004?this.back+dt:0;if(this.v>.002)this.wentBack=false;
@@ -343,11 +357,13 @@ const scene={
       /* lines always finish, then a pause; interruptions wait their turn. No new line starts if he
          is about to sit down before it could finish, so the rest line comes in clean. */
       const tired=this.rest<=0&&a>.3&&this.v>0&&(1-this.fatigue)/((a-.3)*.45)<4.5;
-      if((!this.line||this.thoughtT>this.dur+GAP)&&!tired)this.nextThought();
+      /* a sight coming up cuts a story line short, so he talks about it while it's in front of him */
+      if(this.sights.length&&this.storyLine&&this.thoughtT>.8&&this.thoughtT<this.dur-.3)this.dur=this.thoughtT+.3;
+      if((!this.line||this.thoughtT>this.dur+(this.sights.length?.4:GAP))&&!tired)this.nextThought();
     }
     /* at the top the last line still finishes and pauses, then the peak line takes over for good */
     else if(peak&&this.line!==PEAK&&(!this.line||this.thoughtT>this.dur+GAP)){this.line=PEAK;this.thoughtT=0;this.dur=1e9}
-    if(live&&!peak&&!this.home)for(const o of this.props)if(!this.met.has(o)&&Math.abs(o.p-this.p)<.025){this.met.add(o);this.cue(ON[o.kind],!this.cued);this.fx?.('sight',o.kind)}
+    if(live&&!peak&&!this.home)this.notice();
     const hy0=this.yw(this.p);
     for(const b of this.props){if(b.kind!=='coyote')continue;
       b.next-=dt;const near=Math.abs(hy0-b.y)<this.figH*1.4;if(!near)b.fled=false;
