@@ -50,6 +50,9 @@
   --text-heading--line-height: 28px;
   --text-title: 24px;
   --text-title--line-height: 32px;
+  /* title size, set for reading: prose that runs many lines needs looser leading than a heading */
+  --text-lead: 24px;
+  --text-lead--line-height: 34px;
   /* presentation sizes (functional role 32, specimen 48, display 96) */
   --text-role: 32px;
   --text-role--line-height: 40px;

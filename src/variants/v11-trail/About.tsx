@@ -194,16 +194,19 @@ export function About() {
       }
 
   /* a centered column with wide margins either side; the text inside stays left-aligned to read well.
-     one size throughout: hierarchy comes from color and spacing, not scale */
+     one size per screen (20 on phones, where 24 left ~28 characters a line; 24 above), so hierarchy
+     comes from color and space. gaps are counted in lines: half a line holds where and hello together,
+     a line and a half sets them apart from who he is, one line between the paragraphs */
+  const type = 'text-heading sm:text-lead'
   return (
     <section id="about" className={`mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32 ${showUi ? 'xl:min-h-[52rem]' : ''}`}>
       {showUi && <VersionToggle index={version} onChange={pick} />}
-      <motion.div {...inView} className="relative">
+      <motion.div {...inView} className={`relative ${type}`}>
         {showUi && <VersionList index={version} onChange={pick} />}
-        <p className="text-title text-ink-muted">
+        <p className="text-ink-muted">
           russian hill, sf <time className="ml-2 tabular-nums">{hisTime(now)}</time>
         </p>
-        <h1 className="mt-8 text-title text-ink">
+        <h1 className="mt-[0.5lh] text-balance text-ink">
           {greeting.map((g, i) => (
             <span key={LANGS[i]}>
               {/* each hello stays whole; lines only break after a comma */}
@@ -214,14 +217,14 @@ export function About() {
             </span>
           ))}
         </h1>
-        <p className="mt-8 text-title text-ink-muted">
+        <p className="mt-[1.5lh] text-pretty text-ink-muted">
           {draft.before}
           <NameNote note="yes, you read it as hike, and after the above i know you will never forget my name.">
             hayk
           </NameNote>
           {draft.after}
         </p>
-        {draft.more && <p className="mt-6 text-title text-ink-muted">{draft.more}</p>}
+        {draft.more && <p className="mt-[1lh] text-pretty text-ink-muted">{draft.more}</p>}
       </motion.div>
     </section>
   )
