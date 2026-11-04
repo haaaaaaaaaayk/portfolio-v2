@@ -296,12 +296,13 @@ const scene={
   nextThought(){const l=this.cued||(this.home?null:this.story());this.cued=null;if(!l)return;this.line=l;this.thoughtT=0;this.dur=1.5+this.line.length*.045;this.readType()},
   /* follow the site's live font switch (family + tracking, as em) */
   readType(){const cs=getComputedStyle(document.body);this.font=cs.fontFamily||'system-ui, sans-serif';this.track=(parseFloat(cs.letterSpacing)||0)/(parseFloat(cs.fontSize)||16)},
-  /* clicking Hayk gets him back on his feet with a fresh complaint */
+  /* a click while he sits gets him back on his feet with a fresh complaint */
   nudge(){this.fx?.('poke');this.rest=0;this.fatigue=0;this.poke=2.5;this.talk=1;this.cue(ON.poke,true)},
   goHome(){this.fx?.('home');this.home=true;this.line=PEAK;this.dur=this.thoughtT+.3;this.cue(ON.home,true)},
+  /* he can only go along the trail, so a click anywhere while he sits counts as poking him */
+  pokeable(){return this.rest>0&&!this.done&&!this.home},
   down(x,y){
-    const b=this.hBox;
-    if(b&&!this.done&&!this.home&&x>=b.x0&&x<=b.x1&&y>=b.y0&&y<=b.y1){this.nudge();this.ptr={x,y};return}
+    if(this.pokeable()){this.nudge();this.move(x,y);return}
     this.move(x,y);if(this.done&&!this.home)this.goHome()},
   /* keyboard: hold ↑/↓ to walk, Space/Enter does what a click on him does */
   key(dir){this.keys=dir;this.idle=0;this.idled=false;this.anchor=dir||!this.ring?null:this.yw(this.p)},
@@ -310,7 +311,8 @@ const scene={
     this.t+=dt;const a=this.p,prev=this.p;
     if(this.anchor!=null&&this.ring){const y=this.anchor-this.cam;this.ring.y=y;this.ptr={x:this.ring.x,y}}
     if(this.keys){const sy=this.yw(this.p)-this.cam,x=this.lane(this.yw(this.p),.2);this.ptr={x,y:sy-this.keys*this.H*.35};if(!this.ring)this.ring={x,y:sy};this.idle=0}
-    if(this.ptr){const f=1-Math.exp(-lerp(18,2,Math.pow(a,1.3))*dt);this.ring.x+=(this.ptr.x-this.ring.x)*f;this.ring.y+=(this.ptr.y-this.ring.y)*f}
+    /* only the pointer's height counts: the ring rides the trail, on Hayk's lane, at that height */
+    if(this.ptr){const f=1-Math.exp(-lerp(18,2,Math.pow(a,1.3))*dt);this.ring.y+=(this.ptr.y-this.ring.y)*f;this.ring.x=this.lane(this.cam+this.ring.y,.2)}
     this.rest=Math.max(0,this.rest-dt);
     if(this.home){this.p=Math.max(0,this.p-dt*.14);if(this.p<=0){this.home=false;this.done=false;this.fatigue=0;this.ring=this.ptr=null;this.landed=true}}
     else if(!this.done&&this.ring&&this.rest<=0){
@@ -455,18 +457,21 @@ const scene={
     ctx.clearRect(0,0,W,H);
     this.drawThought(ctx,W,H);
     if(!this.ring||!this.ptr||this.done||this.home)return;
-    /* while he sits he can be poked: a breathing accent halo on him, and the ring fills in when it's over him */
-    const b=this.hBox,resting=this.rest>0,over=resting&&b&&this.ptr.x>=b.x0&&this.ptr.x<=b.x1&&this.ptr.y>=b.y0&&this.ptr.y<=b.y1;
-    this.hov+=((over?1:0)-this.hov)*.25;this.halo+=((resting&&!over?1:0)-this.halo)*.12;
+    /* while he sits a click pokes him: a breathing accent halo on him, and the ring fills in */
+    const resting=this.pokeable();
+    this.hov+=((resting?1:0)-this.hov)*.25;this.halo+=((resting?1:0)-this.halo)*.12;
     const a=this.p,hv=this.hov;ctx.save();
     if(this.halo>.01){const br=.5+.5*Math.sin(this.t*4);ctx.strokeStyle=rgba(ACCENT,this.halo*(.35+.4*br));ctx.lineWidth=2;
       ctx.beginPath();ctx.arc(this.hx,this.hy,this.figH*(.42+.06*br),0,7);ctx.stroke()}
-    ctx.strokeStyle=`rgba(31,52,36,${(.2+a*.3)*(1-hv)})`;ctx.setLineDash([3,4]);ctx.lineWidth=1.2;
-    ctx.beginPath();ctx.moveTo(this.hx,this.hy);ctx.lineTo(this.ring.x,this.ring.y);ctx.stroke();ctx.setLineDash([]);
+    /* the route he'll take, dashed along the trail itself from him to the ring */
+    ctx.strokeStyle=`rgba(31,52,36,${(.2+a*.3)*(1-hv)})`;ctx.setLineDash([3,4]);ctx.lineWidth=1.2;ctx.beginPath();
+    const y0=this.hy,y1=this.ring.y,n=Math.max(1,Math.ceil(Math.abs(y1-y0)/6));
+    for(let i=0;i<=n;i++){const y=lerp(y0,y1,i/n),x=this.lane(this.cam+y,.2);i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+    ctx.stroke();ctx.setLineDash([]);
     const r=lerp(7+a*9,13,hv);
     if(hv>.01){ctx.fillStyle=rgba(ACCENT,.3*hv);ctx.beginPath();ctx.arc(this.ring.x,this.ring.y,r,0,7);ctx.fill()}
     ctx.strokeStyle=hv>.5?rgba(ACCENT,.95):'rgba(255,255,255,.95)';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(this.ring.x,this.ring.y,r,0,7);ctx.stroke();
-    ctx.fillStyle='rgba(31,52,36,.45)';ctx.beginPath();ctx.arc(this.ptr.x,this.ptr.y,2.2,0,7);ctx.fill();ctx.restore();
+    ctx.restore();
   }
 };
 
@@ -561,12 +566,13 @@ scene.fx=(kind,arg)=>{
 /* the scene develops in the first time it comes into view */
 let born=-1;
 const pt=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
-const onDown=e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}const[x,y]=pt(e),b=scene.hBox,onHim=b&&x>=b.x0&&x<=b.x1&&y>=b.y0&&y<=b.y1;
+const onDown=e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}const[x,y]=pt(e),onHim=scene.pokeable();
   scene.down(x,y);ripple(x,y,onHim?4:7);if(!onHim)sfx('tap')};
 const onMove=e=>{if(e.pointerType==='mouse'||e.buttons)scene.move(...pt(e))};
 cv.addEventListener('pointerdown',onDown);
 cv.addEventListener('pointermove',onMove);
-const UP=new Set(['ArrowUp','w','W','ArrowRight','d','D']),DOWN=new Set(['ArrowDown','s','S','ArrowLeft','a','A']);
+/* the trail only goes up and down, so only up and down keys walk it */
+const UP=new Set(['ArrowUp','w','W']),DOWN=new Set(['ArrowDown','s','S']);
 const onKey=e=>{
   if(e.altKey||e.metaKey||e.ctrlKey)return;
   const dir=UP.has(e.key)?1:DOWN.has(e.key)?-1:0;

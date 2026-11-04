@@ -70,7 +70,7 @@ function TrailStage({ opts }: { opts: RefObject<TrailOptions> }) {
           tabIndex={0}
           role="application"
           aria-roledescription="hiking scene"
-          aria-label="A winding trail through a valley of hills, past houses, waterfalls, a pond, coyotes and butterflies. Hold the up arrow to walk Hayk up the trail and the down arrow to walk him back. Press Space or Enter to get him back on his feet, and at the top, to send him home."
+          aria-label="A winding trail through a valley of hills, past houses, waterfalls, a pond, coyotes and butterflies. Hold the up arrow to walk Hayk up the trail and the down arrow to walk him back. When he sits down, press Space or Enter to get him back on his feet, and at the top, to send him home."
           aria-keyshortcuts="ArrowUp ArrowDown Space Enter"
           className="absolute inset-0 block h-full w-full cursor-none touch-none outline-none"
         />
@@ -144,7 +144,7 @@ export default function Trail() {
             </p>
           )}
           <motion.p {...fadeUp(0.2, reduced)} className="text-center text-caption text-ink-muted">
-            Move your mouse up the trail, or click it and hold ↑. I have thoughts. Click me, or press Space, when I sit down.
+            Move your mouse up and down to walk me along the trail, or click it and hold ↑ ↓. I have thoughts. When I sit down, click or press Space.
           </motion.p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             <Segmented label="Thought style" value={style} onChange={pickStyle} options={STYLES} size="compact" />
