@@ -481,6 +481,15 @@ const scene={
   drawUI(ctx,W,H){
     ctx.clearRect(0,0,W,H);
     this.drawThought(ctx,W,H);
+    /* before the first move, a ghost ring rises up the trail ahead of him to show the gesture */
+    if(!this.ring&&!this.done&&!this.home&&this.hBox&&this.t>1.2){
+      const ph=REDUCED?.7:fr((this.t-1.2)/2.4),e=1-Math.pow(1-ph,3),al=REDUCED?.6:Math.sin(Math.PI*ph)*.75;
+      const y0=this.hy,y1=y0-this.H*.22*e,n=Math.max(1,Math.ceil((y0-y1)/6));
+      ctx.save();ctx.strokeStyle=`rgba(31,52,36,${al*.35})`;ctx.setLineDash([3,4]);ctx.lineWidth=1.2;ctx.beginPath();
+      for(let i=0;i<=n;i++){const y=lerp(y0,y1,i/n),x=this.lane(this.cam+y,.2);i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+      ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle=`rgba(255,255,255,${al})`;ctx.lineWidth=1.6;
+      ctx.beginPath();ctx.arc(this.lane(this.cam+y1,.2),y1,7,0,7);ctx.stroke();ctx.restore();
+    }
     if(!this.ring||!this.ptr||this.done||this.home)return;
     /* while he sits a click pokes him: a breathing accent halo on him, and the ring fills in */
     const resting=this.pokeable();
