@@ -5,7 +5,8 @@ import { CaseDialog } from '../../components/CaseDialog'
 import { ProjectPane } from '../../components/GlassMatter'
 import { Switch } from '../../components/ui/Controls'
 import { Segmented } from '../../components/ui/Segmented'
-import { profile, projects } from '../../content'
+import { links, profile, projects } from '../../content'
+import { usePrefs } from '../../lib/prefs'
 import type { CaseId } from '../../content/projects'
 import { close, fadeUp, open, reveal } from '../../lib/motion'
 import { mountTrail, type TrailOptions } from './scene'
@@ -46,7 +47,14 @@ const FEATHER = {
   WebkitMaskComposite: 'source-in',
 } as const
 
-function TrailStage({ opts }: { opts: RefObject<TrailOptions> }) {
+/* how to play, in the visitor's own input: mouse, touch, or keyboard once the scene has focus */
+const COARSE = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
+const HINT = COARSE
+  ? 'Drag up and down the trail to walk me. Tap when I sit down.'
+  : 'Move your mouse up and down the trail to walk me. Click when I sit down.'
+const KEY_HINT = 'Hold ↑ or ↓ to walk me. Space when I sit down.'
+
+function TrailStage({ opts, onFocusChange }: { opts: RefObject<TrailOptions>; onFocusChange: (focused: boolean) => void }) {
   const stage = useRef<HTMLDivElement>(null)
   const scene = useRef<HTMLCanvasElement>(null)
   const ui = useRef<HTMLCanvasElement>(null)
@@ -72,6 +80,8 @@ function TrailStage({ opts }: { opts: RefObject<TrailOptions> }) {
           aria-roledescription="hiking scene"
           aria-label="A winding trail through a valley of hills, past houses, waterfalls, a pond, coyotes and butterflies. Hold the up arrow to walk Hayk up the trail and the down arrow to walk him back. When he sits down, press Space or Enter to get him back on his feet, and at the top, to send him home."
           aria-keyshortcuts="ArrowUp ArrowDown Space Enter"
+          onFocus={() => onFocusChange(true)}
+          onBlur={() => onFocusChange(false)}
           className="absolute inset-0 block h-full w-full cursor-none touch-none outline-none"
         />
         <canvas ref={ui} aria-hidden className="pointer-events-none absolute inset-0 block h-full w-full" />
@@ -86,6 +96,9 @@ export default function Trail() {
   const [style, setStyle] = useState<ThoughtStyle>(initialStyle)
   const [said, setSaid] = useState<string | null>(null)
   const [sound, setSound] = useState(initialSound)
+  const [keyboard, setKeyboard] = useState(false)
+  /* the thought-style picker is a design exploration, so presentation mode (?ui=0) hides it */
+  const { showUi } = usePrefs()
   /* one live object the scene reads every frame, so switching style or sound never remounts it */
   const opts = useRef<TrailOptions>({ mode: style, onThought: setSaid, sound })
   useEffect(() => {
@@ -119,8 +132,22 @@ export default function Trail() {
     <div className="relative min-h-svh bg-paper">
       <main>
         <section className="flex min-h-svh flex-col items-center justify-center gap-4 px-4 py-12">
+          <motion.header
+            {...fadeUp(0, reduced)}
+            className="flex w-[min(92vw,100%)] max-w-[1120px] flex-wrap items-baseline justify-between gap-x-6 gap-y-1 sm:w-[min(80vw,100%)]"
+          >
+            <h1 className="text-heading">
+              {profile.name}{' '}
+              <span className="text-ink-muted">
+                · {profile.roleShort}, {profile.location}
+              </span>
+            </h1>
+            <a href="#work" className="reading-link text-compact">
+              See the work ↓
+            </a>
+          </motion.header>
           <motion.div {...fadeUp(0.1, reduced)} className="flex w-full justify-center">
-            <TrailStage opts={opts} />
+            <TrailStage opts={opts} onFocusChange={setKeyboard} />
           </motion.div>
           {style !== 5 && (
             <p aria-live="polite" className="sr-only">
@@ -143,11 +170,11 @@ export default function Trail() {
               </AnimatePresence>
             </p>
           )}
-          <motion.p {...fadeUp(0.2, reduced)} className="text-center text-caption text-ink-muted">
-            Move your mouse up and down to walk me along the trail, or click it and hold ↑ ↓. I have thoughts. When I sit down, click or press Space.
+          <motion.p {...fadeUp(0.2, reduced)} className="text-center text-compact text-ink-muted">
+            {keyboard ? KEY_HINT : HINT}
           </motion.p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            <Segmented label="Thought style" value={style} onChange={pickStyle} options={STYLES} size="compact" />
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            {showUi && <Segmented label="Thought style" value={style} onChange={pickStyle} options={STYLES} size="compact" />}
             <Switch label="Sound" checked={sound} onChange={setSound} />
           </div>
           <a href="#pitch" className="reading-link mt-6 text-compact">
@@ -159,21 +186,48 @@ export default function Trail() {
           <motion.p {...inView} className="text-compact text-ink-muted">
             {profile.name} · {profile.location}
           </motion.p>
-          <motion.h1 {...inView} className="mt-8 max-w-5xl font-display text-role sm:text-specimen">
+          <motion.h2 {...inView} className="mt-8 max-w-5xl font-display text-role sm:text-specimen">
             {profile.pitch.lead} <span className="text-ink-muted">{profile.pitch.tail}</span>
-          </motion.h1>
+          </motion.h2>
           <motion.p {...inView} className="mt-8 max-w-xl text-title text-ink-muted">
             {profile.looking}
           </motion.p>
         </section>
 
-        <section id="work" className="mx-auto max-w-[1440px] px-4 pb-40 sm:px-8 lg:px-16">
+        <section id="work" className="mx-auto max-w-[1440px] px-4 pb-32 sm:px-8 lg:px-16">
           <p className="text-compact text-ink-muted">Selected work</p>
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             {projects.map((p) => (
               <ProjectPane key={p.id} project={p} onOpen={(id) => setCaseId(id)} />
             ))}
           </div>
+        </section>
+
+        {/* the page ends with a way to reach him, not with the last card */}
+        <section id="contact" className="mx-auto max-w-[1440px] px-4 pb-16 sm:px-8 lg:px-16">
+          <motion.p {...inView} className="max-w-4xl font-display text-role text-ink-muted sm:text-specimen">
+            {profile.contactLine.lead} <span className="rounded-mark bg-accent px-2 text-ink">{profile.contactLine.accent}</span>
+            {profile.contactLine.end}
+          </motion.p>
+          <ul className="mt-10 flex flex-wrap gap-2">
+            {links.map((l) => (
+              <li key={l.id}>
+                <a
+                  href={l.href}
+                  title={l.note}
+                  className="glass inline-flex h-11 items-center rounded-full px-5 text-secondary text-ink-muted transition-transform duration-[260ms] hover:-translate-y-0.5 hover:text-ink-active"
+                >
+                  {l.label} ↗
+                </a>
+              </li>
+            ))}
+          </ul>
+          <footer className="mt-24 flex flex-wrap items-center justify-between gap-4 border-t border-rule pt-4 text-caption text-ink-muted">
+            <span>
+              © {new Date().getFullYear()} {profile.name} · {profile.location}
+            </span>
+            <span>{profile.colophon}</span>
+          </footer>
         </section>
       </main>
 
