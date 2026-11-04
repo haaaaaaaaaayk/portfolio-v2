@@ -34,7 +34,7 @@ function initialSound() {
 
 function initialStyle(): ThoughtStyle {
   const q = Number(new URLSearchParams(window.location.search).get('thought'))
-  return STYLES.some((s) => s.value === q) ? (q as ThoughtStyle) : 1
+  return STYLES.some((s) => s.value === q) ? (q as ThoughtStyle) : 2
 }
 
 /* Feather every edge into the paper; the corners, where both fades meet, go softest. */
