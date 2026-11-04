@@ -18,22 +18,46 @@ export function CaseDialog({
 }) {
   const project = id ? projectById(id) : null
   const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
   const reduced = useReducedMotion()
+  /* the latest onClose, so callers can pass an inline function without re-running the effect */
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
 
+  /* modal: Tab stays inside, Esc closes, and focus goes back to whatever opened it */
   useEffect(() => {
     if (!id) return
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
+      if (e.key !== 'Tab' || !dialogRef.current) return
+      const items = dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+      if (!items.length) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      const inside = dialogRef.current.contains(document.activeElement)
+      if (e.shiftKey && (document.activeElement === first || !inside)) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener('keydown', onKey)
     closeBtnRef.current?.focus()
     return () => {
       document.body.style.overflow = prev
       window.removeEventListener('keydown', onKey)
+      opener?.focus({ preventScroll: true })
     }
-  }, [id, onClose])
+  }, [id])
 
   return createPortal(
     <AnimatePresence>
@@ -49,6 +73,7 @@ export function CaseDialog({
           }}
         >
           <motion.div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label={`Case study: ${project.title}`}
