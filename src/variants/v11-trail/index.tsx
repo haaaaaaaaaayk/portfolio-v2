@@ -134,15 +134,16 @@ export default function Trail() {
         <section className="flex min-h-svh flex-col items-center justify-center gap-4 px-4 py-12">
           <motion.header
             {...fadeUp(0, reduced)}
-            className="flex w-[min(92vw,100%)] max-w-[1120px] flex-wrap items-baseline justify-between gap-x-6 gap-y-1 sm:w-[min(80vw,100%)]"
+            className="flex w-[min(92vw,100%)] max-w-[1120px] items-end justify-between gap-6 sm:w-[min(80vw,100%)]"
           >
-            <h1 className="text-heading">
-              {profile.name}{' '}
-              <span className="text-ink-muted">
-                · {profile.roleShort}, {profile.location}
+            {/* name and role as two deliberate lines, so neither wraps into the other */}
+            <h1 className="min-w-0">
+              <span className="block text-heading">{profile.name}</span>
+              <span className="block text-compact text-ink-muted">
+                {profile.roleShort} · {profile.location}
               </span>
             </h1>
-            <a href="#work" className="reading-link text-compact">
+            <a href="#work" className="reading-link shrink-0 text-compact">
               See the work ↓
             </a>
           </motion.header>
@@ -177,9 +178,6 @@ export default function Trail() {
             {showUi && <Segmented label="Thought style" value={style} onChange={pickStyle} options={STYLES} size="compact" />}
             <Switch label="Sound" checked={sound} onChange={setSound} />
           </div>
-          <a href="#pitch" className="reading-link mt-6 text-compact">
-            Scroll ↓
-          </a>
         </section>
 
         <section id="pitch" className="mx-auto max-w-[1440px] px-4 py-section sm:px-8 sm:py-32 lg:px-16">
