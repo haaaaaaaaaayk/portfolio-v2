@@ -3,6 +3,8 @@ import { useEffect, useId, useState, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { profile } from '../../content'
 import { reveal } from '../../lib/motion'
+import { usePrefs } from '../../lib/prefs'
+import { ABOUT_VERSIONS } from './aboutVersions'
 
 /* hello in each of his languages, picked by the visitor's time of day; late at night it's just hello */
 const LANGS = ['de', 'ko', 'hy', 'uk', 'zh'] as const
@@ -81,10 +83,77 @@ function NameNote({ children, note }: { children: ReactNode; note: string }) {
   )
 }
 
+/* which draft of the paragraph shows: ?about=N first, then the last one browsed, then the draft */
+const ABOUT_KEY = 'trail-about'
+const inRange = (n: number) => Number.isInteger(n) && n >= 0 && n < ABOUT_VERSIONS.length
+function initialVersion() {
+  const q = new URLSearchParams(window.location.search).get('about')
+  if (q !== null && inRange(Number(q))) return Number(q)
+  try {
+    const s = Number(window.localStorage.getItem(ABOUT_KEY))
+    return inRange(s) ? s : 0
+  } catch {
+    return 0
+  }
+}
+
+/**
+ * An internal tool for comparing drafts: previous and next, or ← and → anywhere on the page.
+ * It only shows while the switcher UI is on, and the pick goes in the URL so a link shows it.
+ * Switching is instant on purpose; it's a tool used many times in a row.
+ */
+function VersionToggle({ index, onChange }: { index: number; onChange: (n: number) => void }) {
+  const v = ABOUT_VERSIONS[index]
+  const n = ABOUT_VERSIONS.length
+  const step = (d: number) => onChange((index + d + n) % n)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target
+      if (e.altKey || e.metaKey || e.ctrlKey || (t instanceof HTMLElement && t.closest('input, textarea, [role=application], [role=dialog]'))) return
+      if (e.key === 'ArrowLeft') onChange((index - 1 + n) % n)
+      if (e.key === 'ArrowRight') onChange((index + 1) % n)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [index, n, onChange])
+  const btn = 'inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-control-hover hover:text-ink-active active:scale-[0.97]'
+  return (
+    <div className="glass mb-10 flex items-center gap-2 rounded-full p-1 text-compact" role="group" aria-label="About drafts">
+      <button type="button" className={btn} aria-label="Previous draft" onClick={() => step(-1)}>
+        ‹
+      </button>
+      <p className="min-w-0 flex-1 truncate text-center" aria-live="polite">
+        <span className="tabular-nums text-ink-muted">
+          {index}/{n - 1}
+        </span>{' '}
+        <span className="text-ink">{v.label}</span>{' '}
+        <span className="text-ink-muted">{v.round === 'draft' ? '' : `round ${v.round}`}</span>
+      </p>
+      <button type="button" className={btn} aria-label="Next draft" onClick={() => step(1)}>
+        ›
+      </button>
+    </div>
+  )
+}
+
 export function About() {
   const reduced = useReducedMotion()
   const now = useMinute()
   const greeting = GREETINGS[periodOf(now.getHours())]
+  const { showUi } = usePrefs()
+  const [version, setVersion] = useState(initialVersion)
+  const pick = (n: number) => {
+    setVersion(n)
+    const url = new URL(window.location.href)
+    url.searchParams.set('about', String(n))
+    window.history.replaceState(window.history.state, '', url)
+    try {
+      window.localStorage.setItem(ABOUT_KEY, String(n))
+    } catch {
+      /* private mode etc. */
+    }
+  }
+  const draft = ABOUT_VERSIONS[version]
   const inView = reduced
     ? {}
     : {
@@ -98,6 +167,7 @@ export function About() {
      one size throughout: hierarchy comes from color and spacing, not scale */
   return (
     <section id="about" className="mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32">
+      {showUi && <VersionToggle index={version} onChange={pick} />}
       <motion.div {...inView}>
         <p className="text-title text-ink-muted">
           russian hill, sf <time className="ml-2 tabular-nums">{hisTime(now)}</time>
@@ -114,12 +184,11 @@ export function About() {
           ))}
         </h1>
         <p className="mt-8 text-title text-ink-muted">
-          I am{' '}
+          {draft.before}
           <NameNote note="yes, you read it as hike, and after the above i know you will never forget my name.">
             hayk
           </NameNote>
-          , designing for startups who can’t afford confusion, taking products from zero to one. Currently I am a design
-          engineer at mymizu, improving donations.
+          {draft.after}
         </p>
       </motion.div>
     </section>
