@@ -220,7 +220,7 @@ const scene={
   p:0,t:0,cam:0,v:0,fatigue:0,rest:0,sit:0,cloud:0,done:false,home:false,ring:null,ptr:null,hikers:[],puffs:[],drops:[],next:3,walk:0,
   stepN:0,typed:0,hov:0,halo:0,sights:[],storyLine:false,talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
   props:[],decor:[],flies:[],flock:[],birdT:3,met:new Set(),keys:0,anchor:null,
-  /** the stage listens here for moments worth a ripple or a sound */
+  /** the stage listens here for moments worth a sound */
   fx:null,
   resize(W,H){this.W=W;this.H=H;this.readType();this.build()},
   build(){
@@ -517,10 +517,9 @@ const scene={
 /* ---------- shader: two layers, each with its own gaussian pixel scatter, then grain + matte ---------- */
 const VS='attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}';
 /* bgv maps screen v into the bg texture: (1, 0) for a viewport-sized bg, or a window onto the whole baked valley */
-/* dev develops the scene in: scatter starts wide and hazy, then settles. rip holds tap ripples
-   (x, y in device px, age in s, strength in device px); px is device px per css px. */
+/* dev develops the scene in: scatter starts wide and hazy, then settles. px is device px per css px. */
 const FSbody=`varying vec2 uv;uniform sampler2D bg;uniform sampler2D fg;uniform vec2 res;uniform float t;uniform float sigBg;uniform float sigFg;uniform float amt;uniform vec2 bgv;
-uniform float dev;uniform float px;uniform vec4 rip[6];
+uniform float dev;uniform float px;
 float hash12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
 vec2 gauss(vec2 s,float sig){float u1=max(hash12(s),1e-4),u2=hash12(s+vec2(19.19,7.73));float r=sqrt(-2.*log(u1))*sig,a=6.2831853*u2;return vec2(cos(a),sin(a))*r;}
 float vn(vec2 x){vec2 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(mix(hash12(i),hash12(i+vec2(1.,0.)),f.x),mix(hash12(i+vec2(0.,1.)),hash12(i+1.),f.x),f.y);}
@@ -529,19 +528,11 @@ float grainAt(vec2 x){return(vn(x)*.65+vn(x*2.03+19.7)*.35-.5)*2.;}
 void main(){
   vec2 fc=gl_FragCoord.xy,f=floor(fc);float tt=mod(floor(t*12.),997.);
   vec2 s=f+vec2(tt*37.17,tt*91.31);
-  // each tap sends out one ring that pushes the picture outward as it passes, fading as it spreads
-  vec2 disp=vec2(0.);float crest=0.;
-  for(int i=0;i<6;i++){vec4 r=rip[i];if(r.w<=0.)continue;
-    vec2 dv=fc-r.xy;float d=length(dv),life=clamp(1.-r.z/1.1,0.,1.);
-    float band=(d-r.z*240.*px)/(14.*px),w=exp(-band*band)*life*life;
-    // light on the outer face of the ring, shade on the inner, so it reads even over flat meadow
-    disp+=dv/max(d,1.)*w*r.w;crest+=w*clamp(band,-1.,1.)*r.w/(7.*px);}
   float k=1.+dev*7.;
-  vec2 q=uv+(gauss(s,sigBg*k)+disp)/res;
+  vec2 q=uv+gauss(s,sigBg*k)/res;
   vec3 b=texture2D(bg,vec2(q.x,q.y*bgv.x+bgv.y)).rgb;
-  vec4 p=texture2D(fg,uv+(gauss(s+vec2(41.3,17.9),sigFg*k)+disp*.35)/res);
+  vec4 p=texture2D(fg,uv+gauss(s+vec2(41.3,17.9),sigFg*k)/res);
   vec3 c=p.rgb+b*(1.-p.a);
-  c+=crest*.09;
   c=mix(c,vec3(1.),dev*.55);
   // film grain on a 24fps cadence, a little coarser than a pixel, strongest in the midtones
   float gt=mod(floor(t*24.),997.),l0=dot(c,vec3(.299,.587,.114));
@@ -565,7 +556,7 @@ function setupGL(cv){
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);
   const u=n=>gl.getUniformLocation(p,n);gl.uniform1i(u('bg'),0);gl.uniform1i(u('fg'),1);
   /* the whole valley can live on the GPU only if it fits and v has the precision to address it */
-  return{gl,tBg,tFg,res:u('res'),t:u('t'),sigBg:u('sigBg'),sigFg:u('sigFg'),amt:u('amt'),bgv:u('bgv'),dev:u('dev'),px:u('px'),rip:u('rip[0]'),
+  return{gl,tBg,tFg,res:u('res'),t:u('t'),sigBg:u('sigBg'),sigFg:u('sigFg'),amt:u('amt'),bgv:u('bgv'),dev:u('dev'),px:u('px'),
     max:gl.getParameter(gl.MAX_TEXTURE_SIZE),hp:!!(hp&&hp.precision>0)};
 }
 
@@ -589,15 +580,10 @@ const io=new IntersectionObserver(es=>{visible=es[0].isIntersecting;wake()},{roo
 const onLost=e=>{e.preventDefault();lost=true};
 const onRestored=()=>{g=setupGL(cv);lost=false;uploadWorld();wake()};
 cv.addEventListener('webglcontextlost',onLost);cv.addEventListener('webglcontextrestored',onRestored);
-/* tap ripples, newest last; a seventh pushes out the oldest */
-const rips=[],ripU=new Float32Array(24);
-const ripple=(x,y,amp)=>{if(REDUCED)return;rips.push({x:x*DPR,y:(H-y)*DPR,age:0,amp:amp*DPR});if(rips.length>6)rips.shift()};
-const feet=()=>[scene.lane(scene.yw(scene.p),.2),scene.yw(scene.p)-scene.cam];
 /* each sight has its own sound; steps alternate feet and get heavier as he climbs */
 const SIGHT_SOUND={pond:'water',fall:'water',house:'chime',sign:'chime',flowers:'sparkle',fly:'sparkle',coyote:'rustle'};
 const sfx=(name,o)=>{if(opts.sound)play(name,o)};
 scene.fx=(kind,arg)=>{
-  if(kind==='sit')ripple(...feet(),3.5);
   if(kind==='key')sfx('key',{pitch:.92+Math.random()*.16});
   else if(kind==='step')sfx('step',{volume:lerp(.55,.9,scene.p),pitch:(arg?1.06:.94)*lerp(1,.82,scene.p)*(.95+Math.random()*.1)});
   else if(kind==='sight')sfx(SIGHT_SOUND[arg]??'chime');
@@ -606,8 +592,7 @@ scene.fx=(kind,arg)=>{
 /* the scene develops in the first time it comes into view */
 let born=-1;
 const pt=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
-const onDown=e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}const[x,y]=pt(e),onHim=scene.pokeable();
-  scene.down(x,y);ripple(x,y,onHim?4:7);if(!onHim)sfx('tap')};
+const onDown=e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}scene.down(...pt(e))};
 const onMove=e=>{if(e.pointerType==='mouse'||e.buttons)scene.move(...pt(e))};
 cv.addEventListener('pointerdown',onDown);
 cv.addEventListener('pointermove',onMove);
@@ -631,8 +616,6 @@ function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   scene.update(dt);
   if(born<0)born=now;
-  for(const r of rips)r.age+=dt;while(rips.length&&rips[0].age>1.1)rips.shift();
-  ripU.fill(0);rips.forEach((r,i)=>ripU.set([r.x,r.y,r.age,r.amp],i*4));
   for(const x of[xFg,uctx]){x.setTransform(DPR,0,0,DPR,0,0);x.globalAlpha=1}
   if(!whole){xBg.setTransform(DPR,0,0,DPR,0,0);scene.drawBg(xBg,W,H)}
   scene.drawFg(xFg,W,H);scene.drawUI(uctx,W,H);
@@ -643,7 +626,7 @@ function frame(now){
     gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,g.tFg);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cFg);
     gl.uniform2f(g.res,cv.width,cv.height);gl.uniform1f(g.t,REDUCED?0:now/1000);
     gl.uniform1f(g.sigBg,SOFT_BG*10*DPR);gl.uniform1f(g.sigFg,SOFT_FG*10*DPR);gl.uniform1f(g.amt,GRAIN);
-    gl.uniform1f(g.dev,REDUCED?0:Math.exp(-(now-born)/1000*3));gl.uniform1f(g.px,DPR);gl.uniform4fv(g.rip,ripU);
+    gl.uniform1f(g.dev,REDUCED?0:Math.exp(-(now-born)/1000*3));gl.uniform1f(g.px,DPR);
     gl.drawArrays(gl.TRIANGLES,0,6)}
   else if(flat){flat.setTransform(1,0,0,1,0,0);flat.drawImage(cBg,0,0);flat.drawImage(cFg,0,0)}
   raf=requestAnimationFrame(frame);

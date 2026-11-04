@@ -54,12 +54,6 @@ const PRESETS = {
       { kind: 'tone', wave: 'triangle', freq: 620, glideTo: 1240, glideTime: 0.07, attack: 0.002, decay: 0.085, peak: 0.055 },
     ],
   },
-  /* a tap on the meadow, matching the ripple */
-  tap: {
-    gain: 0.5,
-    layers: [{ kind: 'tone', wave: 'sine', freq: 1200, glideTo: 550, glideTime: 0.14, attack: 0.004, decay: 0.2, peak: 0.07 }],
-    tail: { delay: 0.09, feedback: 0.2, wet: 0.15, lowpass: 3000 },
-  },
   /* someone overtakes him */
   pass: {
     gain: 0.4,
