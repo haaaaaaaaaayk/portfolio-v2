@@ -50,9 +50,9 @@
   --text-heading--line-height: 28px;
   --text-title: 24px;
   --text-title--line-height: 32px;
-  /* title size, set for reading: prose that runs many lines needs looser leading than a heading */
-  --text-lead: 24px;
-  --text-lead--line-height: 34px;
+  /* a lead paragraph: a touch above body, with leading loose enough for prose that runs many lines */
+  --text-lead: 20px;
+  --text-lead--line-height: 30px;
   /* presentation sizes (functional role 32, specimen 48, display 96) */
   --text-role: 32px;
   --text-role--line-height: 40px;
@@ -117,6 +117,13 @@
 
 @font-face {
   font-family: 'Helvetica Now Display';
+  src: local('Helvetica Now Display Medium'), local('HelveticaNowDisplay-Medium');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
   src: local('Helvetica Now Display'), local('HelveticaNowDisplay-Regular'), local('Helvetica Now');
   font-weight: 400;
   font-style: normal;
@@ -131,12 +138,16 @@ html[data-font='sf'] {
     'SF Pro Display', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui,
     'Helvetica Neue', Helvetica, Arial, sans-serif;
   --tracking: 0em;
+  --weight-strong: 500;
 }
 
 html[data-font='haas'] {
   --font-sans-active: 'Alte Haas Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-display-active: 'Alte Haas Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --tracking: -0.04em;
+  /* only Regular ships, and a synthesized bold is worse than none */
+  --weight-strong: 400;
+  font-synthesis-weight: none;
 }
 
 html[data-font='helvetica-now'] {
@@ -147,6 +158,7 @@ html[data-font='helvetica-now'] {
     'Helvetica Now Display', 'Helvetica Now Text', 'HelveticaNowText-Regular',
     'Helvetica Neue', Helvetica, Arial, sans-serif;
   --tracking: 0em;
+  --weight-strong: 500;
 }
 
 /* runtime-tunable glass (the Lab variant drives these) */
@@ -193,22 +205,25 @@ body {
   }
 }
 
-/* One weight throughout: emphasis comes from color, never weight. */
-strong,
-b,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-dt,
-th,
-button,
-input,
-textarea,
-select {
-  font-weight: inherit;
+/* Regular by default: emphasis comes from color, and the one heavier weight (--weight-strong) is
+   opted into by a class. In the base layer so that class can win. */
+@layer base {
+  strong,
+  b,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  dt,
+  th,
+  button,
+  input,
+  textarea,
+  select {
+    font-weight: inherit;
+  }
 }
 button,
 input,

@@ -194,19 +194,18 @@ export function About() {
       }
 
   /* a centered column with wide margins either side; the text inside stays left-aligned to read well.
-     one size per screen (20 on phones, where 24 left ~28 characters a line; 24 above), so hierarchy
-     comes from color and space. gaps are counted in lines: half a line holds where and hello together,
-     a line and a half sets them apart from who he is, one line between the paragraphs */
-  const type = 'text-heading sm:text-lead'
+     three levels, each with one job: where he is now is a caption (14, muted), hello is the headline
+     (24 → 32 display, the one heavier weight), and who he is is a lead paragraph (18 → 20, loose
+     leading for reading). the column holds about 65 characters a line at 20 */
   return (
     <section id="about" className={`mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32 ${showUi ? 'xl:min-h-[52rem]' : ''}`}>
       {showUi && <VersionToggle index={version} onChange={pick} />}
-      <motion.div {...inView} className={`relative ${type}`}>
+      <motion.div {...inView} className="relative">
         {showUi && <VersionList index={version} onChange={pick} />}
-        <p className="text-ink-muted">
-          russian hill, sf <time className="ml-2 tabular-nums">{hisTime(now)}</time>
+        <p className="text-compact text-ink-muted">
+          russian hill, sf <time className="ml-1.5 tabular-nums">{hisTime(now)}</time>
         </p>
-        <h1 className="mt-[0.5lh] text-balance text-ink">
+        <h1 className="mt-2 text-balance font-display text-title font-[var(--weight-strong)] text-ink sm:text-role">
           {greeting.map((g, i) => (
             <span key={LANGS[i]}>
               {/* each hello stays whole; lines only break after a comma */}
@@ -217,14 +216,16 @@ export function About() {
             </span>
           ))}
         </h1>
-        <p className="mt-[1.5lh] text-pretty text-ink-muted">
-          {draft.before}
-          <NameNote note="yes, you read it as hike, and after the above i know you will never forget my name.">
-            hayk
-          </NameNote>
-          {draft.after}
-        </p>
-        {draft.more && <p className="mt-[1lh] text-pretty text-ink-muted">{draft.more}</p>}
+        <div className="mt-8 space-y-[1lh] text-body text-ink-muted sm:mt-10 sm:text-lead">
+          <p className="text-pretty">
+            {draft.before}
+            <NameNote note="yes, you read it as hike, and after the above i know you will never forget my name.">
+              hayk
+            </NameNote>
+            {draft.after}
+          </p>
+          {draft.more && <p className="text-pretty">{draft.more}</p>}
+        </div>
       </motion.div>
     </section>
   )
