@@ -12,17 +12,19 @@ export function ProjectPane({
   onOpen: (id: CaseId, e: MouseEvent<HTMLButtonElement>) => void
   kicker?: string
 }) {
+  /* a button centers its content vertically, so stack it from the top and pin the CTA to the
+     bottom: cards side by side then share their title line and their button line */
   return (
     <button
       type="button"
       onClick={(e) => onOpen(project.id, e)}
-      className="glass glass-edge sheen rounded-card p-5 text-left transition-[box-shadow] duration-[260ms] hover:shadow-glass-lift"
+      className="glass glass-edge sheen flex flex-col rounded-card p-5 text-left transition-[box-shadow] duration-[260ms] hover:shadow-glass-lift"
     >
       <p className="text-caption text-ink-muted tabular-nums">{kicker ?? `Case ${project.index}`}</p>
       <h2 className="mt-2 text-title">{project.title}</h2>
       <p className="mt-3 text-compact text-ink-muted">{project.hook}</p>
-      <ImageSlot label={project.cardSlot.label} ratio={project.cardSlot.ratio} className="mt-4" />
-      <span className="mt-4 inline-flex h-11 items-center rounded-full bg-ink px-4 text-compact text-white">
+      <ImageSlot label={project.cardSlot.label} ratio={project.cardSlot.ratio} className="mt-4 mb-4" />
+      <span className="mt-auto inline-flex h-11 items-center self-start rounded-full bg-ink px-4 text-compact text-white">
         Open case
       </span>
     </button>
