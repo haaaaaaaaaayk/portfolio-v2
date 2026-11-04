@@ -118,7 +118,7 @@ function VersionToggle({ index, onChange }: { index: number; onChange: (n: numbe
   }, [index, n, onChange])
   const btn = 'inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-control-hover hover:text-ink-active active:scale-[0.97]'
   return (
-    <div className="glass mb-10 flex items-center gap-2 rounded-full p-1 text-compact" role="group" aria-label="About drafts">
+    <div className="glass mb-10 flex items-center gap-2 rounded-full p-1 text-compact xl:hidden" role="group" aria-label="About drafts">
       <button type="button" className={btn} aria-label="Previous draft" onClick={() => step(-1)}>
         ‹
       </button>
@@ -133,6 +133,47 @@ function VersionToggle({ index, onChange }: { index: number; onChange: (n: numbe
         ›
       </button>
     </div>
+  )
+}
+
+/* the round each draft belongs to, as the list's group names */
+const ROUNDS = [
+  { round: 'draft', title: 'Original' },
+  { round: 1, title: 'Round 1, ten framings' },
+  { round: 2, title: 'Round 2, ten positionings' },
+] as const
+
+/**
+ * On wide screens, every draft at once in the margin beside the column, so any one is a click away
+ * and the labels can be compared side by side. Same instant switch as the pill it replaces there.
+ */
+function VersionList({ index, onChange }: { index: number; onChange: (n: number) => void }) {
+  return (
+    <nav aria-label="About drafts" className="absolute top-0 right-full mr-16 hidden w-56 text-compact xl:block">
+      {ROUNDS.map((r) => (
+        <div key={r.round} className="mb-5">
+          <p className="mb-1 text-ink-muted">{r.title}</p>
+          <ul>
+            {ABOUT_VERSIONS.map((v, i) =>
+              v.round === r.round ? (
+                <li key={i}>
+                  <button
+                    type="button"
+                    aria-pressed={i === index}
+                    onClick={() => onChange(i)}
+                    className="group flex w-full items-baseline gap-2 rounded-mark py-0.5 text-left text-ink-muted hover:text-ink aria-pressed:text-ink focus-visible:outline-2 focus-visible:outline-ink"
+                  >
+                    <span className="w-5 shrink-0 text-right tabular-nums opacity-60">{i}</span>
+                    <span className="truncate">{v.label}</span>
+                    <span aria-hidden className="ml-auto size-1.5 shrink-0 self-center rounded-full bg-accent opacity-0 group-aria-pressed:opacity-100" />
+                  </button>
+                </li>
+              ) : null,
+            )}
+          </ul>
+        </div>
+      ))}
+    </nav>
   )
 }
 
@@ -166,9 +207,10 @@ export function About() {
   /* a centered column with wide margins either side; the text inside stays left-aligned to read well.
      one size throughout: hierarchy comes from color and spacing, not scale */
   return (
-    <section id="about" className="mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32">
+    <section id="about" className={`mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32 ${showUi ? 'xl:min-h-[52rem]' : ''}`}>
       {showUi && <VersionToggle index={version} onChange={pick} />}
-      <motion.div {...inView}>
+      <motion.div {...inView} className="relative">
+        {showUi && <VersionList index={version} onChange={pick} />}
         <p className="text-title text-ink-muted">
           russian hill, sf <time className="ml-2 tabular-nums">{hisTime(now)}</time>
         </p>
