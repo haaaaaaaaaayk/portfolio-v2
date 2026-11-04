@@ -47,14 +47,7 @@ const FEATHER = {
   WebkitMaskComposite: 'source-in',
 } as const
 
-/* how to play, in the visitor's own input: mouse, touch, or keyboard once the scene has focus */
-const COARSE = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
-const HINT = COARSE
-  ? 'Drag up and down the trail to walk me. Tap when I sit down.'
-  : 'Move your mouse up and down the trail to walk me. Click when I sit down.'
-const KEY_HINT = 'Hold ↑ or ↓ to walk me. Space when I sit down.'
-
-function TrailStage({ opts, onFocusChange }: { opts: RefObject<TrailOptions>; onFocusChange: (focused: boolean) => void }) {
+function TrailStage({ opts }: { opts: RefObject<TrailOptions> }) {
   const stage = useRef<HTMLDivElement>(null)
   const scene = useRef<HTMLCanvasElement>(null)
   const ui = useRef<HTMLCanvasElement>(null)
@@ -80,8 +73,6 @@ function TrailStage({ opts, onFocusChange }: { opts: RefObject<TrailOptions>; on
           aria-roledescription="hiking scene"
           aria-label="A winding trail through a valley of hills, past houses, waterfalls, a pond, coyotes and butterflies. Hold the up arrow to walk Hayk up the trail and the down arrow to walk him back. When he sits down, press Space or Enter to get him back on his feet, and at the top, to send him home."
           aria-keyshortcuts="ArrowUp ArrowDown Space Enter"
-          onFocus={() => onFocusChange(true)}
-          onBlur={() => onFocusChange(false)}
           className="absolute inset-0 block h-full w-full cursor-none touch-none outline-none"
         />
         <canvas ref={ui} aria-hidden className="pointer-events-none absolute inset-0 block h-full w-full" />
@@ -96,7 +87,6 @@ export default function Trail() {
   const [style, setStyle] = useState<ThoughtStyle>(initialStyle)
   const [said, setSaid] = useState<string | null>(null)
   const [sound, setSound] = useState(initialSound)
-  const [keyboard, setKeyboard] = useState(false)
   /* once he's been up and back, his send-off becomes a real way to the work */
   const [finished, setFinished] = useState(false)
   /* the thought-style picker is a design exploration, so presentation mode (?ui=0) hides it */
@@ -133,24 +123,23 @@ export default function Trail() {
   return (
     <div className="relative min-h-svh bg-paper">
       <main>
-        <section className="flex min-h-svh flex-col items-center justify-center gap-4 px-4 py-12">
-          <motion.header
-            {...fadeUp(0, reduced)}
-            className="flex w-[min(92vw,100%)] max-w-[1120px] items-end justify-between gap-6 sm:w-[min(80vw,100%)]"
-          >
-            {/* name and role as two deliberate lines, so neither wraps into the other */}
-            <h1 className="min-w-0">
-              <span className="block text-heading">{profile.name}</span>
-              <span className="block text-compact text-ink-muted">
-                {profile.roleShort} · {profile.location}
-              </span>
-            </h1>
-            <a href="#work" className="reading-link shrink-0 text-compact">
-              See the work ↓
-            </a>
-          </motion.header>
-          <motion.div {...fadeUp(0.1, reduced)} className="flex w-full justify-center">
-            <TrailStage opts={opts} onFocusChange={setKeyboard} />
+        {/* the first screen is the scene and nothing else; everything about him comes after it */}
+        <section className="flex min-h-svh flex-col items-center justify-center px-4 py-12">
+          <motion.div {...fadeUp(0.1, reduced)} className="relative flex w-full justify-center">
+            <TrailStage opts={opts} />
+            {/* his send-off at the end of the walk; it hangs below the scene so nothing shifts */}
+            <AnimatePresence initial={false}>
+              {finished && (
+                <motion.a
+                  href="#work"
+                  initial={reduced ? false : { opacity: 0, y: 6, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)', transition: open }}
+                  className="absolute left-1/2 top-full mt-4 inline-flex h-11 -translate-x-1/2 items-center rounded-full bg-ink px-5 text-compact text-white hover:bg-pressed"
+                >
+                  See the projects ↓
+                </motion.a>
+              )}
+            </AnimatePresence>
           </motion.div>
           {style !== 5 && (
             <p aria-live="polite" className="sr-only">
@@ -173,34 +162,15 @@ export default function Trail() {
               </AnimatePresence>
             </p>
           )}
-          <motion.p {...fadeUp(0.2, reduced)} className="text-center text-compact text-ink-muted">
-            {keyboard ? KEY_HINT : HINT}
-          </motion.p>
-          <AnimatePresence initial={false}>
-            {finished && (
-              <motion.a
-                href="#work"
-                initial={reduced ? false : { opacity: 0, y: 6, filter: 'blur(4px)' }}
-                animate={{ opacity: 1, y: 0, filter: 'blur(0px)', transition: open }}
-                className="inline-flex h-11 items-center rounded-full bg-ink px-5 text-compact text-white hover:bg-pressed"
-              >
-                See the projects ↓
-              </motion.a>
-            )}
-          </AnimatePresence>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            {showUi && <Segmented label="Thought style" value={style} onChange={pickStyle} options={STYLES} size="compact" />}
-            <Switch label="Sound" checked={sound} onChange={setSound} />
-          </div>
         </section>
 
         <section id="pitch" className="mx-auto max-w-[1440px] px-4 py-section sm:px-8 sm:py-32 lg:px-16">
           <motion.p {...inView} className="text-compact text-ink-muted">
             {profile.name} · {profile.location}
           </motion.p>
-          <motion.h2 {...inView} className="mt-8 max-w-5xl font-display text-role sm:text-specimen">
+          <motion.h1 {...inView} className="mt-8 max-w-5xl font-display text-role sm:text-specimen">
             {profile.pitch.lead} <span className="text-ink-muted">{profile.pitch.tail}</span>
-          </motion.h2>
+          </motion.h1>
           <motion.p {...inView} className="mt-8 max-w-xl text-title text-ink-muted">
             {profile.looking}
           </motion.p>
@@ -238,7 +208,12 @@ export default function Trail() {
             <span>
               © {new Date().getFullYear()} {profile.name} · {profile.location}
             </span>
-            <span>{profile.colophon}</span>
+            {/* the scene's settings live down here, out of the way of the first screen */}
+            <span className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {showUi && <Segmented label="Thought style" value={style} onChange={pickStyle} options={STYLES} size="compact" />}
+              <Switch label="Sound" checked={sound} onChange={setSound} />
+              <span>{profile.colophon}</span>
+            </span>
           </footer>
         </section>
       </main>
