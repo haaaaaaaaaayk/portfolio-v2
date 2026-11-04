@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { profile } from '../../content'
 import { reveal } from '../../lib/motion'
 import { usePrefs } from '../../lib/prefs'
-import { ABOUT_VERSIONS } from './aboutVersions'
+import { ABOUT_VERSIONS, FINAL_VERSION } from './aboutVersions'
 
 /* hello in each of his languages, picked by the visitor's time of day; late at night it's just hello */
 const LANGS = ['de', 'ko', 'hy', 'uk', 'zh'] as const
@@ -83,18 +83,11 @@ function NameNote({ children, note }: { children: ReactNode; note: string }) {
   )
 }
 
-/* which draft of the paragraph shows: ?about=N first, then the last one browsed, then the draft */
-const ABOUT_KEY = 'trail-about'
+/* which draft of the paragraph shows: ?about=N for comparing, otherwise the final copy */
 const inRange = (n: number) => Number.isInteger(n) && n >= 0 && n < ABOUT_VERSIONS.length
 function initialVersion() {
   const q = new URLSearchParams(window.location.search).get('about')
-  if (q !== null && inRange(Number(q))) return Number(q)
-  try {
-    const s = Number(window.localStorage.getItem(ABOUT_KEY))
-    return inRange(s) ? s : 0
-  } catch {
-    return 0
-  }
+  return q !== null && inRange(Number(q)) ? Number(q) : FINAL_VERSION
 }
 
 /**
@@ -127,7 +120,7 @@ function VersionToggle({ index, onChange }: { index: number; onChange: (n: numbe
           {index}/{n - 1}
         </span>{' '}
         <span className="text-ink">{v.label}</span>{' '}
-        <span className="text-ink-muted">{v.round === 'draft' ? '' : `round ${v.round}`}</span>
+        <span className="text-ink-muted">{typeof v.round === 'number' ? `round ${v.round}` : ''}</span>
       </p>
       <button type="button" className={btn} aria-label="Next draft" onClick={() => step(1)}>
         ›
@@ -138,6 +131,7 @@ function VersionToggle({ index, onChange }: { index: number; onChange: (n: numbe
 
 /* the round each draft belongs to, as the list's group names */
 const ROUNDS = [
+  { round: 'final', title: 'Final' },
   { round: 'draft', title: 'Original' },
   { round: 1, title: 'Round 1, ten framings' },
   { round: 2, title: 'Round 2, ten positionings' },
@@ -188,11 +182,6 @@ export function About() {
     const url = new URL(window.location.href)
     url.searchParams.set('about', String(n))
     window.history.replaceState(window.history.state, '', url)
-    try {
-      window.localStorage.setItem(ABOUT_KEY, String(n))
-    } catch {
-      /* private mode etc. */
-    }
   }
   const draft = ABOUT_VERSIONS[version]
   const inView = reduced
@@ -232,6 +221,7 @@ export function About() {
           </NameNote>
           {draft.after}
         </p>
+        {draft.more && <p className="mt-6 text-title text-ink-muted">{draft.more}</p>}
       </motion.div>
     </section>
   )

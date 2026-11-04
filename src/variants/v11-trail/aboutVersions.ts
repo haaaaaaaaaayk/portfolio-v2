@@ -6,9 +6,11 @@
 export interface AboutVersion {
   /** the positioning in a few words */
   label: string
-  round: 'draft' | 1 | 2
+  round: 'draft' | 1 | 2 | 'final'
   before: string
   after: string
+  /** a second paragraph, if the draft has one */
+  more?: string
 }
 
 export const ABOUT_VERSIONS: readonly AboutVersion[] = [
@@ -162,4 +164,17 @@ export const ABOUT_VERSIONS: readonly AboutVersion[] = [
     after:
       '. I studied computational sciences and the arts at Minerva, in classrooms across six countries, and learned to get useful fast in unfamiliar places. That’s what an early-stage startup needs from its designer, and it’s what I’m looking for: a small team, a big unknown, and room to ship.',
   },
+
+  /* the final copy, put together from 19, 16 and 20 */
+  {
+    label: 'Final',
+    round: 'final',
+    before: 'I’m ',
+    after:
+      ', a design engineer who takes products from zero to one for startups, from the brand to the shipped app. I design the moments where a product asks people for something (money, data, attention), and I care about doing it without breaking their trust. At mymizu I’m designing in-app donations for a free app with 500K+ downloads.',
+    more: 'I studied computational sciences and the arts at Minerva across SF, Berlin, Seoul, Buenos Aires, Taipei and Tokyo, and learned to get useful fast in unfamiliar places. So I’m looking for an exciting, fast-paced environment where there’s a big unknown and room to ship.',
+  },
 ]
+
+/** the one visitors see */
+export const FINAL_VERSION = ABOUT_VERSIONS.length - 1
