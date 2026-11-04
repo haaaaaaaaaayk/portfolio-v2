@@ -113,9 +113,13 @@ const PROP={
     if(o.rainbow){s.lineWidth=F*.06;['#e0563c','#f2b544','#f3e23a','#a6cf5a','#4fa3c9','#9d7fd1'].forEach((c,i)=>{s.strokeStyle=rgba(c,.45);s.beginPath();s.arc(cx+rw*.3,by-F*.15,F*(1-i*.06),Math.PI*1.08,Math.PI*1.72);s.stroke()})}
   })},
   pond(F){const w=F*2.3,h=F*.95;return sprite(w,h,0,s=>{
+    /* a grass bank and a sandy lip around properly blue water, so it can't read as one more turquoise hill */
     const cx=w/2,cy=h*.58;
-    s.fillStyle='#7fe6cf';s.beginPath();s.ellipse(cx,cy,w*.47,h*.38,0,0,7);s.fill();
-    s.fillStyle='#4fa3c9';s.beginPath();s.ellipse(cx,cy+h*.03,w*.42,h*.31,0,0,7);s.fill();
+    s.fillStyle='#a6cf5a';s.beginPath();s.ellipse(cx,cy,w*.49,h*.41,0,0,7);s.fill();
+    s.fillStyle='#ecdca0';s.beginPath();s.ellipse(cx,cy+h*.01,w*.45,h*.35,0,0,7);s.fill();
+    s.fillStyle='#2f6fbf';s.beginPath();s.ellipse(cx,cy+h*.03,w*.41,h*.3,0,0,7);s.fill();
+    s.fillStyle='#5d93d6';s.beginPath();s.ellipse(cx+w*.03,cy+h*.06,w*.3,h*.2,0,0,7);s.fill();
+    s.fillStyle='rgba(169,205,242,.8)';s.beginPath();s.ellipse(cx-w*.12,cy-h*.06,w*.12,h*.035,-.12,0,7);s.fill();
     for(const[x,y,r]of[[.25,.62,.09],[.68,.72,.07],[.78,.5,.06]]){s.fillStyle='#3f8d62';s.beginPath();s.ellipse(w*x,h*y,F*r*1.3,F*r*.7,0,.5,6.6);s.lineTo(w*x,h*y);s.fill()}
     s.fillStyle='#e47aa8';s.beginPath();s.arc(w*.25,h*.6,F*.03,0,7);s.fill();
     s.strokeStyle='#3f8d62';s.lineWidth=1.6;s.lineCap='round';
@@ -231,6 +235,9 @@ const scene={
     const gg=s.createLinearGradient(0,0,0,WH);gg.addColorStop(0,'#dcefd2');gg.addColorStop(.5,'#ecf0bc');gg.addColorStop(1,'#f4ecb0');s.fillStyle=gg;s.fillRect(0,0,W,WH);
     const pc=['#7fe6cf','#a6cf5a','#f3e23a','#9db3cc','#7fe6cf','#bcd95c'],np=Math.round(WH/H*7);
     for(let i=0;i<np;i++)soft(h1(i*3.1)*W,h1(i*5.7)*WH,U*(.35+h1(i*2.2)*.45),pc[i%pc.length],.32);
+    /* the pond is the only blue water down here: clear the turquoise wash around it */
+    const F0=this.figH,pondAt=SIGHTS.filter(o=>o.kind==='pond').map(o=>{const y=this.yw(o.p);return{x:clamp(this.cx(y)+o.side*this.pw()*o.o,F0*.9,W-F0*.9),y}});
+    for(const q of pondAt)soft(q.x,q.y-F0*.4,H*.32,'#ecf0bc',.75);
     // trail, soft at the edges
     const pw=this.pw();s.lineCap='round';s.lineJoin='round';
     const trace=()=>{s.beginPath();for(let y=-60;y<=WH+60;y+=10){const x=this.cx(y);y===-60?s.moveTo(x,y):s.lineTo(x,y)}};
@@ -258,6 +265,8 @@ const scene={
     const hits=(r,list)=>list.some(c=>r.x0<c.x1&&r.x1>c.x0&&r.y0<c.y1&&r.y1>c.y0);
     const hillBox=it=>({x0:it.x,x1:it.x+it.w,y0:it.by-it.h,y1:it.by+it.h*.06});
     for(let i=items.length-1;i>=0;i--)if(hits(hillBox(items[i]),clear))items.splice(i,1);
+    /* hills beside the pond come from the green and warm sets, never the turquoise or blue ones */
+    for(const it of items)for(const q of pondAt)if(Math.hypot(it.x+it.w/2-q.x,it.by-it.h/2-q.y)<H*.45)it.C=SETS[h1(it.x+it.by)>.5?3:4];
     items.sort((a,b)=>a.by-b.by);
     for(const it of items){if(FILTER)s.filter='none';soft(it.x+it.w*.5,it.by+it.h*.03,it.w*.5,'#2b3b2c',.09);splitTone(s,it.x,it.by,it.w,it.h,it.C,it.flip,it.px)}
     if(FILTER)s.filter='none';
