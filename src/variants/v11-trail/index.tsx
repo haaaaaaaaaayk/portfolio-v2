@@ -16,7 +16,7 @@ type ThoughtStyle = TrailOptions['mode']
 /* Five ways Hayk's thoughts can surface; `?thought=1…5` picks one for sharing. */
 const STYLES = [
   { value: 1, label: 'Cloud', title: 'Inside the rain cloud — compact 14 on grey' },
-  { value: 2, label: 'Type', title: 'No cloud — caption 12 typed out over his head' },
+  { value: 2, label: 'Type', title: 'No cloud — compact 14 typed out over his head, with soft key ticks' },
   { value: 3, label: 'Mark', title: 'Instead of the cloud — accent mark, secondary 16' },
   { value: 4, label: 'Subtitle', title: 'Cloud stays — heading 20 subtitle along the bottom' },
   { value: 5, label: 'Narrator', title: 'Cloud stays — title 24/32 narrated under the scene' },

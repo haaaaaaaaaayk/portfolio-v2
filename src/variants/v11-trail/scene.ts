@@ -216,7 +216,7 @@ const MEAS=document.createElement('canvas').getContext('2d');
 /* ---------- the scene ---------- */
 const scene={
   p:0,t:0,cam:0,v:0,fatigue:0,rest:0,sit:0,cloud:0,done:false,home:false,ring:null,ptr:null,hikers:[],puffs:[],drops:[],next:3,walk:0,
-  stepN:0,hov:0,halo:0,sights:[],storyLine:false,talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
+  stepN:0,typed:0,hov:0,halo:0,sights:[],storyLine:false,talk:0,landed:false,line:null,cued:null,cueAt:-99,seen:new Set(),thoughtT:0,dur:0,fade:0,idle:0,idled:false,back:0,wentBack:false,poke:0,hBox:null,cloudBox:null,cScale:1,text:null,said:null,font:'system-ui, sans-serif',track:0,
   props:[],decor:[],flies:[],flock:[],birdT:3,met:new Set(),keys:0,anchor:null,
   /** the stage listens here for moments worth a ripple or a sound */
   fx:null,
@@ -383,6 +383,9 @@ const scene={
     const wantCloud=peak?1:live||this.poke>0?.85:0;this.cloud+=(wantCloud-this.cloud)*Math.min(1,dt*5);
     this.text=(live||peak)&&this.thoughtT<this.dur?this.line:null;
     this.fade=clamp(this.thoughtT/.25,0,1)*clamp((this.dur-this.thoughtT)/.3,0,1);
+    /* the type style ticks softly as it writes, every other letter, never on a space */
+    const typed=opts.mode===2&&this.text&&this.cloud>.5?Math.min(this.text.length,Math.floor(this.thoughtT*28)):0;
+    if(typed>this.typed&&typed%2===0&&this.text[typed-1]!==' ')this.fx?.('key');this.typed=typed;
     const said=this.cloud>.5?this.text:null;if(said!==this.said){this.said=said;opts.onThought?.(said)}
     const tc=clamp(this.yw(this.p)-this.H*.68,0,this.WH-this.H);this.cam+=(tc-this.cam)*(1-Math.exp(-dt*3));
     this.next-=dt;if(this.next<=0){this.next=5+Math.random()*4;this.spawn()}
@@ -464,11 +467,11 @@ const scene={
     ctx.save();ctx.globalAlpha=al;
     if(m===1){ // inside the cloud: paper on rain-grey, compact 14
       const b=this.cloudBox;type(14,PAPER);ctx.fillText(text,b.x,b.y+b.h*.6);
-    }else if(m===2){ // no cloud: caption 12 typed out above his head, accent caret
-      type(12,MUTED);const n=Math.min(text.length,Math.floor(this.thoughtT*28)),shown=text.slice(0,n);
-      const full=ctx.measureText(text).width,x=within(this.hx,full/2+6),y=this.hBox.y0-12;
+    }else if(m===2){ // no cloud: compact 14 in ink typed out above his head, accent caret
+      type(14,INK);const n=Math.min(text.length,Math.floor(this.thoughtT*28)),shown=text.slice(0,n);
+      const full=ctx.measureText(text).width,x=within(this.hx,full/2+6),y=this.hBox.y0-14;
       ctx.textAlign='left';const x0=x-full/2;halo(shown,x0,y);
-      if(n<text.length||Math.sin(this.t*7)>0){ctx.fillStyle=ACCENT;ctx.fillRect(x0+ctx.measureText(shown).width+2,y-7,2,14)}
+      if(n<text.length||Math.sin(this.t*7)>0){ctx.fillStyle=ACCENT;ctx.fillRect(x0+ctx.measureText(shown).width+2,y-8,2,16)}
     }else if(m===3){ // instead of the cloud: an accent mark, secondary 16, pops in
       type(16,INK);const w=ctx.measureText(text).width+16,x=within(this.hx,w/2),y=this.hBox.y0-20;
       const pop=1+.12*Math.max(0,1-this.thoughtT*5);ctx.translate(x,y);ctx.scale(pop,pop);
@@ -480,7 +483,6 @@ const scene={
   },
   drawUI(ctx,W,H){
     ctx.clearRect(0,0,W,H);
-    this.drawThought(ctx,W,H);
     /* before the first move, a ghost ring rises up the trail ahead of him to show the gesture */
     if(!this.ring&&!this.done&&!this.home&&this.hBox&&this.t>1.2){
       const ph=REDUCED?.7:fr((this.t-1.2)/2.4),e=1-Math.pow(1-ph,3),al=REDUCED?.6:Math.sin(Math.PI*ph)*.75;
@@ -490,7 +492,8 @@ const scene={
       ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle=`rgba(255,255,255,${al})`;ctx.lineWidth=1.6;
       ctx.beginPath();ctx.arc(this.lane(this.cam+y1,.2),y1,7,0,7);ctx.stroke();ctx.restore();
     }
-    if(!this.ring||!this.ptr||this.done||this.home)return;
+    /* his words go on last, so the route and ring never cut through them */
+    if(!this.ring||!this.ptr||this.done||this.home){this.drawThought(ctx,W,H);return}
     /* while he sits a click pokes him: a breathing accent halo on him, and the ring fills in */
     const resting=this.pokeable();
     this.hov+=((resting?1:0)-this.hov)*.25;this.halo+=((resting?1:0)-this.halo)*.12;
@@ -505,7 +508,7 @@ const scene={
     const r=lerp(7+a*9,13,hv);
     if(hv>.01){ctx.fillStyle=rgba(ACCENT,.3*hv);ctx.beginPath();ctx.arc(this.ring.x,this.ring.y,r,0,7);ctx.fill()}
     ctx.strokeStyle=hv>.5?rgba(ACCENT,.95):'rgba(255,255,255,.95)';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(this.ring.x,this.ring.y,r,0,7);ctx.stroke();
-    ctx.restore();
+    ctx.restore();this.drawThought(ctx,W,H);
   }
 };
 
@@ -593,7 +596,8 @@ const SIGHT_SOUND={pond:'water',fall:'water',house:'chime',sign:'chime',flowers:
 const sfx=(name,o)=>{if(opts.sound)play(name,o)};
 scene.fx=(kind,arg)=>{
   if(kind==='sit')ripple(...feet(),3.5);
-  if(kind==='step')sfx('step',{volume:lerp(.55,.9,scene.p),pitch:(arg?1.06:.94)*lerp(1,.82,scene.p)*(.95+Math.random()*.1)});
+  if(kind==='key')sfx('key',{pitch:.92+Math.random()*.16});
+  else if(kind==='step')sfx('step',{volume:lerp(.55,.9,scene.p),pitch:(arg?1.06:.94)*lerp(1,.82,scene.p)*(.95+Math.random()*.1)});
   else if(kind==='sight')sfx(SIGHT_SOUND[arg]??'chime');
   else sfx(kind);
 };

@@ -30,6 +30,14 @@ const PRESETS = {
       { kind: 'noise', filter: 'bandpass', freq: 2600, q: 1.4, offset: 0.004, attack: 0.001, decay: 0.035, peak: 0.05 },
     ],
   },
+  /* a soft key as his thought types out */
+  key: {
+    gain: 0.3,
+    layers: [
+      { kind: 'noise', filter: 'bandpass', freq: 4200, q: 2, attack: 0.001, decay: 0.012, peak: 0.05 },
+      { kind: 'tone', wave: 'sine', freq: 1900, attack: 0.001, decay: 0.01, peak: 0.008 },
+    ],
+  },
   /* he sits: a breathy sigh that falls */
   sit: {
     gain: 0.45,
