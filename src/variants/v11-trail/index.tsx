@@ -9,6 +9,7 @@ import { links, profile, projects } from '../../content'
 import { usePrefs } from '../../lib/prefs'
 import type { CaseId } from '../../content/projects'
 import { close, fadeUp, open, reveal } from '../../lib/motion'
+import { About } from './About'
 import { mountTrail, type TrailOptions } from './scene'
 
 type ThoughtStyle = TrailOptions['mode']
@@ -164,17 +165,7 @@ export default function Trail() {
           )}
         </section>
 
-        <section id="pitch" className="mx-auto max-w-[1440px] px-4 py-section sm:px-8 sm:py-32 lg:px-16">
-          <motion.p {...inView} className="text-compact text-ink-muted">
-            {profile.name} · {profile.location}
-          </motion.p>
-          <motion.h1 {...inView} className="mt-8 max-w-5xl font-display text-role sm:text-specimen">
-            {profile.pitch.lead} <span className="text-ink-muted">{profile.pitch.tail}</span>
-          </motion.h1>
-          <motion.p {...inView} className="mt-8 max-w-xl text-title text-ink-muted">
-            {profile.looking}
-          </motion.p>
-        </section>
+        <About />
 
         <section id="work" className="mx-auto max-w-[1440px] px-4 pb-32 sm:px-8 lg:px-16">
           <p className="text-compact text-ink-muted">Selected work</p>
