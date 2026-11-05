@@ -491,9 +491,9 @@ const scene={
       const b=this.cloudBox;type(14,PAPER);ctx.fillText(text,b.x,b.y+b.h*.6);
     }else if(m===2){ // no cloud: compact 14 in ink typed out above his head, accent caret
       type(14,INK);const n=Math.min(text.length,Math.floor(this.thoughtT*28)),shown=text.slice(0,n);
-      const full=ctx.measureText(text).width,x=within(this.hx,full/2+6),y=this.hBox.y0-14;
+      const full=ctx.measureText(text).width,x=within(this.hx,full/2+8),y=this.hBox.y0-16;
       ctx.textAlign='left';const x0=x-full/2;halo(shown,x0,y);
-      if(n<text.length||Math.sin(this.t*7)>0){ctx.fillStyle=ACCENT;ctx.fillRect(x0+ctx.measureText(shown).width+2,y-8,2,16)}
+      if(n<text.length||Math.sin(this.t*7)>0){ctx.fillStyle=ACCENT;ctx.fillRect(x0+ctx.measureText(shown).width+4,y-8,2,16)}
     }else if(m===3){ // instead of the cloud: an accent mark, secondary 16, pops in
       type(16,INK);const w=ctx.measureText(text).width+16,x=within(this.hx,w/2),y=this.hBox.y0-20;
       const pop=1+.12*Math.max(0,1-this.thoughtT*5);ctx.translate(x,y);ctx.scale(pop,pop);

@@ -64,7 +64,7 @@ function NameNote({ children, note }: { children: ReactNode; note: string }) {
         onBlur={() => setOpen(false)}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-        className="cursor-help rounded-mark text-ink underline decoration-ink-muted decoration-dotted decoration-1 underline-offset-[6px] outline-offset-2 focus-visible:outline-2 focus-visible:outline-ink"
+        className="cursor-help rounded-mark text-ink underline decoration-ink-muted decoration-dotted decoration-1 underline-offset-4 outline-offset-2 focus-visible:outline-2 focus-visible:outline-ink"
       >
         {children}
       </button>
@@ -106,13 +106,13 @@ export function About() {
 
   /* a centered column with wide margins either side; the text inside stays left-aligned to read well.
      three levels, each with one job: where he is now is a caption (14, muted), hello is the headline
-     (24 → 32 display, the one heavier weight), and who he is is a lead paragraph (18 → 20, loose
-     leading for reading). the column holds about 65 characters a line at 20 */
+     (24 → 32 display, the one heavier weight), and who he is is the reading text (18 → 20 on 28).
+     everything sits on the 4px grid. the column holds about 65 characters a line at 20 */
   return (
     <section id="about" className="mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32">
       <motion.div {...inView} className="relative">
         <p className="text-compact text-ink-muted">
-          russian hill, sf <time className="ml-1.5 tabular-nums">{hisTime(now)}</time>
+          russian hill, sf <time className="ml-2 tabular-nums">{hisTime(now)}</time>
         </p>
         <h1 className="mt-2 text-balance font-display text-title font-[var(--weight-strong)] text-ink sm:text-role">
           {greeting.map((g, i) => (
@@ -125,7 +125,7 @@ export function About() {
             </span>
           ))}
         </h1>
-        <div className="mt-8 space-y-[1lh] text-body text-ink-muted sm:mt-10 sm:text-lead">
+        <div className="mt-8 space-y-[1lh] text-body text-ink-muted sm:mt-10 sm:text-heading">
           <p className="text-pretty">
             {draft.before}
             <NameNote note="yes, you read it as hike, and after the above i know you will never forget my name.">

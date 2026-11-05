@@ -50,9 +50,6 @@
   --text-heading--line-height: 28px;
   --text-title: 24px;
   --text-title--line-height: 32px;
-  /* a lead paragraph: a touch above body, with leading loose enough for prose that runs many lines */
-  --text-lead: 20px;
-  --text-lead--line-height: 30px;
   /* presentation sizes (functional role 32, specimen 48, display 96) */
   --text-role: 32px;
   --text-role--line-height: 40px;
@@ -249,7 +246,7 @@ select {
   text-decoration-line: underline;
   text-decoration-style: solid;
   text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  text-underline-offset: 4px;
   text-decoration-color: transparent;
   transition:
     text-decoration-color 180ms ease,
