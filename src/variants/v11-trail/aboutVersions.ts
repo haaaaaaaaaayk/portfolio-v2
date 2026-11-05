@@ -1,7 +1,6 @@
 /**
  * Every draft of Trail's about paragraph, kept so none is lost. Each reads `before` + hayk + `after`,
- * so the name always carries its hike note. Browse them with the toggle above the about (shown
- * when the switcher UI is on) or share one with ?about=N.
+ * so the name always carries its hike note. The page shows the final one; ?about=N shows any other.
  */
 export interface AboutVersion {
   /** the positioning in a few words */

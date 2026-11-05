@@ -3,7 +3,6 @@ import { useEffect, useId, useState, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { profile } from '../../content'
 import { reveal } from '../../lib/motion'
-import { usePrefs } from '../../lib/prefs'
 import { ABOUT_VERSIONS, FINAL_VERSION } from './aboutVersions'
 
 /* hello in each of his languages, picked by the visitor's time of day; late at night it's just hello */
@@ -83,106 +82,18 @@ function NameNote({ children, note }: { children: ReactNode; note: string }) {
   )
 }
 
-/* which draft of the paragraph shows: ?about=N for comparing, otherwise the final copy */
+/* which draft of the paragraph shows: the final copy, or ?about=N to look at an earlier one */
 const inRange = (n: number) => Number.isInteger(n) && n >= 0 && n < ABOUT_VERSIONS.length
 function initialVersion() {
   const q = new URLSearchParams(window.location.search).get('about')
   return q !== null && inRange(Number(q)) ? Number(q) : FINAL_VERSION
 }
 
-/**
- * An internal tool for comparing drafts: previous and next, or ← and → anywhere on the page.
- * It only shows while the switcher UI is on, and the pick goes in the URL so a link shows it.
- * Switching is instant on purpose; it's a tool used many times in a row.
- */
-function VersionToggle({ index, onChange }: { index: number; onChange: (n: number) => void }) {
-  const v = ABOUT_VERSIONS[index]
-  const n = ABOUT_VERSIONS.length
-  const step = (d: number) => onChange((index + d + n) % n)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target
-      if (e.altKey || e.metaKey || e.ctrlKey || (t instanceof HTMLElement && t.closest('input, textarea, [role=application], [role=dialog]'))) return
-      if (e.key === 'ArrowLeft') onChange((index - 1 + n) % n)
-      if (e.key === 'ArrowRight') onChange((index + 1) % n)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [index, n, onChange])
-  const btn = 'inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-control-hover hover:text-ink-active active:scale-[0.97]'
-  return (
-    <div className="glass mb-10 flex items-center gap-2 rounded-full p-1 text-compact xl:hidden" role="group" aria-label="About drafts">
-      <button type="button" className={btn} aria-label="Previous draft" onClick={() => step(-1)}>
-        ‹
-      </button>
-      <p className="min-w-0 flex-1 truncate text-center" aria-live="polite">
-        <span className="tabular-nums text-ink-muted">
-          {index}/{n - 1}
-        </span>{' '}
-        <span className="text-ink">{v.label}</span>{' '}
-        <span className="text-ink-muted">{typeof v.round === 'number' ? `round ${v.round}` : ''}</span>
-      </p>
-      <button type="button" className={btn} aria-label="Next draft" onClick={() => step(1)}>
-        ›
-      </button>
-    </div>
-  )
-}
-
-/* the round each draft belongs to, as the list's group names */
-const ROUNDS = [
-  { round: 'final', title: 'Final' },
-  { round: 'draft', title: 'Original' },
-  { round: 1, title: 'Round 1, ten framings' },
-  { round: 2, title: 'Round 2, ten positionings' },
-] as const
-
-/**
- * On wide screens, every draft at once in the margin beside the column, so any one is a click away
- * and the labels can be compared side by side. Same instant switch as the pill it replaces there.
- */
-function VersionList({ index, onChange }: { index: number; onChange: (n: number) => void }) {
-  return (
-    <nav aria-label="About drafts" className="absolute top-0 right-full mr-16 hidden w-56 text-compact xl:block">
-      {ROUNDS.map((r) => (
-        <div key={r.round} className="mb-5">
-          <p className="mb-1 text-ink-muted">{r.title}</p>
-          <ul>
-            {ABOUT_VERSIONS.map((v, i) =>
-              v.round === r.round ? (
-                <li key={i}>
-                  <button
-                    type="button"
-                    aria-pressed={i === index}
-                    onClick={() => onChange(i)}
-                    className="group flex w-full items-baseline gap-2 rounded-mark py-0.5 text-left text-ink-muted hover:text-ink aria-pressed:text-ink focus-visible:outline-2 focus-visible:outline-ink"
-                  >
-                    <span className="w-5 shrink-0 text-right tabular-nums opacity-60">{i}</span>
-                    <span className="truncate">{v.label}</span>
-                    <span aria-hidden className="ml-auto size-1.5 shrink-0 self-center rounded-full bg-accent opacity-0 group-aria-pressed:opacity-100" />
-                  </button>
-                </li>
-              ) : null,
-            )}
-          </ul>
-        </div>
-      ))}
-    </nav>
-  )
-}
-
 export function About() {
   const reduced = useReducedMotion()
   const now = useMinute()
   const greeting = GREETINGS[periodOf(now.getHours())]
-  const { showUi } = usePrefs()
-  const [version, setVersion] = useState(initialVersion)
-  const pick = (n: number) => {
-    setVersion(n)
-    const url = new URL(window.location.href)
-    url.searchParams.set('about', String(n))
-    window.history.replaceState(window.history.state, '', url)
-  }
+  const [version] = useState(initialVersion)
   const draft = ABOUT_VERSIONS[version]
   const inView = reduced
     ? {}
@@ -198,10 +109,8 @@ export function About() {
      (24 → 32 display, the one heavier weight), and who he is is a lead paragraph (18 → 20, loose
      leading for reading). the column holds about 65 characters a line at 20 */
   return (
-    <section id="about" className={`mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32 ${showUi ? 'xl:min-h-[52rem]' : ''}`}>
-      {showUi && <VersionToggle index={version} onChange={pick} />}
+    <section id="about" className="mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32">
       <motion.div {...inView} className="relative">
-        {showUi && <VersionList index={version} onChange={pick} />}
         <p className="text-compact text-ink-muted">
           russian hill, sf <time className="ml-1.5 tabular-nums">{hisTime(now)}</time>
         </p>

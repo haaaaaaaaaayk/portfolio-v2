@@ -1,11 +1,8 @@
-/** Trail — the hiking scene opens the page, then who he is, then how to reach him. Mouse, touch or keyboard. */
+/** Trail — the hiking scene opens the page, then who he is. Mouse, touch or keyboard. */
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Switch } from '../../components/ui/Controls'
-import { Segmented } from '../../components/ui/Segmented'
-import { links, profile } from '../../content'
-import { usePrefs } from '../../lib/prefs'
-import { close, fadeUp, open, reveal } from '../../lib/motion'
+import { profile } from '../../content'
+import { close, fadeUp, open } from '../../lib/motion'
 import { About } from './About'
 import { mountTrail, type TrailOptions } from './scene'
 
@@ -81,41 +78,14 @@ function TrailStage({ opts }: { opts: RefObject<TrailOptions> }) {
 
 export default function Trail() {
   const reduced = useReducedMotion()
-  const [style, setStyle] = useState<ThoughtStyle>(initialStyle)
+  /* the style and sound pickers are off for now: ?thought=N still picks a style, and a visitor who
+     turned sound off before keeps it off */
+  const [style] = useState<ThoughtStyle>(initialStyle)
   const [said, setSaid] = useState<string | null>(null)
-  const [sound, setSound] = useState(initialSound)
   /* once he's been up and back, his send-off becomes a real way down to meet him */
   const [finished, setFinished] = useState(false)
-  /* the thought-style picker is a design exploration, so presentation mode (?ui=0) hides it */
-  const { showUi } = usePrefs()
-  /* one live object the scene reads every frame, so switching style or sound never remounts it */
-  const opts = useRef<TrailOptions>({ mode: style, onThought: setSaid, sound, onFinale: () => setFinished(true) })
-  useEffect(() => {
-    opts.current.mode = style
-  }, [style])
-  useEffect(() => {
-    opts.current.sound = sound
-    try {
-      window.localStorage.setItem(SOUND_KEY, sound ? 'on' : 'off')
-    } catch {
-      /* private mode etc. */
-    }
-  }, [sound])
-
-  const pickStyle = (v: ThoughtStyle) => {
-    setStyle(v)
-    const url = new URL(window.location.href)
-    url.searchParams.set('thought', String(v))
-    window.history.replaceState(null, '', url)
-  }
-  const inView = reduced
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        whileInView: { opacity: 1, y: 0 },
-        viewport: { once: true, margin: '-80px' },
-        transition: reveal,
-      }
+  /* one live object the scene reads every frame */
+  const opts = useRef<TrailOptions>({ mode: style, onThought: setSaid, sound: initialSound(), onFinale: () => setFinished(true) })
 
   return (
     <div className="relative min-h-svh bg-paper">
@@ -163,40 +133,11 @@ export default function Trail() {
 
         <About />
 
-        {/* the case studies are off for now; ProjectPane and CaseDialog are still there to bring back */}
-        {/* the page ends with a way to reach him, on the about's column so the page reads down one line */}
-        <section id="contact" className="mx-auto w-full max-w-2xl px-6 pb-16 sm:px-8">
-          <motion.p {...inView} className="max-w-4xl text-balance font-display text-role text-ink-muted sm:text-specimen">
-            {profile.contactLine.lead} <span className="rounded-mark bg-accent px-2 text-ink">{profile.contactLine.accent}</span>
-            {profile.contactLine.end}
-          </motion.p>
-          <ul className="mt-10 flex flex-wrap gap-2">
-            {links.map((l) => (
-              <li key={l.id}>
-                <a
-                  href={l.href}
-                  title={l.note}
-                  className="glass inline-flex h-11 items-center rounded-full px-5 text-secondary text-ink-muted transition-transform duration-[260ms] hover:-translate-y-0.5 hover:text-ink-active"
-                >
-                  {l.label} ↗
-                </a>
-              </li>
-            ))}
-          </ul>
-          <footer className="mt-24 flex flex-wrap items-center justify-between gap-4 border-t border-rule pt-4 text-caption text-ink-muted">
-            <span>
-              © {new Date().getFullYear()} {profile.name} · {profile.location}
-            </span>
-            {/* the scene's settings live down here, out of the way of the first screen */}
-            <span className="flex flex-wrap items-center gap-x-6 gap-y-2">
-              {showUi && <Segmented label="Thought style" value={style} onChange={pickStyle} options={STYLES} size="compact" />}
-              <Switch label="Sound" checked={sound} onChange={setSound} />
-              <span>{profile.colophon}</span>
-            </span>
-          </footer>
-        </section>
+        {/* the case studies, contact and scene settings are off for now; the page ends on who he is */}
+        <footer className="mx-auto w-full max-w-2xl px-6 pb-16 text-caption text-ink-muted sm:px-8">
+          © {new Date().getFullYear()}, {profile.name}
+        </footer>
       </main>
-
     </div>
   )
 }
