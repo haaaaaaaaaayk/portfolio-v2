@@ -111,14 +111,16 @@ const PROP={
     shade(s,cx,by,cw*.75,F*.12);
     /* the cliff, with a lower shoulder of rock on the side away from the trail so it isn't a box */
     const g=s.createLinearGradient(x0,0,x0+cw,0);g.addColorStop(0,'#b2a798');g.addColorStop(.5,'#968b7f');g.addColorStop(1,'#73695f');s.fillStyle=g;
-    s.beginPath();s.roundRect(x0,by-pool-ch,cw,ch+pool*.4,[F*.14,F*.18,F*.04,F*.04]);s.fill();
+    const cliff=()=>{s.beginPath();s.roundRect(x0,by-pool-ch,cw,ch+pool*.4,[F*.1,F*.1,F*.04,F*.04])};
+    cliff();s.fill();
     s.beginPath();s.roundRect(toward>0?x0-cw*.16:x0+cw*.84,by-pool-ch*.55,cw*.32,ch*.55+pool*.4,[F*.12,F*.12,F*.04,F*.04]);s.fill();
     s.strokeStyle='rgba(70,60,52,.28)';s.lineWidth=1.2;s.beginPath();
     for(const[fx,fy,l]of[[.18,.35,.22],[.74,.28,.18],[.3,.68,.16],[.82,.62,.2]]){s.moveTo(x0+cw*fx,by-pool-ch+ch*fy);s.lineTo(x0+cw*fx+cw*l,by-pool-ch+ch*fy+F*.03)}s.stroke();
-    /* grass on top, and the stream running across it to the lip */
+    /* grass on top, cut to the cliff's own outline so it's the same width, not a halo; then the
+       stream running across it to the lip */
     const ty=by-pool-ch;
-    s.fillStyle='#a6cf5a';s.beginPath();s.roundRect(x0-F*.04,ty-F*.08,cw+F*.08,F*.2,F*.1);s.fill();
-    s.fillStyle='#5d93d6';s.beginPath();s.moveTo(cx-fw*.25,ty-F*.08);s.lineTo(cx+fw*.25,ty-F*.08);s.lineTo(cx+fw*.55,ty+lip);s.lineTo(cx-fw*.55,ty+lip);s.closePath();s.fill();
+    s.save();cliff();s.clip();s.fillStyle='#a6cf5a';s.fillRect(x0,ty,cw,F*.14);s.restore();
+    s.fillStyle='#5d93d6';s.beginPath();s.moveTo(cx-fw*.25,ty);s.lineTo(cx+fw*.25,ty);s.lineTo(cx+fw*.55,ty+lip);s.lineTo(cx-fw*.55,ty+lip);s.closePath();s.fill();
     /* the drop: pale water widening a little as it falls */
     s.fillStyle='#d6eefa';s.beginPath();s.moveTo(cx-fw*.55,ty+lip-F*.02);s.lineTo(cx+fw*.55,ty+lip-F*.02);s.lineTo(cx+fw*.7,by-pool*.55);s.lineTo(cx-fw*.7,by-pool*.55);s.closePath();s.fill();
     s.fillStyle='rgba(93,147,214,.35)';s.fillRect(cx+fw*.2,ty+lip,fw*.3,ch-lip);
