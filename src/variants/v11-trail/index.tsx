@@ -1,13 +1,10 @@
-/** Trail — the hiking scene opens the page, then the pitch, then the work. Mouse, touch or keyboard. */
+/** Trail — the hiking scene opens the page, then who he is, then how to reach him. Mouse, touch or keyboard. */
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { CaseDialog } from '../../components/CaseDialog'
-import { ProjectPane } from '../../components/GlassMatter'
 import { Switch } from '../../components/ui/Controls'
 import { Segmented } from '../../components/ui/Segmented'
-import { links, profile, projects } from '../../content'
+import { links, profile } from '../../content'
 import { usePrefs } from '../../lib/prefs'
-import type { CaseId } from '../../content/projects'
 import { close, fadeUp, open, reveal } from '../../lib/motion'
 import { About } from './About'
 import { mountTrail, type TrailOptions } from './scene'
@@ -84,11 +81,10 @@ function TrailStage({ opts }: { opts: RefObject<TrailOptions> }) {
 
 export default function Trail() {
   const reduced = useReducedMotion()
-  const [caseId, setCaseId] = useState<CaseId | null>(null)
   const [style, setStyle] = useState<ThoughtStyle>(initialStyle)
   const [said, setSaid] = useState<string | null>(null)
   const [sound, setSound] = useState(initialSound)
-  /* once he's been up and back, his send-off becomes a real way to the work */
+  /* once he's been up and back, his send-off becomes a real way down to meet him */
   const [finished, setFinished] = useState(false)
   /* the thought-style picker is a design exploration, so presentation mode (?ui=0) hides it */
   const { showUi } = usePrefs()
@@ -132,12 +128,12 @@ export default function Trail() {
             <AnimatePresence initial={false}>
               {finished && (
                 <motion.a
-                  href="#work"
+                  href="#about"
                   initial={reduced ? false : { opacity: 0, y: 6, filter: 'blur(4px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)', transition: open }}
                   className="absolute left-1/2 top-full mt-4 inline-flex h-11 -translate-x-1/2 items-center rounded-full bg-ink px-5 text-compact text-white hover:bg-pressed"
                 >
-                  See the projects ↓
+                  About me ↓
                 </motion.a>
               )}
             </AnimatePresence>
@@ -167,18 +163,10 @@ export default function Trail() {
 
         <About />
 
-        <section id="work" className="mx-auto max-w-[1440px] px-4 pb-32 sm:px-8 lg:px-16">
-          <p className="text-compact text-ink-muted">Selected work</p>
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            {projects.map((p) => (
-              <ProjectPane key={p.id} project={p} onOpen={(id) => setCaseId(id)} />
-            ))}
-          </div>
-        </section>
-
-        {/* the page ends with a way to reach him, not with the last card */}
-        <section id="contact" className="mx-auto max-w-[1440px] px-4 pb-16 sm:px-8 lg:px-16">
-          <motion.p {...inView} className="max-w-4xl font-display text-role text-ink-muted sm:text-specimen">
+        {/* the case studies are off for now; ProjectPane and CaseDialog are still there to bring back */}
+        {/* the page ends with a way to reach him, on the about's column so the page reads down one line */}
+        <section id="contact" className="mx-auto w-full max-w-2xl px-6 pb-16 sm:px-8">
+          <motion.p {...inView} className="max-w-4xl text-balance font-display text-role text-ink-muted sm:text-specimen">
             {profile.contactLine.lead} <span className="rounded-mark bg-accent px-2 text-ink">{profile.contactLine.accent}</span>
             {profile.contactLine.end}
           </motion.p>
@@ -209,7 +197,6 @@ export default function Trail() {
         </section>
       </main>
 
-      <CaseDialog id={caseId} onClose={() => setCaseId(null)} />
     </div>
   )
 }

@@ -9,7 +9,7 @@ export interface TrailOptions {
   onThought?: (text: string | null) => void
   /** synthesized sound effects on or off */
   sound?: boolean
-  /** called when he's back at the start and sends the visitor to the projects */
+  /** called when he's back at the start and sends the visitor down the page */
   onFinale?: () => void
 }
 
@@ -206,7 +206,7 @@ const ON={
   sign:['A sign. Finally, some wayfinding.','“Summit, this way.” Wow, very helpful.']};
 const PEAK='Ugh, Hayk hates hiking.';
 /* back at the start after the walk down */
-const FINALE='Enough torture, now look at my projects.';
+const FINALE='Enough torture, now come meet me.';
 /* seconds of silence between two lines */
 const GAP=1;
 /* 24th tokens used on the canvas */
