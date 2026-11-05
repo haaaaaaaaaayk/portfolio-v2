@@ -103,16 +103,31 @@ const PROP={
     if(o.hut){s.fillStyle='#5a4636';s.fillRect(cx-1,ry-F*.36,2,F*.36);s.fillStyle='#e0563c';s.beginPath();s.moveTo(cx+1,ry-F*.36);s.lineTo(cx+1+F*.22,ry-F*.29);s.lineTo(cx+1,ry-F*.22);s.closePath();s.fill()}
     for(let i=0;i<4;i++){s.fillStyle=BLOOM[i%BLOOM.length];s.beginPath();s.arc(cx-bw*.55+i*bw*.12,by-F*.04,F*.035,0,7);s.fill()}
   })},
+  /* water needs somewhere to come from: a stream crosses the grassy top of a flat stone cliff, spills
+     over the lip, drops down the face into a blue plunge pool, and leaves toward the trail. stone is
+     warm grey so it never reads as water */
   fall(F,o){const w=F*2.8,h=F*2.3;return sprite(w,h,0,s=>{
-    const cx=w/2,by=h-F*.12,rw=F*2.2,rh=F*1.7,top=by-F*.12-rh;
-    shade(s,cx,by,rw*.6,F*.1);
-    const g=s.createLinearGradient(cx-rw/2,0,cx+rw/2,0);g.addColorStop(0,'#9db3cc');g.addColorStop(.55,'#7d9fc0');g.addColorStop(1,'#6d6873');s.fillStyle=g;
-    bell(s,cx-rw/2,by-F*.12,rw,rh,.5);s.fill();bell(s,cx-rw*.62,by-F*.12,rw*.5,rh*.62,.6);s.fill();
-    s.fillStyle='#a6cf5a';s.beginPath();s.ellipse(cx,top+F*.1,rw*.2,F*.12,0,0,7);s.fill();
-    s.fillStyle='#c8f5e6';s.beginPath();s.roundRect(cx-rw*.07,top+F*.12,rw*.14,rh-F*.12,rw*.05);s.fill();
-    s.fillStyle='#4fa3c9';s.beginPath();s.ellipse(cx,by-F*.08,rw*.46,F*.2,0,0,7);s.fill();
-    s.fillStyle='#7fe6cf';s.beginPath();s.ellipse(cx,by-F*.12,rw*.32,F*.1,0,0,7);s.fill();
-    if(o.rainbow){s.lineWidth=F*.06;['#e0563c','#f2b544','#f3e23a','#a6cf5a','#4fa3c9','#9d7fd1'].forEach((c,i)=>{s.strokeStyle=rgba(c,.45);s.beginPath();s.arc(cx+rw*.3,by-F*.15,F*(1-i*.06),Math.PI*1.08,Math.PI*1.72);s.stroke()})}
+    const g0=fallGeo(F),cx=w/2,{cw,ch,lip,pool,fw}=g0,by=h-F*.12,x0=cx-cw/2,toward=-(o.side||1);
+    shade(s,cx,by,cw*.75,F*.12);
+    /* the cliff, with a lower shoulder of rock on the side away from the trail so it isn't a box */
+    const g=s.createLinearGradient(x0,0,x0+cw,0);g.addColorStop(0,'#b2a798');g.addColorStop(.5,'#968b7f');g.addColorStop(1,'#73695f');s.fillStyle=g;
+    s.beginPath();s.roundRect(x0,by-pool-ch,cw,ch+pool*.4,[F*.14,F*.18,F*.04,F*.04]);s.fill();
+    s.beginPath();s.roundRect(toward>0?x0-cw*.16:x0+cw*.84,by-pool-ch*.55,cw*.32,ch*.55+pool*.4,[F*.12,F*.12,F*.04,F*.04]);s.fill();
+    s.strokeStyle='rgba(70,60,52,.28)';s.lineWidth=1.2;s.beginPath();
+    for(const[fx,fy,l]of[[.18,.35,.22],[.74,.28,.18],[.3,.68,.16],[.82,.62,.2]]){s.moveTo(x0+cw*fx,by-pool-ch+ch*fy);s.lineTo(x0+cw*fx+cw*l,by-pool-ch+ch*fy+F*.03)}s.stroke();
+    /* grass on top, and the stream running across it to the lip */
+    const ty=by-pool-ch;
+    s.fillStyle='#a6cf5a';s.beginPath();s.roundRect(x0-F*.04,ty-F*.08,cw+F*.08,F*.2,F*.1);s.fill();
+    s.fillStyle='#5d93d6';s.beginPath();s.moveTo(cx-fw*.25,ty-F*.08);s.lineTo(cx+fw*.25,ty-F*.08);s.lineTo(cx+fw*.55,ty+lip);s.lineTo(cx-fw*.55,ty+lip);s.closePath();s.fill();
+    /* the drop: pale water widening a little as it falls */
+    s.fillStyle='#d6eefa';s.beginPath();s.moveTo(cx-fw*.55,ty+lip-F*.02);s.lineTo(cx+fw*.55,ty+lip-F*.02);s.lineTo(cx+fw*.7,by-pool*.55);s.lineTo(cx-fw*.7,by-pool*.55);s.closePath();s.fill();
+    s.fillStyle='rgba(93,147,214,.35)';s.fillRect(cx+fw*.2,ty+lip,fw*.3,ch-lip);
+    /* the plunge pool in front, the same blue as the pond, then the outflow toward the trail */
+    s.strokeStyle='#5d93d6';s.lineWidth=F*.09;s.lineCap='round';s.beginPath();s.moveTo(cx+toward*cw*.3,by-pool*.35);s.quadraticCurveTo(cx+toward*cw*.6,by-F*.02,cx+toward*w*.48,by-F*.04);s.stroke();
+    s.fillStyle='#ecdca0';s.beginPath();s.ellipse(cx,by-pool*.45,cw*.52,pool*.62,0,0,7);s.fill();
+    s.fillStyle='#2f6fbf';s.beginPath();s.ellipse(cx,by-pool*.42,cw*.47,pool*.52,0,0,7);s.fill();
+    s.fillStyle='#5d93d6';s.beginPath();s.ellipse(cx+cw*.05,by-pool*.36,cw*.32,pool*.32,0,0,7);s.fill();
+    if(o.rainbow){s.lineWidth=F*.05;['#e0563c','#f2b544','#f3e23a','#a6cf5a','#4fa3c9','#9d7fd1'].forEach((c,i)=>{s.strokeStyle=rgba(c,.4);s.beginPath();s.arc(cx,by-pool*.5,F*(.75-i*.05),Math.PI*1.1,Math.PI*1.45);s.stroke()})}
   })},
   pond(F){const w=F*2.3,h=F*.95;return sprite(w,h,0,s=>{
     /* a grass bank and a sandy lip around properly blue water, so it can't read as one more turquoise hill */
@@ -174,6 +189,8 @@ const SETS=[
   ['#7d9fc0','#d9a7bf','#f3d2e0'],
   ['#2a6a4a','#2fae98','#7fe6cf'],
   ['#2fae98','#6fe0c4','#c8f5e6']];
+/* the waterfall's shape, shared by its sprite and the water that moves on it */
+function fallGeo(F){return{cw:F*1.6,ch:F*1.45,lip:F*.06,pool:F*.42,fw:F*.26}}
 function bell(s,x0,by,w,h,px){const p=w*px;s.beginPath();s.moveTo(x0,by);s.bezierCurveTo(x0+p*.45,by,x0+p*.55,by-h,x0+p,by-h);s.bezierCurveTo(x0+p+(w-p)*.45,by-h,x0+p+(w-p)*.55,by,x0+w,by);s.closePath()}
 function splitTone(s,x,by,w,h,C,flip,px){
   if(FILTER)s.filter=`blur(${h*.08}px)`;bell(s,x,by,w,h,px);
@@ -238,7 +255,7 @@ const scene={
     const pc=['#7fe6cf','#a6cf5a','#f3e23a','#9db3cc','#7fe6cf','#bcd95c'],np=Math.round(WH/H*7);
     for(let i=0;i<np;i++)soft(h1(i*3.1)*W,h1(i*5.7)*WH,U*(.35+h1(i*2.2)*.45),pc[i%pc.length],.32);
     /* the pond is the only blue water down here: clear the turquoise wash around it */
-    const F0=this.figH,pondAt=SIGHTS.filter(o=>o.kind==='pond').map(o=>{const y=this.yw(o.p);return{x:clamp(this.cx(y)+o.side*this.pw()*o.o,F0*.9,W-F0*.9),y}});
+    const F0=this.figH,pondAt=SIGHTS.filter(o=>o.kind==='pond'||o.kind==='fall').map(o=>{const y=this.yw(o.p);return{x:clamp(this.cx(y)+o.side*this.pw()*o.o,F0*.9,W-F0*.9),y}});
     for(const q of pondAt)soft(q.x,q.y-F0*.4,H*.32,'#ecf0bc',.75);
     // trail, soft at the edges
     const pw=this.pw();s.lineCap='round';s.lineJoin='round';
@@ -449,10 +466,11 @@ const scene={
     if(o.sp)put(ctx,o.sp,o.x-o.sp.w/2,sy-o.sp.h);
     if(o.kind==='house'){const k=o.hut?.8:1,bw=F*1.15*k,wh=F*.62*k,cx=o.x+bw*.245,cy=sy-F*.06-wh-wh*.85;
       for(let j=0;j<5;j++){const ph=fr(t*.22+j/5);ctx.fillStyle=`rgba(255,255,255,${.6*(1-ph)})`;ctx.beginPath();ctx.arc(cx+Math.sin(ph*5+j)*F*.06+ph*F*.25,cy-ph*F*1.1,F*(.04+ph*.09),0,7);ctx.fill()}}
-    else if(o.kind==='fall'){const rw=F*2.2,rh=F*1.7,by=sy-F*.12,top=by-F*.12-rh;
+    else if(o.kind==='fall'){const{ch,lip,pool,fw}=fallGeo(F),by=sy-F*.12,ty=by-pool-ch,bot=by-pool*.55;
+      /* streaks falling from the lip to the pool, then foam where they land */
       ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.6;ctx.lineCap='round';ctx.beginPath();
-      for(let j=0;j<11;j++){const ph=fr(t*1.1+h1(j+o.i*13)),x=o.x+(h1(j*3.7+o.i)-.5)*rw*.11,y=top+F*.15+ph*(rh-F*.3);ctx.moveTo(x,y);ctx.lineTo(x,y+F*.16)}ctx.stroke();
-      for(let j=0;j<4;j++){const ph=fr(t*1.8+j*.27);ctx.fillStyle=`rgba(255,255,255,${.8*(1-ph)})`;ctx.beginPath();ctx.arc(o.x+(j-1.5)*F*.1,by-F*.12-ph*F*.16,F*(.03+ph*.03),0,7);ctx.fill()}}
+      for(let j=0;j<11;j++){const ph=fr(t*1.1+h1(j+o.i*13)),y=ty+lip+ph*(bot-ty-lip-F*.16),x=o.x+(h1(j*3.7+o.i)-.5)*fw*(1+ph*.3);ctx.moveTo(x,y);ctx.lineTo(x,y+F*.16)}ctx.stroke();
+      for(let j=0;j<4;j++){const ph=fr(t*1.8+j*.27);ctx.fillStyle=`rgba(255,255,255,${.8*(1-ph)})`;ctx.beginPath();ctx.arc(o.x+(j-1.5)*F*.1,bot-ph*F*.14,F*(.03+ph*.03),0,7);ctx.fill()}}
     else if(o.kind==='pond'){const w=F*2.3,cy=sy-F*.95*.42;
       ctx.lineWidth=1.2;for(let j=0;j<3;j++){const ph=fr(t*.3+j/3);ctx.strokeStyle=`rgba(255,255,255,${.7*(1-ph)})`;ctx.beginPath();ctx.ellipse(o.x+(j-1)*w*.18,cy,w*(.04+ph*.14),w*(.015+ph*.05),0,0,7);ctx.stroke()}}
     else if(o.kind==='coyote')coyote(ctx,clamp(o.x+o.dx,F*.5,this.W-F*.5),sy,F,o.dir||1,o.hop>=0?o.hop:0,o.col)
