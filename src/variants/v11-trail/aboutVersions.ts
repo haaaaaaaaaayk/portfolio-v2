@@ -171,7 +171,7 @@ export const ABOUT_VERSIONS: readonly AboutVersion[] = [
     before: 'I’m ',
     after:
       ', a design engineer who takes products from zero to one for startups, from the brand to the shipped app. I design the moments where a product asks people for something (money, data, attention), and I care about doing it without breaking their trust. At mymizu I’m designing in-app donations for a free app with 500K+ downloads.',
-    more: 'I studied computational sciences and the arts at Minerva across SF, Berlin, Seoul, Buenos Aires, Taipei and Tokyo, and learned to get useful fast in unfamiliar places. So I’m looking for an exciting, fast-paced environment where there’s a big unknown and room to ship.',
+    more: 'I studied computational sciences and the arts at Minerva across SF, Berlin, Seoul, Buenos Aires, Taipei and Tokyo, bringing a multidisciplinary, global read on the patterns that shape good products.',
   },
 ]
 
