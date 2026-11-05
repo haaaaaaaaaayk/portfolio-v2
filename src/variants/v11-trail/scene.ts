@@ -200,11 +200,11 @@ function splitTone(s,x,by,w,h,C,flip,px){
   g.addColorStop(0,C[2]);g.addColorStop(.5,C[1]);g.addColorStop(1,C[0]);s.fillStyle=g;s.fill();
 }
 
-/* ---------- thoughts: a storyline keyed to how far up he is, interrupted by what happens
+/* ---------- thoughts: a storyline keyed to how far up he is (he sets off excited, and it wears off), interrupted by what happens
    on the way; each pool plays in order the first time, then shuffles. The peak gets the last word. ---------- */
 const STORY=[
-  [0,['Oh, I don’t think I like this.','Wait, is it uphill the whole way?','Nobody mentioned a slope in the brief.','Fresh air is overrated.']],
-  [.16,['I could be designing right now.','This trail has terrible onboarding.','Zero affordances. Not one handrail.','Who approved this many steps?','One escalator. That’s all I ask.']],
+  [0,['Hiking day! Let’s go!','Fresh air, big views. I love this already.','Look at me, an outdoors person.','Summit by lunch. Easy.']],
+  [.16,['Wait, is it uphill the whole way?','Nobody mentioned a slope in the brief.','I could be designing right now.','This trail has terrible onboarding.','Zero affordances. Not one handrail.','Who approved this many steps?','One escalator. That’s all I ask.']],
   [.38,['Oh, my smoker lungs.','Is that my heart or a drum solo?','My lungs are typing an apology.','Every step is a breaking change.','I’d trade a kidney for a chairlift.']],
   [.62,['My legs just filed a bug report.','Can I prototype the summit instead?','Somebody rate-limit this mountain.','I’m sweating in sixteen million colors.','Is that flag real or just a mockup?']],
   [.86,['Almost there. Probably. Hopefully.','I can see the flag. It’s mocking me.','If I don’t make it, use an 8pt grid.']]];
@@ -221,7 +221,7 @@ const ON={
   coyote:['That coyote has better cardio than me.','Hi, coyote. I’m mostly bones and snacks.','It trots. I trudge. Same trail.'],
   pond:['A pond. I’m not swimming. Don’t ask.','Very calming. Still uphill, though.'],
   flowers:['Okay, the flowers are nice. Don’t tell anyone.','Great palette. Terrible trail.'],
-  fly:['A butterfly. Lighter than my backpack.','Even the bugs have wings. Unfair.'],
+  fly:['A butterfly. Zero effort, all flow.','Even the bugs have wings. Unfair.'],
   sign:['A sign. Finally, some wayfinding.','“Summit, this way.” Wow, very helpful.']};
 const PEAK='Ugh, Hayk hates hiking.';
 /* back at the start after the walk down */
