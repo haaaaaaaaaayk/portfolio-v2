@@ -89,6 +89,10 @@ export default function Trail() {
 
   return (
     <div className="relative min-h-svh bg-paper">
+      {/* the mark, Halftone cushion from the metal logo system, back to the top of the page */}
+      <a href="#" aria-label={`${profile.name}, back to top`} className="absolute left-4 top-4 z-10 block size-12 rounded-sm outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink sm:left-8 sm:top-8">
+        <img src={`${import.meta.env.BASE_URL}logo-halftone.png`} alt="" width={48} height={48} className="block size-12" />
+      </a>
       <main>
         {/* the first screen is the scene and nothing else; everything about him comes after it */}
         <section className="flex min-h-svh flex-col items-center justify-center px-4 py-12">
