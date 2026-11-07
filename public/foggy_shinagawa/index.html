@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c0f12">
+<meta name="color-scheme" content="dark">
+<title>Fogged Glass</title>
+  <script type="module" crossorigin src="/foggy_shinagawa/assets/index-at4Kgpb1.js"></script>
+  <link rel="stylesheet" crossorigin href="/foggy_shinagawa/assets/index-CadlAcZm.css">
+</head>
+<body>
+
+<div id="stage"><canvas id="view" aria-label="Fogged window. Drag to draw on the glass."></canvas></div>
+
+<div class="hint" id="hint"><b>Fogged Glass</b><span>Drag to draw on the window</span></div>
+
+<div class="dock" id="dock">
+  <!-- One glass bar: settings unfold inside it, above the tools -->
+  <div class="dock-inner glass" id="bar">
+    <div class="drawer" id="panel" role="group" aria-label="Scene and brush" hidden>
+      <div class="drawer-inner">
+        <div class="group" id="scenes" role="group" aria-label="Scene behind the glass">
+          <label class="swatch-add" data-tip="Add your photo">
+            <input class="vh" type="file" id="photoInput" accept="image/*">
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9"/></svg><span class="vh">Use your own photo</span>
+          </label>
+        </div>
+        <label class="ctl" for="size">Finger <input type="range" id="size" min="4" max="60" value="12"></label>
+        <label class="ctl" for="wet">Wetness <input type="range" id="wet" min="0" max="100" value="55"></label>
+        <label class="ctl" for="fog">Fog <input type="range" id="fog" min="0" max="100" value="55"></label>
+      </div>
+    </div>
+    <div class="actions" id="actions" role="toolbar" aria-label="Tools">
+      <button class="btn" data-tip="Scribble" id="scribble" type="button" aria-label="Scribble">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16c2-5 3.5-8 5-8 2 0 .5 7 3 7 2 0 2.5-5 4.5-5 1.8 0 1.5 4 5.5 4"/></svg>
+      </button>
+      <button class="btn" data-tip="Undo" id="undo" type="button" aria-label="Undo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+      </button>
+      <button class="btn" data-tip="Wipe" id="wipe" type="button" aria-label="Wipe the glass">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 20H9l-4.3-4.3a1 1 0 0 1 0-1.4l9.6-9.6a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4L12 19"/><path d="m18 13.3-6.3-6.3"/></svg>
+      </button>
+      <span class="divider" aria-hidden="true"></span>
+      <button class="btn" data-tip="Snapshot" id="snap" type="button" aria-label="Snapshot">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2"/><circle cx="12" cy="13" r="3"/></svg>
+      </button>
+      <button class="btn" data-tip="Sound on" id="sound" type="button" aria-label="Squeak sound" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5a.8.8 0 0 1 1.5.5v14a.8.8 0 0 1-1.5.5L6 15"/><g class="waves"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.7 5a9 9 0 0 1 0 14"/></g><g class="mute"><path d="m16 10 4 4m0-4-4 4"/></g></svg>
+      </button>
+      <button class="btn" data-tip="Scene and brush" id="adjust" type="button" aria-label="Scene and brush" aria-expanded="false" aria-controls="panel">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h8M16 6h4M4 12h2M10 12h10M4 18h11M19 18h1"/><circle cx="14" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+      </button>
+      <button class="btn" data-tip="Hide tools" id="hide" type="button" aria-label="Hide tools">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+<button class="btn show glass" id="show" type="button" aria-label="Show tools" title="Show tools" hidden>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
+</button>
+
+<div class="shot" id="shot" hidden>
+  <figure>
+    <img id="shotImg" alt="Snapshot of your fogged glass drawing">
+    <figcaption>Right-click or long-press the image to save it.</figcaption>
+    <button class="btn glass" id="closeShot" type="button">Close</button>
+  </figure>
+</div>
+
+</body>
+</html>
