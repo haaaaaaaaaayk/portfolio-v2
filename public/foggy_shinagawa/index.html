@@ -6,14 +6,26 @@
 <meta name="theme-color" content="#0c0f12">
 <meta name="color-scheme" content="dark">
 <title>Fogged Glass</title>
-  <script type="module" crossorigin src="/foggy_shinagawa/assets/index-at4Kgpb1.js"></script>
-  <link rel="stylesheet" crossorigin href="/foggy_shinagawa/assets/index-CadlAcZm.css">
+  <script type="module" crossorigin src="/foggy_shinagawa/assets/index-C_PmfqAZ.js"></script>
+  <link rel="stylesheet" crossorigin href="/foggy_shinagawa/assets/index-B3yzA8Mj.css">
 </head>
 <body>
 
 <div id="stage"><canvas id="view" aria-label="Fogged window. Drag to draw on the glass."></canvas></div>
 
-<div class="hint" id="hint"><b>Fogged Glass</b><span>Drag to draw on the window</span></div>
+<!-- A note on the glass at every visit. Hidden until main.js shows it, after the window is up. -->
+<section class="note glass" id="note" role="dialog" aria-labelledby="noteTitle" aria-describedby="noteBody" hidden>
+  <button class="note-close" id="noteClose" type="button" aria-label="Close">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>
+  </button>
+  <h1 id="noteTitle">Fogged Glass</h1>
+  <div id="noteBody">
+    <p>I spent a rainy season in Tokyo, living near Shinagawa Station, and took a lot of photos of the streets around it.</p>
+    <p>I also had a habit of writing on fogged-up glass with my finger whenever I found some.</p>
+  </div>
+  <p class="note-how">Press and drag to draw on the glass.</p>
+  <button class="note-go" id="noteGo" type="button">Start drawing</button>
+</section>
 
 <div class="dock" id="dock">
   <!-- One glass bar: settings unfold inside it, above the tools -->
@@ -25,10 +37,15 @@
             <input class="vh" type="file" id="photoInput" accept="image/*">
             <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9"/></svg><span class="vh">Use your own photo</span>
           </label>
+          <button class="swatch-add" type="button" id="takePhoto" data-tip="Take a photo" aria-label="Take a photo">
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 4.5a1 1 0 0 1 1-1H4l1-1.5h2l1 1.5h1.5a1 1 0 0 1 1 1v4.5a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1z"/><circle cx="6" cy="6.5" r="1.75"/></svg>
+          </button>
+          <!-- phones and tablets: the system camera, back lens first -->
+          <input class="vh" type="file" id="cameraInput" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
         </div>
         <label class="ctl" for="size">Finger <input type="range" id="size" min="4" max="60" value="12"></label>
         <label class="ctl" for="wet">Wetness <input type="range" id="wet" min="0" max="100" value="55"></label>
-        <label class="ctl" for="fog">Fog <input type="range" id="fog" min="0" max="100" value="55"></label>
+        <label class="ctl" for="fog">Fog <input type="range" id="fog" min="0" max="100" value="12"></label>
       </div>
     </div>
     <div class="actions" id="actions" role="toolbar" aria-label="Tools">
@@ -42,8 +59,9 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 20H9l-4.3-4.3a1 1 0 0 1 0-1.4l9.6-9.6a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4L12 19"/><path d="m18 13.3-6.3-6.3"/></svg>
       </button>
       <span class="divider" aria-hidden="true"></span>
-      <button class="btn" data-tip="Snapshot" id="snap" type="button" aria-label="Snapshot">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2"/><circle cx="12" cy="13" r="3"/></svg>
+      <!-- a download arrow, not a camera: the camera is Take a photo; this saves your drawing -->
+      <button class="btn" data-tip="Save image" id="snap" type="button" aria-label="Save image">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19h14"/></svg>
       </button>
       <button class="btn" data-tip="Sound on" id="sound" type="button" aria-label="Squeak sound" aria-pressed="true">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5a.8.8 0 0 1 1.5.5v14a.8.8 0 0 1-1.5.5L6 15"/><g class="waves"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.7 5a9 9 0 0 1 0 14"/></g><g class="mute"><path d="m16 10 4 4m0-4-4 4"/></g></svg>
@@ -61,11 +79,31 @@
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
 </button>
 
+<!-- Desktop camera: a live viewfinder on the same dimmed glass as the snapshot -->
+<div class="shot cam" id="cam" role="dialog" aria-label="Take a photo" hidden>
+  <figure>
+    <div class="cam-frame">
+      <video id="camVideo" playsinline muted></video>
+      <span class="cam-flash" id="camFlash" aria-hidden="true"></span>
+    </div>
+    <p class="cam-msg" id="camMsg" hidden></p>
+    <div class="cam-row">
+      <button class="btn glass" id="camCancel" type="button">Cancel</button>
+      <button class="shutter" id="camShutter" type="button" aria-label="Take the photo"></button>
+      <span aria-hidden="true"></span>
+    </div>
+  </figure>
+</div>
+
 <div class="shot" id="shot" hidden>
   <figure>
     <img id="shotImg" alt="Snapshot of your fogged glass drawing">
-    <figcaption>Right-click or long-press the image to save it.</figcaption>
-    <button class="btn glass" id="closeShot" type="button">Close</button>
+    <div class="shot-row">
+      <button class="btn glass" id="closeShot" type="button">Close</button>
+      <button class="btn glass save" id="saveShot" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19h14"/></svg>Save image
+      </button>
+    </div>
   </figure>
 </div>
 
