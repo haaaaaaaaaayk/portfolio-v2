@@ -4,6 +4,9 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { profile } from '../../content'
 import { reveal } from '../../lib/motion'
 import { ABOUT_VERSIONS, FINAL_VERSION } from './aboutVersions'
+import saved from './aboutText.json'
+import { Block, EditBar, EditableText, LookBar } from './TextEditor'
+import type { Look } from './textStyles'
 
 /* hello in each of his languages, picked by the visitor's time of day; late at night it's just hello.
    kept lowercase on purpose: a casual hello, unlike the rest of the page */
@@ -90,11 +93,15 @@ function initialVersion() {
   return q !== null && inRange(Number(q)) ? Number(q) : FINAL_VERSION
 }
 
+type AboutText = typeof saved
+type BlockId = 'location' | 'hello' | 'intro' | 'more'
+
 export function About() {
   const reduced = useReducedMotion()
   const now = useMinute()
   const greeting = GREETINGS[periodOf(now.getHours())]
   const [version] = useState(initialVersion)
+  const isFinal = version === FINAL_VERSION
   const draft = ABOUT_VERSIONS[version]
   const inView = reduced
     ? {}
@@ -105,19 +112,55 @@ export function About() {
         transition: reveal,
       }
 
+  /* the words and their looks come from aboutText.json; in npm run dev they can be edited in place */
+  const [text, setText] = useState<AboutText>(saved)
+  const [base, setBase] = useState<AboutText>(saved)
+  const [editing, setEditing] = useState(false)
+  const [selected, setSelected] = useState<BlockId | null>(null)
+  const canEdit = import.meta.env.DEV && isFinal
+  const on = canEdit && editing
+  const dirty = JSON.stringify(text) !== JSON.stringify(base)
+  const set = <K extends BlockId>(id: K, patch: Partial<AboutText[K]>) =>
+    setText((t) => ({ ...t, [id]: { ...t[id], ...patch } }))
+  const block = (id: BlockId) => ({
+    editing: on,
+    selected: on && selected === id,
+    onSelect: () => setSelected(id),
+    look: { style: text[id].style, color: text[id].color } as Look,
+  })
+  const bar = (id: BlockId, extra?: ReactNode) => (
+    <LookBar look={block(id).look} onChange={(l) => set(id, l as Partial<AboutText[typeof id]>)}>
+      {extra}
+    </LookBar>
+  )
+  const save = async () => {
+    const res = await fetch('/__about-text', { method: 'POST', body: JSON.stringify(text, null, 2) })
+    if (!res.ok) throw new Error(await res.text())
+    setBase(text)
+  }
+
   /* a centered column with wide margins either side; the text inside stays left-aligned to read well.
-     who he is (the paragraph, 18 → 20 on 28) is the main thing; above it, two quiet lines: where he is now
-     (14, muted) and hello (16 on 24, regular, in ink so it reads as a greeting rather than a label).
-     the page's h1 is for screen readers only. everything sits on the 4px grid; the column holds about
-     65 characters a line at 20 */
+     who he is (the paragraphs) is the main thing; above it, two quiet lines: where he is now and hello.
+     each block's style and color is a design-system token picked in aboutText.json (or the editor).
+     the page's h1 is for screen readers only. everything sits on the 4px grid */
   return (
     <section id="about" className="mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32">
       <motion.div {...inView} className="relative">
         <h1 className="sr-only">Hayk Sargsyan, product designer and design engineer</h1>
-        <p className="text-compact text-ink-muted">
-          Russian Hill, SF <time className="ml-2 tabular-nums">{hisTime(now)}</time>
-        </p>
-        <p className="mt-1 text-balance text-secondary text-ink">
+        <Block {...block('location')} bar={bar('location')}>
+          <EditableText
+            editing={on}
+            label="Location"
+            value={text.location.text}
+            onChange={(v) => set('location', { text: v })}
+          />{' '}
+          <time className="ml-2 tabular-nums">{hisTime(now)}</time>
+        </Block>
+        <Block
+          {...block('hello')}
+          className="mt-1 text-balance"
+          bar={bar('hello', <span className="text-ink-muted">Changes with the time of day</span>)}
+        >
           {greeting.map((g, i) => (
             <span key={LANGS[i]}>
               {/* each hello stays whole; lines only break after a comma */}
@@ -127,18 +170,66 @@ export function About() {
               {i < greeting.length - 1 ? ', ' : ''}
             </span>
           ))}
-        </p>
-        <div className="mt-8 space-y-[1lh] text-body text-ink-muted sm:mt-10 sm:text-heading">
-          <p className="text-pretty">
-            {draft.before}
-            <NameNote note="Yes, you read it as hike, and after the above I know you will never forget my name.">
-              Hayk
-            </NameNote>
-            {draft.after}
-          </p>
-          {draft.more && <p className="text-pretty">{draft.more}</p>}
+        </Block>
+        <div className="mt-8 space-y-7 sm:mt-10">
+          <Block
+            {...block('intro')}
+            className="text-pretty"
+            bar={bar(
+              'intro',
+              <label className="flex min-w-60 flex-1 items-center gap-2">
+                <span className="shrink-0 text-ink-muted">Name note</span>
+                <input
+                  value={text.intro.note}
+                  onChange={(e) => set('intro', { note: e.target.value })}
+                  className="h-8 w-full rounded-control bg-control px-3 text-compact text-ink outline-offset-2 focus-visible:outline-2 focus-visible:outline-ink"
+                />
+              </label>,
+            )}
+          >
+            {isFinal ? (
+              <>
+                <EditableText editing={on} label="Before the name" value={text.intro.before} onChange={(v) => set('intro', { before: v })} />
+                {on ? (
+                  <span className="text-ink underline decoration-ink-muted decoration-dotted decoration-1 underline-offset-4">
+                    <EditableText editing label="Name" value={text.intro.name} onChange={(v) => set('intro', { name: v })} />
+                  </span>
+                ) : (
+                  <NameNote note={text.intro.note}>{text.intro.name}</NameNote>
+                )}
+                <EditableText editing={on} label="After the name" value={text.intro.after} onChange={(v) => set('intro', { after: v })} />
+              </>
+            ) : (
+              <>
+                {draft.before}
+                <NameNote note={text.intro.note}>{text.intro.name}</NameNote>
+                {draft.after}
+              </>
+            )}
+          </Block>
+          {(isFinal ? text.more.text : draft.more) && (
+            <Block {...block('more')} className="text-pretty" bar={bar('more')}>
+              {isFinal ? (
+                <EditableText editing={on} label="Second paragraph" value={text.more.text} onChange={(v) => set('more', { text: v })} />
+              ) : (
+                draft.more
+              )}
+            </Block>
+          )}
         </div>
       </motion.div>
+      {canEdit && (
+        <EditBar
+          editing={editing}
+          setEditing={(v) => {
+            setEditing(v)
+            if (!v) setSelected(null)
+          }}
+          dirty={dirty}
+          onSave={save}
+          onReset={() => setText(base)}
+        />
+      )}
     </section>
   )
 }
