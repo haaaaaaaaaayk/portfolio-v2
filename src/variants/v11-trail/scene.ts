@@ -594,13 +594,17 @@ function uploadWorld(){
 const ro=new ResizeObserver(()=>{const r=el.getBoundingClientRect(),w=Math.round(r.width),h=Math.round(r.height);if(!w||!h||(w===W&&h===H))return;
   W=w;H=h;for(const c of[cBg,cFg,cv,ui]){c.width=Math.round(W*DPR);c.height=Math.round(H*DPR)}scene.resize(W,H);uploadWorld();wake()});ro.observe(el);
 const io=new IntersectionObserver(es=>{visible=es[0].isIntersecting;wake()},{rootMargin:'200px'});io.observe(el);
+/* sound is stricter than drawing: only while at least a quarter of the trail is on screen, so it goes quiet once
+   you scroll away to the about section (drawing keeps a 200px margin so it's ready before it scrolls in) */
+let heard=true;
+const ioSound=new IntersectionObserver(es=>{heard=es[0].intersectionRatio>=.25},{threshold:[0,.25,.5]});ioSound.observe(el);
 /* a lost context draws nothing until it comes back, then gets its program and valley again */
 const onLost=e=>{e.preventDefault();lost=true};
 const onRestored=()=>{g=setupGL(cv);lost=false;uploadWorld();wake()};
 cv.addEventListener('webglcontextlost',onLost);cv.addEventListener('webglcontextrestored',onRestored);
 /* each sight has its own sound; steps alternate feet and get heavier as he climbs */
 const SIGHT_SOUND={pond:'water',fall:'water',house:'chime',sign:'chime',flowers:'sparkle',fly:'sparkle',coyote:'rustle'};
-const sfx=(name,o)=>{if(opts.sound)play(name,o)};
+const sfx=(name,o)=>{if(opts.sound&&heard)play(name,o)};
 scene.fx=(kind,arg)=>{
   if(kind==='key')sfx('key',{pitch:.92+Math.random()*.16});
   else if(kind==='step')sfx('step',{volume:lerp(.55,.9,scene.p),pitch:(arg?1.06:.94)*lerp(1,.82,scene.p)*(.95+Math.random()*.1)});
@@ -653,7 +657,7 @@ document.addEventListener('visibilitychange',wake);
 wake();
 
 return()=>{
-  cancelAnimationFrame(raf);ro.disconnect();io.disconnect();
+  cancelAnimationFrame(raf);ro.disconnect();io.disconnect();ioSound.disconnect();
   document.removeEventListener('visibilitychange',wake);
   cv.removeEventListener('webglcontextlost',onLost);cv.removeEventListener('webglcontextrestored',onRestored);
   cv.removeEventListener('pointerdown',onDown);cv.removeEventListener('pointermove',onMove);
