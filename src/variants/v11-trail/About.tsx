@@ -8,11 +8,11 @@ import { ABOUT_VERSIONS, FINAL_VERSION } from './aboutVersions'
 /* hello in each of his languages, picked by the visitor's time of day; late at night it's just hello */
 const LANGS = ['de', 'ko', 'hy', 'uk', 'zh'] as const
 const GREETINGS: Record<'morning' | 'afternoon' | 'evening' | 'night', readonly string[]> = {
-  morning: ['guten morgen', '좋은 아침', 'բարի լույս', 'доброго ранку', '早上好'],
+  morning: ['Guten Morgen', '좋은 아침', 'Բարի լույս', 'Доброго ранку', '早上好'],
   /* Korean has no everyday "good afternoon" or "good evening"; 안녕 is what people say */
-  afternoon: ['guten tag', '안녕', 'բարի օր', 'добрий день', '下午好'],
-  evening: ['guten abend', '안녕', 'բարի երեկո', 'добрий вечір', '晚上好'],
-  night: ['hallo', '안녕', 'ողջույն', 'привіт', '你好'],
+  afternoon: ['Guten Tag', '안녕', 'Բարի օր', 'Добрий день', '下午好'],
+  evening: ['Guten Abend', '안녕', 'Բարի երեկո', 'Добрий вечір', '晚上好'],
+  night: ['Hallo', '안녕', 'Ողջույն', 'Привіт', '你好'],
 }
 function periodOf(hour: number) {
   if (hour >= 5 && hour < 12) return 'morning'
@@ -21,14 +21,14 @@ function periodOf(hour: number) {
   return 'night'
 }
 
-/* his local time, 4:46pm style */
+/* his local time, 4:46 PM style */
 const HIS_TIME = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
   minute: '2-digit',
   hour12: true,
   timeZone: profile.timezone,
 })
-const hisTime = (d: Date) => HIS_TIME.format(d).replace(/\s?([AP])M$/, (_, m: string) => `${m.toLowerCase()}m`)
+const hisTime = (d: Date) => HIS_TIME.format(d)
 
 /** Ticks on each minute boundary, so the clock changes when the minute does, not up to 59s late. */
 function useMinute() {
@@ -112,7 +112,7 @@ export function About() {
     <section id="about" className="mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32">
       <motion.div {...inView} className="relative">
         <p className="text-compact text-ink-muted">
-          russian hill, sf <time className="ml-2 tabular-nums">{hisTime(now)}</time>
+          Russian Hill, SF <time className="ml-2 tabular-nums">{hisTime(now)}</time>
         </p>
         <h1 className="mt-2 text-balance font-display text-title font-[var(--weight-strong)] text-ink sm:text-role">
           {greeting.map((g, i) => (
@@ -128,8 +128,8 @@ export function About() {
         <div className="mt-8 space-y-[1lh] text-body text-ink-muted sm:mt-10 sm:text-heading">
           <p className="text-pretty">
             {draft.before}
-            <NameNote note="yes, you read it as hike, and after the above i know you will never forget my name.">
-              hayk
+            <NameNote note="Yes, you read it as hike, and after the above I know you will never forget my name.">
+              Hayk
             </NameNote>
             {draft.after}
           </p>
