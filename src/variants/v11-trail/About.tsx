@@ -106,16 +106,18 @@ export function About() {
       }
 
   /* a centered column with wide margins either side; the text inside stays left-aligned to read well.
-     three levels, each with one job: where he is now is a caption (14, muted), hello is the headline
-     (24 → 32 display, the one heavier weight), and who he is is the reading text (18 → 20 on 28).
-     everything sits on the 4px grid. the column holds about 65 characters a line at 20 */
+     who he is (the paragraph, 18 → 20 on 28) is the main thing; above it, two quiet lines: where he is now
+     (14, muted) and hello (16 on 24, regular, in ink so it reads as a greeting rather than a label).
+     the page's h1 is for screen readers only. everything sits on the 4px grid; the column holds about
+     65 characters a line at 20 */
   return (
     <section id="about" className="mx-auto w-full max-w-2xl px-6 py-section sm:px-8 sm:py-32">
       <motion.div {...inView} className="relative">
+        <h1 className="sr-only">Hayk Sargsyan, product designer and design engineer</h1>
         <p className="text-compact text-ink-muted">
           Russian Hill, SF <time className="ml-2 tabular-nums">{hisTime(now)}</time>
         </p>
-        <h1 className="mt-2 text-balance font-display text-title font-[var(--weight-strong)] text-ink sm:text-role">
+        <p className="mt-1 text-balance text-secondary text-ink">
           {greeting.map((g, i) => (
             <span key={LANGS[i]}>
               {/* each hello stays whole; lines only break after a comma */}
@@ -125,7 +127,7 @@ export function About() {
               {i < greeting.length - 1 ? ', ' : ''}
             </span>
           ))}
-        </h1>
+        </p>
         <div className="mt-8 space-y-[1lh] text-body text-ink-muted sm:mt-10 sm:text-heading">
           <p className="text-pretty">
             {draft.before}
