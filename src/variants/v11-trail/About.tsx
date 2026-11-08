@@ -5,14 +5,15 @@ import { profile } from '../../content'
 import { reveal } from '../../lib/motion'
 import { ABOUT_VERSIONS, FINAL_VERSION } from './aboutVersions'
 
-/* hello in each of his languages, picked by the visitor's time of day; late at night it's just hello */
+/* hello in each of his languages, picked by the visitor's time of day; late at night it's just hello.
+   kept lowercase on purpose: a casual hello, unlike the rest of the page */
 const LANGS = ['de', 'ko', 'hy', 'uk', 'zh'] as const
 const GREETINGS: Record<'morning' | 'afternoon' | 'evening' | 'night', readonly string[]> = {
-  morning: ['Guten Morgen', '좋은 아침', 'Բարի լույս', 'Доброго ранку', '早上好'],
+  morning: ['guten morgen', '좋은 아침', 'բարի լույս', 'доброго ранку', '早上好'],
   /* Korean has no everyday "good afternoon" or "good evening"; 안녕 is what people say */
-  afternoon: ['Guten Tag', '안녕', 'Բարի օր', 'Добрий день', '下午好'],
-  evening: ['Guten Abend', '안녕', 'Բարի երեկո', 'Добрий вечір', '晚上好'],
-  night: ['Hallo', '안녕', 'Ողջույն', 'Привіт', '你好'],
+  afternoon: ['guten tag', '안녕', 'բարի օր', 'добрий день', '下午好'],
+  evening: ['guten abend', '안녕', 'բարի երեկո', 'добрий вечір', '晚上好'],
+  night: ['hallo', '안녕', 'ողջույն', 'привіт', '你好'],
 }
 function periodOf(hour: number) {
   if (hour >= 5 && hour < 12) return 'morning'
