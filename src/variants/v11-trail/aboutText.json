@@ -6,9 +6,9 @@
     "strong": false
   },
   "hello": {
-    "style": "secondary",
-    "color": "ink",
-    "strong": false
+    "style": "body",
+    "color": "ink-active",
+    "strong": true
   },
   "intro": {
     "style": "body-heading",
@@ -16,7 +16,7 @@
     "before": "I’m ",
     "name": "Hayk",
     "after": ", a design engineer who takes products from zero to one for startups, from the brand to the shipped app. I design the moments where a product asks people for something (money, data, attention), and I care about doing it without breaking their trust. At mymizu I’m designing in-app donations for a free app with 500K+ downloads.",
-    "note": "Yes, you read it as hike, and after the above I know you will never forget my name.",
+    "note": "You read it as hike just like in the interaction above ;D",
     "strong": false
   },
   "more": {
