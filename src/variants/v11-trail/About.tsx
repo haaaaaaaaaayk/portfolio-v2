@@ -126,7 +126,7 @@ export function About() {
     editing: on,
     selected: on && selected === id,
     onSelect: () => setSelected(id),
-    look: { style: text[id].style, color: text[id].color } as Look,
+    look: { style: text[id].style, color: text[id].color, strong: text[id].strong } as Look,
   })
   const bar = (id: BlockId, extra?: ReactNode) => (
     <LookBar look={block(id).look} onChange={(l) => set(id, l as Partial<AboutText[typeof id]>)}>

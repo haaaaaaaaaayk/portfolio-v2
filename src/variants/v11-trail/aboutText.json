@@ -1,24 +1,28 @@
 {
   "location": {
-    "style": "caption",
+    "style": "compact",
     "color": "ink-muted",
-    "text": "Russian Hill, SF"
+    "text": "Russian Hill, SF",
+    "strong": false
   },
   "hello": {
-    "style": "small",
-    "color": "ink"
+    "style": "secondary",
+    "color": "ink",
+    "strong": false
   },
   "intro": {
-    "style": "body",
+    "style": "body-heading",
     "color": "ink-muted",
     "before": "I’m ",
     "name": "Hayk",
     "after": ", a design engineer who takes products from zero to one for startups, from the brand to the shipped app. I design the moments where a product asks people for something (money, data, attention), and I care about doing it without breaking their trust. At mymizu I’m designing in-app donations for a free app with 500K+ downloads.",
-    "note": "Yes, you read it as hike, and after the above I know you will never forget my name."
+    "note": "Yes, you read it as hike, and after the above I know you will never forget my name.",
+    "strong": false
   },
   "more": {
-    "style": "body",
+    "style": "body-heading",
     "color": "ink-muted",
-    "text": "I studied computational sciences and the arts at Minerva across SF, Tokyo, Berlin, Seoul, Buenos Aires and Taipei, bringing a multidisciplinary, global read on the patterns that shape good products."
+    "text": "I studied computational sciences and the arts at Minerva across SF, Tokyo, Berlin, Seoul, Buenos Aires and Taipei, bringing a multidisciplinary, global read on the patterns that shape good products.",
+    "strong": false
   }
 }

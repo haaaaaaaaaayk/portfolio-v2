@@ -113,6 +113,17 @@ export function LookBar({
           ))}
         </select>
       </label>
+      <button
+        type="button"
+        aria-pressed={!!look.strong}
+        title="--weight-strong, the system's one opt-in weight"
+        onClick={() => onChange({ ...look, strong: !look.strong })}
+        className={`h-8 cursor-pointer rounded-control px-3 text-compact outline-offset-2 focus-visible:outline-2 focus-visible:outline-ink ${
+          look.strong ? 'bg-ink text-white hover:bg-pressed' : 'bg-control text-ink hover:bg-control-hover'
+        }`}
+      >
+        Strong
+      </button>
       <div role="radiogroup" aria-label="Text color" className="flex items-center gap-1">
         {Object.entries(TEXT_COLORS).map(([k, c]) => {
           const on = look.color === k
