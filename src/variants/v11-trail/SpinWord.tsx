@@ -8,6 +8,9 @@
  * "six cities" and loop through the cities). It blurs with its speed (up to 3px), so the whips read as motion and
  * the loop stays sharp. Every turn starts from the drum's current angle and velocity, so leaving mid-spin carries
  * the momentum back. The slot is always as wide as the longest word, so nothing around it ever moves.
+ * Each word crossing the front clicks with the trail's typing sound, like a split-flap board: the whip is a run
+ * of clicks that slows as the drum settles, the loop one click per word. Same random pitch as the typing, at
+ * most one click per 30ms, and silent when the visitor has turned the trail's sound off.
  * Touch: tap to start, tap again to stop. Reduced motion: no spin, the words crossfade in the same loop.
  */
 import {
@@ -21,6 +24,7 @@ import {
   type MotionValue,
 } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { play } from './sound'
 
 const LOOP_EVERY = 1200 // ms per word in the loop: a 0.5s turn, then 0.7s at rest to read it
 const SPIN = { type: 'spring' as const, bounce: 0, visualDuration: 0.9 } // fast start, slows into place
@@ -75,6 +79,19 @@ export function SpinWord({ words, label, restOnly = false }: { words: readonly s
   }
   useEffect(() => () => (clearTimeout(timer.current), anim.current?.stop()), [])
   const onPointerEnter = useHoverZone(start, stop)
+  // a click each time a word crosses the front (rot passes a face's angle), like a split-flap board
+  const lastFace = useRef(0)
+  const lastClick = useRef(0)
+  useMotionValueEvent(rot, 'change', (r) => {
+    const face = Math.round(r / STEP)
+    if (face === lastFace.current) return
+    lastFace.current = face
+    const now = performance.now()
+    if (now - lastClick.current < 30 || !soundOn()) return
+    lastClick.current = now
+    play('key', { pitch: 0.92 + Math.random() * 0.16 })
+  })
+
   // reduced motion swaps words by re-rendering which face is in front (no rotation to follow)
   const [, force] = useState(0)
   useMotionValueEvent(rot, 'change', () => reduced && force((n) => n + 1))
@@ -140,6 +157,15 @@ function Face({
       {word}
     </motion.span>
   )
+}
+
+/* the trail's sound setting: on unless this visitor turned it off (index.tsx stores it under this key) */
+function soundOn() {
+  try {
+    return window.localStorage.getItem('trail-sound') !== 'off'
+  } catch {
+    return true
+  }
 }
 
 /**
