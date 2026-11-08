@@ -6,7 +6,7 @@ import { reveal } from '../../lib/motion'
 import { ABOUT_VERSIONS, FINAL_VERSION } from './aboutVersions'
 import saved from './aboutText.json'
 import { Block, EditBar, EditableText, LookBar } from './TextEditor'
-import { AskWord } from './AskWord'
+import { SpinWord } from './SpinWord'
 import type { Look } from './textStyles'
 
 /* hello in each of his languages, picked by the visitor's time of day; late at night it's just hello.
@@ -96,23 +96,31 @@ function initialVersion() {
 
 type AboutText = typeof saved
 
-/* {ask} in the copy is where the spinning word goes; the punctuation right after it stays on its line */
-function withAsk(copy: string) {
-  const i = copy.indexOf('{ask}')
-  if (i < 0) return copy
-  const rest = copy.slice(i + 5)
-  const punct = rest.match(/^[.,;:!?]*/)![0]
-  return (
-    <>
-      {copy.slice(0, i)}
-      <span className="whitespace-nowrap">
-        <AskWord />
+/* Placeholders in the copy where a spinning word goes. The first word is where it rests; the punctuation right
+   after a placeholder stays on its line with it. */
+const SPINS: Record<string, { words: readonly string[]; label: string; restOnly?: boolean }> = {
+  '{ask}': { words: ['attention', 'money', 'data'], label: 'money, data, attention' },
+  '{cities}': {
+    words: ['six cities', 'San Francisco', 'Tokyo', 'Berlin', 'Seoul', 'Buenos Aires', 'Taipei'],
+    label: 'six cities: San Francisco, Tokyo, Berlin, Seoul, Buenos Aires and Taipei',
+    restOnly: true,
+  },
+}
+function withSpins(copy: string) {
+  const parts = copy.split(/(\{ask\}|\{cities\})/)
+  return parts.map((part, i) => {
+    const spin = SPINS[part]
+    if (!spin) return i > 0 && SPINS[parts[i - 1]] ? part.replace(/^[.,;:!?]*/, '') : part
+    const punct = (parts[i + 1] ?? '').match(/^[.,;:!?]*/)![0]
+    return (
+      <span key={i} className="whitespace-nowrap">
+        <SpinWord {...spin} />
         {punct}
       </span>
-      {rest.slice(punct.length)}
-    </>
-  )
+    )
+  })
 }
+
 type BlockId = 'location' | 'hello' | 'intro' | 'more'
 
 export function About() {
@@ -217,9 +225,9 @@ export function About() {
                   <NameNote note={text.intro.note}>{text.intro.name}</NameNote>
                 )}
                 {on ? (
-                  <EditableText editing label="After the name ({ask} is the spinning word)" value={text.intro.after} onChange={(v) => set('intro', { after: v })} />
+                  <EditableText editing label="After the name ({ask} is a spinning word)" value={text.intro.after} onChange={(v) => set('intro', { after: v })} />
                 ) : (
-                  withAsk(text.intro.after)
+                  withSpins(text.intro.after)
                 )}
               </>
             ) : (
@@ -233,7 +241,11 @@ export function About() {
           {(isFinal ? text.more.text : draft.more) && (
             <Block {...block('more')} className="text-pretty" bar={bar('more')}>
               {isFinal ? (
-                <EditableText editing={on} label="Second paragraph" value={text.more.text} onChange={(v) => set('more', { text: v })} />
+                on ? (
+                  <EditableText editing label="Second paragraph ({cities} is a spinning word)" value={text.more.text} onChange={(v) => set('more', { text: v })} />
+                ) : (
+                  withSpins(text.more.text)
+                )
               ) : (
                 draft.more
               )}

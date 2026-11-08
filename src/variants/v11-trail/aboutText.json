@@ -22,7 +22,7 @@
   "more": {
     "style": "body-heading",
     "color": "ink-muted",
-    "text": "I studied Computational Science and Arts at Minerva University across SF, Tokyo, Berlin, Seoul, Buenos Aires and Taipei, bringing a multidisciplinary, global read on the patterns that shape good products.",
+    "text": "I studied Computational Science and Arts at Minerva University across {cities}, bringing a multidisciplinary, global read on the patterns that shape good products.",
     "strong": false
   }
 }

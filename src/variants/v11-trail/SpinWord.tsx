@@ -1,11 +1,13 @@
 /**
- * The word in "a product asks people for ___": a drum of three asks seen head-on. Ported from D4 · Spin in
- * github.com/haaaaaaaaaayk/something-word, where the five-version exploration lives.
+ * A word that spins: a drum of words seen head-on. Ported from D4 · Spin in github.com/haaaaaaaaaayk/something-word,
+ * where the exploration lives. Used for the asks (attention, money, data) and the cities.
  *
- * Rests on "attention". Hover and the drum whips a full turn and slows onto "money", then loops on its own, one
- * word every 1.2s, for as long as you stay. Leave and it whips round again, at least a full turn, back to
- * "attention". It blurs with its speed (up to 3px), so the whips read as motion and the loop stays sharp. Every
- * turn starts from the drum's current angle and velocity, so leaving mid-spin carries the momentum back.
+ * Rests on its first word. Hover and the drum whips a full turn and slows onto the next word, then loops on its
+ * own, one word every 1.2s, for as long as you stay. Leave and it whips round again, at least a full turn, back to
+ * the resting word. With `restOnly`, the resting word shows only at rest and the loop skips it (the cities rest on
+ * "six cities" and loop through the cities). It blurs with its speed (up to 3px), so the whips read as motion and
+ * the loop stays sharp. Every turn starts from the drum's current angle and velocity, so leaving mid-spin carries
+ * the momentum back. The slot is always as wide as the longest word, so nothing around it ever moves.
  * Touch: tap to start, tap again to stop. Reduced motion: no spin, the words crossfade in the same loop.
  */
 import {
@@ -18,20 +20,25 @@ import {
   useVelocity,
   type MotionValue,
 } from 'framer-motion'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-const WORDS = ['attention', 'money', 'data'] as const
-
-/* A full ring: 12 faces 30° apart, each word four times, so the drum can spin forever. RADIUS puts neighbouring
-   words one line (28px, the paragraph's line height) apart where they cross the front: r = 14 / tan(15°). */
-const STEP = 30
-const FACES = 360 / STEP
-const RADIUS = 14 / Math.tan(((STEP / 2) * Math.PI) / 180) // ≈ 52px
 const LOOP_EVERY = 1200 // ms per word in the loop: a 0.5s turn, then 0.7s at rest to read it
 const SPIN = { type: 'spring' as const, bounce: 0, visualDuration: 0.9 } // fast start, slows into place
 const TURN = { type: 'spring' as const, bounce: 0, visualDuration: 0.5 }
 
-export function AskWord() {
+/* A full ring: the words repeat round the drum, at least 12 faces, so it can spin forever. RADIUS puts
+   neighbouring words one line (28px, the paragraph's line height) apart where they cross the front:
+   r = 14 / tan(step / 2). Three words: 12 faces, 30°, 52px. Seven: 14 faces, ~26°, 61px. */
+function ring(count: number) {
+  const faces = count * Math.ceil(12 / count)
+  const step = 360 / faces
+  return { faces, step, radius: 14 / Math.tan(((step / 2) * Math.PI) / 180) }
+}
+
+export function SpinWord({ words, label, restOnly = false }: { words: readonly string[]; label: string; restOnly?: boolean }) {
+  const { faces: FACES, step: STEP, radius: RADIUS } = useMemo(() => ring(words.length), [words.length])
+  const isRest = (angle: number) => (((Math.round(angle / STEP) % FACES) + FACES) % FACES) % words.length === 0
+
   const reduced = !!useReducedMotion()
   const rot = useMotionValue(0) // degrees turned; the face at angle a is in front when rot ≡ a
   const [on, setOn] = useState(false)
@@ -46,27 +53,31 @@ export function AskWord() {
   }
   const nearest = () => Math.round(rot.get() / STEP) * STEP
   // the loop: a turn, a rest, the next turn; each step schedules the next and checks it's still wanted
+  const next = (from: number) => (restOnly && isRest(from + STEP) ? from + 2 * STEP : from + STEP)
   const tick = () => {
     if (!active.current) return
-    go(nearest() + STEP, TURN)
+    go(next(nearest()), TURN)
     timer.current = window.setTimeout(tick, LOOP_EVERY)
   }
   const start = () => {
     active.current = true
     setOn(true)
     clearTimeout(timer.current)
-    go(nearest() + 360 + STEP, SPIN) // one full turn plus a step, onto the next word
+    go(next(nearest() + 360), SPIN) // one full turn plus a step, onto the next word
     timer.current = window.setTimeout(tick, 900 + LOOP_EVERY - 500) // once the spin has landed and rested
   }
   const stop = () => {
     active.current = false
     setOn(false)
     clearTimeout(timer.current)
-    const cycle = STEP * WORDS.length // at least a full turn, onto the next "attention" face
+    const cycle = STEP * words.length // at least a full turn, onto the next resting face
     go(Math.ceil((rot.get() + 360) / cycle) * cycle, SPIN)
   }
   useEffect(() => () => (clearTimeout(timer.current), anim.current?.stop()), [])
   const onPointerEnter = useHoverZone(start, stop)
+  // reduced motion swaps words by re-rendering which face is in front (no rotation to follow)
+  const [, force] = useState(0)
+  useMotionValueEvent(rot, 'change', () => reduced && force((n) => n + 1))
 
   const drum = useTransform(rot, (r) => `translateZ(${-RADIUS}px) rotateX(${-r}deg)`)
   const speed = useVelocity(rot) // degrees per second
@@ -75,19 +86,19 @@ export function AskWord() {
   return (
     <button
       type="button"
-      aria-label="money, data, attention"
+      aria-label={label}
       onPointerEnter={onPointerEnter}
       onClick={() => (on ? stop() : start())}
       className="relative inline-block cursor-pointer touch-manipulation select-none text-left text-ink outline-offset-2 focus-visible:rounded-mark focus-visible:outline-2 focus-visible:outline-ink after:pointer-events-none after:absolute after:inset-x-0 after:bottom-[3px] after:border-b after:border-dotted after:border-ink-muted"
     >
-      {/* fixed width: every face sits in one grid cell, so the slot is always as wide as "attention", the
-          longest word; it never resizes, and nothing around it moves */}
+      {/* fixed width: every face sits in one grid cell, so the slot is always as wide as the longest word;
+          it never resizes, and nothing around it moves */}
       <span aria-hidden="true" className="pointer-events-none inline-grid">
         {/* the fixed point of view: perspective here, the cylinder keeps its faces in 3D */}
         <motion.span className="inline-grid [perspective:320px]" style={{ filter: blur }}>
           <motion.span className="inline-grid [transform-style:preserve-3d]" style={{ transform: drum }}>
             {Array.from({ length: FACES }, (_, k) => (
-              <Face key={k} k={k} rot={rot} reduced={reduced} />
+              <Face key={k} word={words[k % words.length]} angle={k * STEP} radius={RADIUS} front={Math.round(rot.get() / STEP) % FACES === k} rot={rot} reduced={reduced} step={STEP} />
             ))}
           </motion.span>
         </motion.span>
@@ -96,24 +107,37 @@ export function AskWord() {
   )
 }
 
-function Face({ k, rot, reduced }: { k: number; rot: MotionValue<number>; reduced: boolean }) {
-  const angle = k * STEP
+function Face({
+  word,
+  angle,
+  radius,
+  step,
+  front,
+  rot,
+  reduced,
+}: {
+  word: string
+  angle: number
+  radius: number
+  step: number
+  front: boolean
+  rot: MotionValue<number>
+  reduced: boolean
+}) {
   // how far this face is from the front, in steps, the short way round; opacity follows, so at rest only the
   // front word shows and the neighbours appear only while the drum turns
-  const away = useTransform(rot, (r) => Math.abs(((((angle - r) % 360) + 540) % 360) - 180) / STEP)
+  const away = useTransform(rot, (r) => Math.abs(((((angle - r) % 360) + 540) % 360) - 180) / step)
   const opacity = useTransform(away, (a) => Math.max(0, 1 - a))
-  const [, force] = useState(0)
-  useMotionValueEvent(rot, 'change', () => reduced && force((n) => n + 1))
   return (
     <motion.span
       className="whitespace-nowrap [grid-area:1/1] [backface-visibility:hidden]"
       style={{
-        transform: reduced ? 'none' : `rotateX(${angle}deg) translateZ(${RADIUS}px)`,
-        opacity: reduced ? (Math.round(rot.get() / STEP) % FACES === k ? 1 : 0) : opacity,
+        transform: reduced ? 'none' : `rotateX(${angle}deg) translateZ(${radius}px)`,
+        opacity: reduced ? (front ? 1 : 0) : opacity,
         transition: reduced ? 'opacity 200ms ease' : undefined,
       }}
     >
-      {WORDS[k % WORDS.length]}
+      {word}
     </motion.span>
   )
 }
