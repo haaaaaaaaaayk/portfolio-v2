@@ -6,6 +6,7 @@ import { reveal } from '../../lib/motion'
 import { ABOUT_VERSIONS, FINAL_VERSION } from './aboutVersions'
 import saved from './aboutText.json'
 import { Block, EditBar, EditableText, LookBar } from './TextEditor'
+import { AskWord } from './AskWord'
 import type { Look } from './textStyles'
 
 /* hello in each of his languages, picked by the visitor's time of day; late at night it's just hello.
@@ -94,6 +95,24 @@ function initialVersion() {
 }
 
 type AboutText = typeof saved
+
+/* {ask} in the copy is where the spinning word goes; the punctuation right after it stays on its line */
+function withAsk(copy: string) {
+  const i = copy.indexOf('{ask}')
+  if (i < 0) return copy
+  const rest = copy.slice(i + 5)
+  const punct = rest.match(/^[.,;:!?]*/)![0]
+  return (
+    <>
+      {copy.slice(0, i)}
+      <span className="whitespace-nowrap">
+        <AskWord />
+        {punct}
+      </span>
+      {rest.slice(punct.length)}
+    </>
+  )
+}
 type BlockId = 'location' | 'hello' | 'intro' | 'more'
 
 export function About() {
@@ -197,7 +216,11 @@ export function About() {
                 ) : (
                   <NameNote note={text.intro.note}>{text.intro.name}</NameNote>
                 )}
-                <EditableText editing={on} label="After the name" value={text.intro.after} onChange={(v) => set('intro', { after: v })} />
+                {on ? (
+                  <EditableText editing label="After the name ({ask} is the spinning word)" value={text.intro.after} onChange={(v) => set('intro', { after: v })} />
+                ) : (
+                  withAsk(text.intro.after)
+                )}
               </>
             ) : (
               <>
