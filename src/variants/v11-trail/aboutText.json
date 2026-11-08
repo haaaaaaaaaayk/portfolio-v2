@@ -15,14 +15,14 @@
     "color": "ink-muted",
     "before": "I’m ",
     "name": "Hayk",
-    "after": ", a design engineer who takes products from zero to one for startups, from the brand to the shipped app. I design the moments where a product asks people for something (money, data, attention), and I care about doing it without breaking their trust. At mymizu I’m designing in-app donations for a free app with 500K+ downloads.",
+    "after": ", a design engineer who takes products from 0 to 1 for startups, from the brand to the shipped app. I design the moments where a product asks people for something (money, data, attention). At mymizu I’m designing in-app donations for a free app with 500K+ downloads.",
     "note": "You read it as hike just like in the interaction above ;D",
     "strong": false
   },
   "more": {
     "style": "body-heading",
     "color": "ink-muted",
-    "text": "I studied computational sciences and the arts at Minerva across SF, Tokyo, Berlin, Seoul, Buenos Aires and Taipei, bringing a multidisciplinary, global read on the patterns that shape good products.",
+    "text": "I studied Computational Science and Arts at Minerva University across SF, Tokyo, Berlin, Seoul, Buenos Aires and Taipei, bringing a multidisciplinary, global read on the patterns that shape good products.",
     "strong": false
   }
 }
