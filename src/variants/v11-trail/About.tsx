@@ -69,7 +69,7 @@ function NameNote({ children, note }: { children: ReactNode; note: string }) {
         onBlur={() => setOpen(false)}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-        className="cursor-help rounded-mark text-ink underline decoration-ink-muted decoration-dotted decoration-1 underline-offset-4 outline-offset-2 focus-visible:outline-2 focus-visible:outline-ink"
+        className="cursor-help rounded-mark text-ink outline-offset-2 focus-visible:outline-2 focus-visible:outline-ink"
       >
         {children}
       </button>
@@ -218,7 +218,7 @@ export function About() {
               <>
                 <EditableText editing={on} label="Before the name" value={text.intro.before} onChange={(v) => set('intro', { before: v })} />
                 {on ? (
-                  <span className="text-ink underline decoration-ink-muted decoration-dotted decoration-1 underline-offset-4">
+                  <span className="text-ink">
                     <EditableText editing label="Name" value={text.intro.name} onChange={(v) => set('intro', { name: v })} />
                   </span>
                 ) : (
