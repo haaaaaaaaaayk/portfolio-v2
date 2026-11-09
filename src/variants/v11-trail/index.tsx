@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { profile } from '../../content'
+import { FONTS, usePrefs } from '../../lib/prefs'
 import { close, fadeUp, open } from '../../lib/motion'
 import { About } from './About'
 import { Hello } from './Hello'
@@ -140,10 +141,35 @@ export default function Trail() {
         <Hello />
 
         {/* case studies and scene settings are off for now */}
-        <footer className="mx-auto w-full max-w-[912px] px-6 pb-16 text-caption text-ink-muted sm:px-8">
-          © {new Date().getFullYear()}, {profile.name}
+        <footer className="mx-auto flex w-full max-w-[912px] items-center justify-between gap-4 px-6 pb-16 text-caption text-ink-muted sm:px-8">
+          <span>
+            © {new Date().getFullYear()}, {profile.name}
+          </span>
+          <FontPicker />
         </footer>
       </main>
+    </div>
+  )
+}
+
+/* The page's typeface, chosen by the visitor: the three stacks the 24th System ships (SF, Alte Haas Grotesk,
+   Helvetica Now). Each name is set in its own face, so the choice previews itself; the pick is remembered. */
+function FontPicker() {
+  const { font, setFont } = usePrefs()
+  return (
+    <div role="group" aria-label="Typeface" className="flex items-center gap-1">
+      {FONTS.map((f) => (
+        <button
+          key={f.id}
+          type="button"
+          aria-pressed={font === f.id}
+          onClick={() => setFont(f.id)}
+          data-font-preview={f.id}
+          className="h-8 cursor-pointer rounded-full px-3 text-caption text-ink-muted outline-offset-2 transition-colors duration-200 hover:text-ink-active focus-visible:outline-2 focus-visible:outline-ink aria-pressed:bg-control aria-pressed:text-ink"
+        >
+          {f.label}
+        </button>
+      ))}
     </div>
   )
 }

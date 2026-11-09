@@ -527,3 +527,8 @@ select {
     animation: none;
   }
 }
+
+/* the font picker's labels, each set in the face it picks */
+[data-font-preview='sf'] { font-family: 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; letter-spacing: 0; }
+[data-font-preview='haas'] { font-family: 'Alte Haas Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif; letter-spacing: -0.04em; }
+[data-font-preview='helvetica-now'] { font-family: 'Helvetica Now Text', 'Helvetica Now Display', 'Helvetica Neue', Helvetica, Arial, sans-serif; letter-spacing: 0; }

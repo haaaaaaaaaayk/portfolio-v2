@@ -81,6 +81,8 @@ function applyFont(font: FontId) {
 }
 
 function syncUrl() {
+  // only the playground mirrors its state in the address; the published site keeps clean links
+  if (!import.meta.env.DEV) return
   const url = new URL(window.location.href)
   url.searchParams.set('v', String(state.variant))
   url.searchParams.set('font', state.font)
