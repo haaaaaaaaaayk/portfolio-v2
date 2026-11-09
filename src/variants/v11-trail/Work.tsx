@@ -1,6 +1,6 @@
 /**
- * Work: a wall of case-study tiles, after pdepablo.com. Mixed shapes (square, landscape, portrait) interlock in
- * columns, and every column ends level so the wall has a clean bottom edge.
+ * Work: a wall of case-study tiles, after pdepablo.com. Fogged Glass leads, big and live; the rest are mixed shapes
+ * (square, landscape, portrait) that interlock in columns, and every column ends level so each band has a clean edge.
  *
  * Exact grid, all multiples of 4, inside the page's 912px boundary:
  *  - container 912px max, 32px side padding → 848px content = 3 columns × 272 + 2 gaps × 16
@@ -22,6 +22,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { reveal } from '../../lib/motion'
 import './work.css'
+import { FogPane } from './FogPane'
 
 type Shape = 'square' | 'landscape' | 'portrait'
 const SHAPE: Record<Shape, { ratio: string; label: string; asset: string }> = {
@@ -30,21 +31,26 @@ const SHAPE: Record<Shape, { ratio: string; label: string; asset: string }> = {
   portrait: { ratio: 'aspect-[272/364]', label: 'Portrait', asset: '544 × 728' },
 }
 
-type Tile = { id: string; title: string; shape: Shape; href: string }
-const tile = (n: number, shape: Shape): Tile => ({ id: `p${n}`, title: `Project ${String(n).padStart(2, '0')}`, shape, href: '#work' })
+type Tile = { kind: 'placeholder'; id: string; title: string; shape: Shape; href: string } | { kind: 'fog' }
+const tile = (n: number, shape: Shape): Tile => ({ kind: 'placeholder', id: `p${n}`, title: `Project ${String(n).padStart(2, '0')}`, shape, href: '#work' })
+const FOG: Tile = { kind: 'fog' }
 
-/* placeholders until the real case studies exist, laid out per column count so every column ends level */
-const LAYOUT: Record<1 | 2 | 3, Tile[][]> = {
+/* A band is a row of columns; a column can span two. Every column in a band ends level:
+   3 columns: [Fogged Glass 560×560 over two columns | portrait 364 + landscape 180 = 560]
+              [square + square | landscape + portrait | portrait + landscape], each 560
+   2 columns: [Fogged Glass full width, 16:9] then [P L P L | S S P L], each 4 widths + 3 gaps
+   1 column:  Fogged Glass first, then the rest */
+type Column = { span?: 2; tiles: Tile[] }
+const LAYOUT: Record<1 | 2 | 3, Column[][]> = {
   3: [
-    [tile(1, 'square'), tile(4, 'square')],
-    [tile(2, 'landscape'), tile(5, 'portrait')],
-    [tile(3, 'portrait'), tile(6, 'landscape')],
+    [{ span: 2, tiles: [FOG] }, { tiles: [tile(1, 'portrait'), tile(2, 'landscape')] }],
+    [{ tiles: [tile(3, 'square'), tile(4, 'square')] }, { tiles: [tile(5, 'landscape'), tile(6, 'portrait')] }, { tiles: [tile(7, 'portrait'), tile(8, 'landscape')] }],
   ],
   2: [
-    [tile(1, 'square'), tile(2, 'landscape'), tile(3, 'portrait')],
-    [tile(4, 'square'), tile(5, 'portrait'), tile(6, 'landscape')],
+    [{ span: 2, tiles: [FOG] }],
+    [{ tiles: [tile(1, 'portrait'), tile(2, 'landscape'), tile(6, 'portrait'), tile(5, 'landscape')] }, { tiles: [tile(3, 'square'), tile(4, 'square'), tile(7, 'portrait'), tile(8, 'landscape')] }],
   ],
-  1: [[tile(1, 'square'), tile(2, 'landscape'), tile(3, 'portrait'), tile(4, 'square'), tile(5, 'portrait'), tile(6, 'landscape')]],
+  1: [[{ tiles: [FOG, tile(1, 'portrait'), tile(2, 'landscape'), tile(3, 'square'), tile(4, 'square'), tile(5, 'landscape'), tile(6, 'portrait'), tile(7, 'portrait'), tile(8, 'landscape')] }]],
 }
 
 function useColumns(): 1 | 2 | 3 {
@@ -72,15 +78,19 @@ export function Work() {
         <p className="text-compact text-ink-muted">Work</p>
         <h2 className="mt-2 text-balance text-body text-ink sm:text-heading">Selected case studies.</h2>
 
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3">
-          {LAYOUT[cols].map((column, c) => (
-            <ul key={c} className="flex flex-col gap-4">
-              {column.map((t) => (
-                <li key={t.id}>
-                  <WorkTile {...t} />
-                </li>
+        <div className="mt-8 flex flex-col gap-4 sm:mt-10">
+          {LAYOUT[cols].map((band, b) => (
+            <div key={b} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {band.map((column, c) => (
+                <ul key={c} className={`flex flex-col gap-4 ${column.span === 2 ? 'sm:col-span-2' : ''}`}>
+                  {column.tiles.map((t) => (
+                    <li key={t.kind === 'fog' ? 'fog' : t.id}>
+                      {t.kind === 'fog' ? <FogTile cols={cols} /> : <WorkTile {...t} />}
+                    </li>
+                  ))}
+                </ul>
               ))}
-            </ul>
+            </div>
           ))}
         </div>
       </motion.div>
@@ -89,7 +99,7 @@ export function Work() {
   )
 }
 
-function WorkTile({ title, shape, href }: Tile) {
+function WorkTile({ title, shape, href }: Extract<Tile, { kind: 'placeholder' }>) {
   const s = SHAPE[shape]
   return (
     <a
@@ -107,6 +117,28 @@ function WorkTile({ title, shape, href }: Tile) {
       <span className="pointer-events-none absolute inset-0 grid place-items-center">
         <span className="work-pill inline-flex h-9 items-center rounded-full bg-[rgb(20_20_20/72%)] px-4 text-secondary text-white backdrop-blur-xl backdrop-saturate-150">
           {title}
+        </span>
+      </span>
+    </a>
+  )
+}
+
+/**
+ * The big one: Fogged Glass, live. Wipe the fog with the cursor (or press and drag to write); a still click opens
+ * the piece. No hover zoom here, because it would slide the glass under the cursor while you wipe, and the name
+ * pill sits in the bottom-left corner so it doesn't cover the glass. 560×560 on desktop, 16:9 across two columns.
+ */
+function FogTile({ cols }: { cols: 1 | 2 | 3 }) {
+  return (
+    <a
+      href={`${import.meta.env.BASE_URL}foggy_shinagawa/`}
+      aria-label="Fogged Glass: write on the fogged-up windows of Shinagawa"
+      className={`group relative block overflow-hidden rounded-card outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${cols === 2 ? 'aspect-video' : 'aspect-square'}`}
+    >
+      <FogPane src={`${import.meta.env.BASE_URL}foggy_shinagawa/scenes/gate.jpg`} />
+      <span className="pointer-events-none absolute bottom-4 left-4">
+        <span className="work-pill inline-flex h-9 items-center rounded-full bg-[rgb(20_20_20/72%)] px-4 text-secondary text-white backdrop-blur-xl backdrop-saturate-150">
+          Fogged Glass ↗
         </span>
       </span>
     </a>
