@@ -714,6 +714,10 @@ const RATIOS = [
 const EFFECTS = [
   { id: 'press',   name: 'Press' },
   { id: 'letters', name: 'Letters' },
+  { id: 'engrave',   name: 'Engrave' },
+  { id: 'hatch',     name: 'Hatch' },
+  { id: 'mezzotint', name: 'Mezzotint' },
+  { id: 'toner',     name: 'Toner' },
   { id: 'binary', name: 'Binary', glyph: '01' },
   { id: 'dots',   name: 'Dots',   glyph: '●' },
   { id: 'blocks', name: 'Blocks', glyph: '■' },
@@ -767,7 +771,7 @@ const DEFAULTS = {
 /* ================== end of owner settings ================== */
 
 const MAX_LEVELS = 6;
-const EFFECT_CODE = { binary: 0, dots: 1, blocks: 2, dither: 3, stitch: 4, press: 5, letters: 6 };   // paper + up to 5 inks
+const EFFECT_CODE = { binary: 0, dots: 1, blocks: 2, dither: 3, stitch: 4, press: 5, letters: 6, engrave: 7, hatch: 8, mezzotint: 9, toner: 10 };   // paper + up to 5 inks
 const TRAIL = 14;       // pointer trail samples
 
 const VERT = `#version 300 es
@@ -937,6 +941,21 @@ float glyph(int slot, vec2 lc, vec2 g) {
   return textureGrad(uAtlas, uv, dFdx(g) / ATLAS, dFdy(g) / ATLAS).r;
 }
 
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
+// Tone between cell centres, for effects drawn with continuous lines instead of cells.
+float toneSmooth(vec2 g) {
+  vec2 p = g - 0.5;
+  ivec2 i = ivec2(floor(p));
+  vec2 f = fract(p);
+  return mix(mix(toneAt(i), toneAt(i + ivec2(1, 0)), f.x), mix(toneAt(i + ivec2(0, 1)), toneAt(i + ivec2(1, 1)), f.x), f.y);
+}
+// Distance to the centre of the nearest line of a ruling with period 1.
+float ruling(float t) { return abs(fract(t) - 0.5); }
+
 float letterGlyph(int slot, vec2 lc, vec2 g) {
   vec2 cell = vec2(mod(float(slot), 8.0), floor(float(slot) / 8.0));
   vec2 uv = (cell + vec2(lc.x, 1.0 - lc.y)) / 8.0;
@@ -1063,6 +1082,53 @@ void main() {
       col = mix(col, over, m * 0.94);
       if (i == uPlate) plateMask = m;
     }
+  } else if (uEffect == 7) {
+    // Engrave: one ruling, like a banknote portrait. Lines swell with tone and bend around it.
+    float vs = toneSmooth(g);
+    float a = radians(uAngle);
+    vec2 dir = vec2(cos(a), sin(a)), nrm = vec2(-dir.y, dir.x);
+    vec2 pc = (fc - uRes * 0.5) / uCell;
+    float t = dot(pc, nrm) + (vs - 0.5) * 0.9 + sin(dot(pc, dir) * 0.35) * 0.12;
+    float w = clamp(vs, 0.0, 1.0) * 0.5;
+    float m = (1.0 - smoothstep(w - aa, w + aa, ruling(t))) * step(0.02, vs);
+    col = mix(paper, uLevels[max(1, quant(vs))], m);
+  } else if (uEffect == 8) {
+    // Hatch: pen strokes layered as tone climbs, each pass at a new angle and in the next colour,
+    // with a little hand wobble along every stroke.
+    float vs = toneSmooth(g);
+    vec2 pc = (fc - uRes * 0.5) / uCell;
+    float base = radians(uAngle);
+    float pen = 0.09 + 0.6 / uCell;
+    int n = uCount - 1;
+    for (int k = 0; k < 4; k++) {
+      float fk = float(k);
+      float on = smoothstep(fk * 0.22 + 0.04, fk * 0.22 + 0.12, vs);
+      if (on <= 0.0) break;
+      float a = base + (k == 1 ? 1.5708 : k == 2 ? 0.7854 : k == 3 ? -0.7854 : 0.0);
+      vec2 dir = vec2(cos(a), sin(a)), nrm = vec2(-dir.y, dir.x);
+      float along = dot(pc, dir);
+      float t = dot(pc, nrm) + (vnoise(vec2(along * 0.25, fk * 7.0 + floor(dot(pc, nrm)))) - 0.5) * 0.35;
+      float m = (1.0 - smoothstep(pen - aa, pen + aa, ruling(t))) * on;
+      col = mix(col, uLevels[1 + int(mod(fk, float(max(n, 1))))], m);
+    }
+  } else if (uEffect == 9) {
+    // Mezzotint: a plate roughened by a rocker; ink sits in random burrs, so tone becomes grain, not dots.
+    float vs = toneSmooth(g);
+    float burr = vnoise(fc / max(1.5, uCell * 0.22)) * 0.65 + hash(floor(fc / 1.5)) * 0.35;
+    float m = smoothstep(burr - 0.06, burr + 0.06, vs);
+    col = mix(paper, uLevels[max(1, quant(vs))], m);
+  } else if (uEffect == 10) {
+    // Toner: a photocopy. One-bit toner with an uneven threshold, drum streaks, dust that flickers,
+    // and a faint ghost of the page from the previous pass.
+    float vs = toneSmooth(g);
+    vec3 toner = uLevels[uCount - 1];
+    float th = 0.5 + (vnoise(fc / (uCell * 3.0)) - 0.5) * 0.3 + (hash(floor(fc)) - 0.5) * 0.06;
+    float m = smoothstep(th - 0.01, th + 0.01, vs);
+    float ghost = smoothstep(0.45, 0.6, toneSmooth(g - vec2(0.9, -0.4))) * 0.16;
+    float streak = step(0.9975, hash(vec2(floor(fc.x / 2.0), 3.0))) * 0.3 * smoothstep(0.3, 0.8, vnoise(vec2(fc.x * 0.1, fc.y / (uRes.y * 0.25))));
+    float dust = step(0.996, hash(floor(fc / 1.5) + floor(uTime * mix(0.0, 12.0, uFlicker))));
+    float edge = smoothstep(0.5, 0.72, length(fc / uRes - 0.5)) * 0.18;   // the lid never quite seals at the corners
+    col = mix(paper, toner, clamp(max(max(m, ghost), max(streak, dust)) + edge * (1.0 - m), 0.0, 1.0));
   } else if (uEffect == 6) {
     // Letters: the text runs through the cells in reading order; tone picks the ink.
     int li = quant(v);
@@ -1536,12 +1602,12 @@ function render() {
 const $ = id => document.getElementById(id);
 
 const SLIDERS = {
-  angle:      { label: 'Screen angle',    min: 0, max: 90,  unit: '°', parent: 'effect-fields', only: ['press'] },
+  angle:      { label: 'Angle',           min: 0, max: 90,  unit: '°', parent: 'effect-fields', only: ['press', 'engrave', 'hatch'] },
   misreg:     { label: 'Misregistration', min: 0, max: 100, unit: '%', parent: 'effect-fields', only: ['press'] },
   gain:       { label: 'Dot gain',        min: 0, max: 100, unit: '%', parent: 'effect-fields', only: ['press'] },
   size:       { label: 'Cell size',  min: 4,   max: 40,  unit: 'px', parent: 'grid-fields' },
   gap:        { label: 'Gap',        min: 0,   max: 60,  unit: '%',  parent: 'grid-fields', only: ['dots', 'blocks', 'dither'] },
-  flicker:    { label: 'Flicker',    min: 0,   max: 100, unit: '%',  parent: 'grid-fields', only: ['binary', 'stitch'] },
+  flicker:    { label: 'Flicker',    min: 0,   max: 100, unit: '%',  parent: 'grid-fields', only: ['binary', 'stitch', 'toner'] },
   contrast:   { label: 'Contrast',   min: 50,  max: 250, unit: '%',  parent: 'tone-fields' },
   brightness: { label: 'Brightness', min: -50, max: 50,  unit: '',   parent: 'tone-fields', signed: true },
   speed:      { label: 'Motion',     min: 0,   max: 200, unit: '%',  parent: 'motion-fields' },
@@ -2015,7 +2081,7 @@ let lastImage = null;   // kept so a Code export can carry the visitor's photo
 function halftoneEmbed(el, C, VERT, TONE_FRAG, DRAW_FRAG, drawAtlas, drawLetters) {
   const TRAIL = 14, MAX_LEVELS = 6;
   const code = (list, name) => Math.max(0, list.indexOf(name));
-  const EFFECT = code(['binary', 'dots', 'blocks', 'dither', 'stitch', 'press', 'letters'], C.effect);
+  const EFFECT = code(['binary', 'dots', 'blocks', 'dither', 'stitch', 'press', 'letters', 'engrave', 'hatch', 'mezzotint', 'toner'], C.effect);
   const SOURCE = code(['tide', 'flow', 'orbs', 'image'], C.source);
   const POINTER = code(['glow', 'push', 'pull', 'twirl'], C.pointer);
   const LEVELS = [C.background, ...C.colors].slice(0, MAX_LEVELS);
@@ -2182,7 +2248,7 @@ function exportConfig() {
 }
 
 const CONFIG_DOC = `/* Settings, exactly as you left them in Halftone Specimen. Change any value to tweak the look.
-   effect      press | letters | binary | dots | blocks | dither | stitch
+   effect      press | letters | engrave | hatch | mezzotint | toner | binary | dots | blocks | dither | stitch
    background  the base colour; colors run from light to strong (1 to 5 of them)
    source      tide | flow | orbs | image        pointer  glow | push | pull | twirl
    size        cell size in px                   gap, flicker, angle, misreg, gain, contrast, brightness, speed, brush, force: numbers as on the panel */`;
