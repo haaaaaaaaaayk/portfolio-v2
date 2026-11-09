@@ -716,8 +716,9 @@ const EFFECTS = [
   { id: 'letters', name: 'Letters' },
   { id: 'engrave',   name: 'Engrave' },
   { id: 'hatch',     name: 'Hatch' },
-  { id: 'mezzotint', name: 'Mezzotint' },
+  { id: 'mezzotint', name: 'Mezzo' },
   { id: 'toner',     name: 'Toner' },
+  { id: 'woodcut',   name: 'Woodcut' },
   { id: 'binary', name: 'Binary', glyph: '01' },
   { id: 'dots',   name: 'Dots',   glyph: '●' },
   { id: 'blocks', name: 'Blocks', glyph: '■' },
@@ -771,7 +772,7 @@ const DEFAULTS = {
 /* ================== end of owner settings ================== */
 
 const MAX_LEVELS = 6;
-const EFFECT_CODE = { binary: 0, dots: 1, blocks: 2, dither: 3, stitch: 4, press: 5, letters: 6, engrave: 7, hatch: 8, mezzotint: 9, toner: 10 };   // paper + up to 5 inks
+const EFFECT_CODE = { binary: 0, dots: 1, blocks: 2, dither: 3, stitch: 4, press: 5, letters: 6, engrave: 7, hatch: 8, mezzotint: 9, toner: 10, woodcut: 11 };   // paper + up to 5 inks
 const TRAIL = 14;       // pointer trail samples
 
 const VERT = `#version 300 es
@@ -1129,6 +1130,22 @@ void main() {
     float dust = step(0.996, hash(floor(fc / 1.5) + floor(uTime * mix(0.0, 12.0, uFlicker))));
     float edge = smoothstep(0.5, 0.72, length(fc / uRes - 0.5)) * 0.18;   // the lid never quite seals at the corners
     col = mix(paper, toner, clamp(max(max(m, ghost), max(streak, dust)) + edge * (1.0 - m), 0.0, 1.0));
+  } else if (uEffect == 11) {
+    // Woodcut, as in Japanese woodblock: a flat colour block printed first, its wood grain showing,
+    // then the key block on top, carved in grooves that follow the image's contours like a gouge.
+    float vs = toneSmooth(g);
+    int n = uCount - 1;
+    if (n > 1) {
+      float grainW = vnoise(vec2(fc.x / (uCell * 6.0), fc.y / (uCell * 0.6)));
+      float flatInk = smoothstep(0.18, 0.24, vs) * (0.7 + 0.3 * grainW);
+      col = mix(col, uLevels[1], flatInk);
+    }
+    float t = vs * 16.0 + (vnoise(fc / (uCell * 5.0)) - 0.5) * 0.8;
+    float fw = max(fwidth(t), 1e-3);
+    float w = smoothstep(0.3, 1.0, vs) * 0.5 + (hash(floor(fc / 1.5)) - 0.5) * 0.04;
+    float key = (1.0 - smoothstep(w - fw, w + fw, ruling(t))) * smoothstep(0.28, 0.32, vs);
+    key = max(key, smoothstep(0.9, 0.93, vs));
+    col = mix(col, uLevels[uCount - 1], key);
   } else if (uEffect == 6) {
     // Letters: the text runs through the cells in reading order; tone picks the ink.
     int li = quant(v);
@@ -2081,7 +2098,7 @@ let lastImage = null;   // kept so a Code export can carry the visitor's photo
 function halftoneEmbed(el, C, VERT, TONE_FRAG, DRAW_FRAG, drawAtlas, drawLetters) {
   const TRAIL = 14, MAX_LEVELS = 6;
   const code = (list, name) => Math.max(0, list.indexOf(name));
-  const EFFECT = code(['binary', 'dots', 'blocks', 'dither', 'stitch', 'press', 'letters', 'engrave', 'hatch', 'mezzotint', 'toner'], C.effect);
+  const EFFECT = code(['binary', 'dots', 'blocks', 'dither', 'stitch', 'press', 'letters', 'engrave', 'hatch', 'mezzotint', 'toner', 'woodcut'], C.effect);
   const SOURCE = code(['tide', 'flow', 'orbs', 'image'], C.source);
   const POINTER = code(['glow', 'push', 'pull', 'twirl'], C.pointer);
   const LEVELS = [C.background, ...C.colors].slice(0, MAX_LEVELS);
@@ -2248,7 +2265,7 @@ function exportConfig() {
 }
 
 const CONFIG_DOC = `/* Settings, exactly as you left them in Halftone Specimen. Change any value to tweak the look.
-   effect      press | letters | engrave | hatch | mezzotint | toner | binary | dots | blocks | dither | stitch
+   effect      press | letters | engrave | hatch | mezzotint | toner | woodcut | binary | dots | blocks | dither | stitch
    background  the base colour; colors run from light to strong (1 to 5 of them)
    source      tide | flow | orbs | image        pointer  glow | push | pull | twirl
    size        cell size in px                   gap, flicker, angle, misreg, gain, contrast, brightness, speed, brush, force: numbers as on the panel */`;
