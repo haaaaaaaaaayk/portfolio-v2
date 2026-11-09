@@ -35,7 +35,7 @@ export function Hello() {
   }
 
   return (
-    <section id="hello" className="mx-auto w-full max-w-[1292px] px-6 pb-section sm:pb-32">
+    <section id="hello" className="mx-auto w-full max-w-[912px] px-6 pb-section sm:px-8 sm:pb-32">
       <motion.div
         {...inView}
         className="flex flex-col gap-6 rounded-card bg-surface p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8"

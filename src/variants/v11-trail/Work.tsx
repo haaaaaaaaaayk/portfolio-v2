@@ -2,11 +2,11 @@
  * Work: a wall of case-study tiles, after pdepablo.com. Mixed shapes (square, landscape, portrait) interlock in
  * columns, and every column ends level so the wall has a clean bottom edge.
  *
- * Exact grid, all multiples of 4, at full width:
- *  - container 1292px max, 24px side padding → 1244px content = 3 columns × 404 + 2 gaps × 16
- *  - tiles: square 404×404, landscape 404×268, portrait 404×540
- *  - columns: [square, square] · [landscape, portrait] · [portrait, landscape], each 824px tall
- *  - because landscape + portrait = 2 squares in height (268 + 540 = 808 = 2 × 404), the columns stay level at any
+ * Exact grid, all multiples of 4, inside the page's 912px boundary:
+ *  - container 912px max, 32px side padding → 848px content = 3 columns × 272 + 2 gaps × 16
+ *  - tiles: square 272×272, landscape 272×180 (≈3:2), portrait 272×364 (≈3:4)
+ *  - columns: [square, square] · [landscape, portrait] · [portrait, landscape], each 560px tall
+ *  - because landscape + portrait = 2 squares in height (180 + 364 = 544 = 2 × 272), the columns stay level at any
  *    width, not just the widest
  *  - 2 columns from 640px (each column holds one of each shape, so they also end level), 1 column on phones
  *
@@ -25,9 +25,9 @@ import './work.css'
 
 type Shape = 'square' | 'landscape' | 'portrait'
 const SHAPE: Record<Shape, { ratio: string; label: string; asset: string }> = {
-  square: { ratio: 'aspect-square', label: 'Square', asset: '808 × 808' },
-  landscape: { ratio: 'aspect-[404/268]', label: 'Landscape', asset: '808 × 536' },
-  portrait: { ratio: 'aspect-[404/540]', label: 'Portrait', asset: '808 × 1080' },
+  square: { ratio: 'aspect-square', label: 'Square', asset: '544 × 544' },
+  landscape: { ratio: 'aspect-[272/180]', label: 'Landscape', asset: '544 × 360' },
+  portrait: { ratio: 'aspect-[272/364]', label: 'Portrait', asset: '544 × 728' },
 }
 
 type Tile = { id: string; title: string; shape: Shape; href: string }
@@ -67,7 +67,7 @@ export function Work() {
     : { initial: { opacity: 0, y: 8 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-80px' }, transition: reveal }
 
   return (
-    <section id="work" className="relative mx-auto w-full max-w-[1292px] px-6 py-section sm:py-32">
+    <section id="work" className="relative mx-auto w-full max-w-[912px] px-6 py-section sm:px-8 sm:py-32">
       <motion.div {...inView}>
         <p className="text-compact text-ink-muted">Work</p>
         <h2 className="mt-2 text-balance text-body text-ink sm:text-heading">Selected case studies.</h2>
@@ -128,7 +128,7 @@ function GridOverlay() {
   }, [])
   if (!on) return null
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 right-0 z-30 mx-auto w-full max-w-[1292px] px-6">
+    <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 right-0 z-30 mx-auto w-full max-w-[912px] px-6 sm:px-8">
       <div className="grid h-full grid-cols-1 gap-x-4 sm:grid-cols-2 lg:grid-cols-3">
         {[0, 1, 2].map((i) => (
           <div key={i} className={`h-full bg-[rgb(255_0_80/6%)] outline outline-1 outline-[rgb(255_0_80/30%)] ${i > 0 ? 'hidden sm:block' : ''} ${i > 1 ? 'sm:hidden lg:block' : ''}`} />

@@ -140,7 +140,7 @@ export default function Trail() {
         <Hello />
 
         {/* case studies and scene settings are off for now */}
-        <footer className="mx-auto w-full max-w-[1292px] px-6 pb-16 text-caption text-ink-muted">
+        <footer className="mx-auto w-full max-w-[912px] px-6 pb-16 text-caption text-ink-muted sm:px-8">
           © {new Date().getFullYear()}, {profile.name}
         </footer>
       </main>
