@@ -4,6 +4,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { profile } from '../../content'
 import { close, fadeUp, open } from '../../lib/motion'
 import { About } from './About'
+import { Hello } from './Hello'
+import { Playground } from './Playground'
+import { SectionPill } from './SectionPill'
 import { mountTrail, type TrailOptions } from './scene'
 
 type ThoughtStyle = TrailOptions['mode']
@@ -89,9 +92,10 @@ export default function Trail() {
 
   return (
     <div className="relative min-h-svh bg-paper">
+      <SectionPill />
       <main>
         {/* the first screen is the scene and nothing else; everything about him comes after it */}
-        <section className="flex min-h-svh flex-col items-center justify-center px-4 py-12">
+        <section id="top" className="flex min-h-svh flex-col items-center justify-center px-4 py-12">
           <motion.div {...fadeUp(0.1, reduced)} className="relative flex w-full justify-center">
             <TrailStage opts={opts} />
             {/* his send-off at the end of the walk; it hangs below the scene so nothing shifts */}
@@ -132,9 +136,11 @@ export default function Trail() {
         </section>
 
         <About />
+        <Playground />
+        <Hello />
 
-        {/* the case studies, contact and scene settings are off for now; the page ends on who he is */}
-        <footer className="mx-auto w-full max-w-2xl px-6 pb-16 text-caption text-ink-muted sm:px-8">
+        {/* case studies and scene settings are off for now */}
+        <footer className="mx-auto w-full max-w-4xl px-6 pb-16 text-caption text-ink-muted sm:px-8">
           © {new Date().getFullYear()}, {profile.name}
         </footer>
       </main>
