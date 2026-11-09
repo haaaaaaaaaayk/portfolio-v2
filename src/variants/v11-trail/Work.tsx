@@ -10,9 +10,7 @@
  *
  * Hover or keyboard focus, as on pdepablo.com:
  *  - the image eases to 1.02 (600ms, ease-reading, which is the ease-fast curve)
- *  - a dark glass pill with the project's name pops in at the tile's centre (fade 200ms, settle from 0.97 and 6px
- *    lower over 350ms). The blur keeps the name readable over any image.
- * Touch screens can't hover, so there the pill is always shown.
+ *  - the name and a one-line description sit bottom left, always shown (see Caption), so the hover is just the zoom
  *
  * In development, press G to see the columns.
  */
@@ -20,7 +18,6 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { reveal } from '../../lib/motion'
 import { SpinWord } from './SpinWord'
-import './work.css'
 
 type Shape = 'square' | 'landscape' | 'portrait'
 const SHAPE: Record<Shape, { ratio: string; label: string; asset: string }> = {
@@ -30,15 +27,17 @@ const SHAPE: Record<Shape, { ratio: string; label: string; asset: string }> = {
 }
 
 /* A live piece shows as a 10-second loop made from the piece itself; `big` is the lead tile, whose shape follows the columns. */
-type Loop = { kind: 'loop'; id: string; name: string; label: string; path: string; media: string; shape: Shape | 'big' }
+type Loop = { kind: 'loop'; id: string; name: string; line: string; label: string; path: string; media: string; shape: Shape | 'big' }
 type Tile = Loop | { kind: 'spin'; id: 'spin' }
 const FOG: Tile = {
-  kind: 'loop', id: 'fog', name: 'Fogged Glass', label: 'Fogged Glass: write on the fogged-up windows of Shinagawa',
+  kind: 'loop', id: 'fog', name: 'Foggy Shinagawa', line: 'Write on a fogged-up window in Tokyo.',
+  label: 'Foggy Shinagawa: write on a fogged-up window in Tokyo',
   path: 'foggy_shinagawa/', media: 'work/fogged-glass', shape: 'big',
 }
 const SPIN: Tile = { kind: 'spin', id: 'spin' }
 const HALFTONE: Tile = {
-  kind: 'loop', id: 'halftone', name: 'Halftone Specimen', label: 'Halftone Specimen: an analog print press in the browser',
+  kind: 'loop', id: 'halftone', name: 'Halftone Specimen', line: 'Turn any image into analog print.',
+  label: 'Halftone Specimen: turn any image into analog print',
   path: 'halftone/', media: 'work/halftone', shape: 'square',
 }
 
@@ -105,9 +104,9 @@ export function Work() {
  *    560×560 on desktop, 16:9 across two columns on tablets.
  *  - Halftone Specimen (square, cropped from its 3:4 loop): ten effects on the Golden Gate, each printing over the last (scripts/record-halftone).
  * It loads late and plays only while on screen, pausing when scrolled away; with reduced motion it stays on its poster
- * frame. Same hover as every tile: the video eases to 1.02 and the name pill pops in at the centre.
+ * frame. Same hover as every tile: the video eases to 1.02.
  */
-function LoopTile({ name, label, path, media, shape, cols }: Loop & { cols: 1 | 2 | 3 }) {
+function LoopTile({ name, line, label, path, media, shape, cols }: Loop & { cols: 1 | 2 | 3 }) {
   const video = useRef<HTMLVideoElement>(null)
   const reduced = useReducedMotion()
   useEffect(() => {
@@ -143,11 +142,7 @@ function LoopTile({ name, label, path, media, shape, cols }: Loop & { cols: 1 | 
         aria-hidden
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-[600ms] ease-reading group-hover:scale-[1.02] group-focus-visible:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
       />
-      <span className="pointer-events-none absolute inset-0 grid place-items-center">
-        <span className="work-pill inline-flex h-9 items-center rounded-full bg-[rgb(20_20_20/72%)] px-4 text-secondary text-white backdrop-blur-xl backdrop-saturate-150">
-          {name}
-        </span>
-      </span>
+      <Caption name={name} line={line} onVideo />
     </a>
   )
 }
@@ -155,7 +150,7 @@ function LoopTile({ name, label, path, media, shape, cols }: Loop & { cols: 1 | 
 /**
  * Spin a word (hayko.me/spin): the tile is the piece itself, not a recording. The site's own spinning word, at
  * twice the paragraph size, loops through "hello" in five languages while the tile is on screen (silent: it runs
- * on its own, so it doesn't click). Hover keeps it looping and shows the name pill like every tile.
+ * on its own, so it doesn't click). Hover zooms it a touch, like every tile.
  */
 const HELLOS = ['hello', 'բարև', 'hola', 'こんにちは', 'bonjour'] as const
 function SpinTile() {
@@ -173,18 +168,32 @@ function SpinTile() {
     <a
       ref={ref}
       href={`${base}spin/`}
-      aria-label="Spin a word: nineteen ways a word can turn into another, with your own words"
-      className={`group relative grid place-items-center overflow-hidden rounded-card bg-canvas outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${SHAPE.square.ratio}`}
+      aria-label="Spin a word: nineteen ways to animate your word"
+      className={`group relative grid place-items-center overflow-hidden rounded-card bg-canvas pb-16 outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${SHAPE.square.ratio}`}
     >
       <span aria-hidden className="scale-200 text-body text-ink transition-transform duration-[600ms] ease-reading group-hover:scale-[2.04] motion-reduce:transition-none">
         <SpinWord words={HELLOS} label="hello in five languages" driven={seen} silent />
       </span>
-      <span className="pointer-events-none absolute inset-0 grid place-items-center">
-        <span className="work-pill inline-flex h-9 items-center rounded-full bg-[rgb(20_20_20/72%)] px-4 text-secondary text-white backdrop-blur-xl backdrop-saturate-150">
-          Spin a word
-        </span>
-      </span>
+      <Caption name="Spin a word" line="19 ways to animate your word." />
     </a>
+  )
+}
+
+/**
+ * The tile's name and one line on what you can do there, bottom left and always shown, so people know what they're
+ * clicking into before they hover. On video the type is white over a soft dark fade: the fade has a job, keeping
+ * the words readable over any frame (Halftone's Toner shot is nearly white). On a light tile it's ink, no fade.
+ */
+function Caption({ name, line, onVideo = false }: { name: string; line: string; onVideo?: boolean }) {
+  return (
+    <span
+      className={`pointer-events-none absolute inset-x-0 bottom-0 flex flex-col px-4 pb-4 pt-12 text-compact ${
+        onVideo ? 'bg-linear-to-t from-[rgb(0_0_0/56%)] to-transparent text-white' : 'text-ink'
+      }`}
+    >
+      <span>{name}</span>
+      <span className={onVideo ? 'text-[rgb(255_255_255/76%)]' : 'text-ink-muted'}>{line}</span>
+    </span>
   )
 }
 
