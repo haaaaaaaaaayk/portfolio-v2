@@ -6,7 +6,7 @@
     "strong": false
   },
   "hello": {
-    "style": "body",
+    "style": "title",
     "color": "ink-active",
     "strong": true
   },
@@ -22,7 +22,7 @@
   "more": {
     "style": "body-heading",
     "color": "ink-muted",
-    "text": "I studied Computational Science and Arts at Minerva University across {cities}, bringing a multidisciplinary, global read on the patterns that shape good products.",
+    "text": "I studied Computational Science and Arts at Minerva University across {cities}, bringing a multidisciplinary, global read on the patterns that shape innovation and good products.",
     "strong": false
   }
 }

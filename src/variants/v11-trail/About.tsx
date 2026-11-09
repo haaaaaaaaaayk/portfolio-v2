@@ -97,7 +97,7 @@ function initialVersion() {
 type AboutText = typeof saved
 
 /* Placeholders in the copy where a spinning word goes. The first word is where it rests; the punctuation right
-   after a placeholder stays on its line with it. */
+   after a placeholder rides on every face of the drum, so it always sits right after the word showing. */
 const SPINS: Record<string, { words: readonly string[]; label: string; restOnly?: boolean }> = {
   '{ask}': { words: ['attention', 'money', 'data'], label: 'money, data, attention' },
   '{cities}': {
@@ -113,10 +113,7 @@ function withSpins(copy: string) {
     if (!spin) return i > 0 && SPINS[parts[i - 1]] ? part.replace(/^[.,;:!?]*/, '') : part
     const punct = (parts[i + 1] ?? '').match(/^[.,;:!?]*/)![0]
     return (
-      <span key={i} className="whitespace-nowrap">
-        <SpinWord {...spin} />
-        {punct}
-      </span>
+      <SpinWord key={i} {...spin} suffix={punct} />
     )
   })
 }

@@ -45,6 +45,7 @@ export function SpinWord({
   restOnly = false,
   driven,
   silent = false,
+  suffix = '',
 }: {
   words: readonly string[]
   label: string
@@ -53,6 +54,9 @@ export function SpinWord({
   driven?: boolean
   /** no clicks: for loops that run on their own, like a Work tile, where nobody asked for sound */
   silent?: boolean
+  /** punctuation that belongs to the word (a comma, a full stop): printed on every face, so it travels with the
+      word instead of waiting at the edge of the slot */
+  suffix?: string
 }) {
   const { faces: FACES, step: STEP, radius: RADIUS } = useMemo(() => ring(words.length), [words.length])
   const isRest = (angle: number) => (((Math.round(angle / STEP) % FACES) + FACES) % FACES) % words.length === 0
@@ -131,7 +135,7 @@ export function SpinWord({
       aria-label={label}
       onPointerEnter={driven === undefined ? onPointerEnter : undefined}
       onClick={() => (on ? stop() : start())}
-      className="relative inline-block cursor-pointer touch-manipulation select-none text-left text-ink outline-offset-2 focus-visible:rounded-mark focus-visible:outline-2 focus-visible:outline-ink after:pointer-events-none after:absolute after:inset-x-0 after:bottom-[3px] after:border-b after:border-dotted after:border-ink-muted"
+      className="relative inline-block cursor-pointer touch-manipulation select-none text-left text-ink outline-offset-2 focus-visible:rounded-mark focus-visible:outline-2 focus-visible:outline-ink"
     >
       {/* fixed width: every face sits in one grid cell, so the slot is always as wide as the longest word;
           it never resizes, and nothing around it moves */}
@@ -140,7 +144,7 @@ export function SpinWord({
         <motion.span className="inline-grid [perspective:320px]" style={{ filter: blur }}>
           <motion.span className="inline-grid [transform-style:preserve-3d]" style={{ transform: drum }}>
             {Array.from({ length: FACES }, (_, k) => (
-              <Face key={k} word={words[k % words.length]} angle={k * STEP} radius={RADIUS} front={Math.round(rot.get() / STEP) % FACES === k} rot={rot} reduced={reduced} step={STEP} />
+              <Face key={k} word={words[k % words.length] + suffix} angle={k * STEP} radius={RADIUS} front={Math.round(rot.get() / STEP) % FACES === k} rot={rot} reduced={reduced} step={STEP} />
             ))}
           </motion.span>
         </motion.span>
