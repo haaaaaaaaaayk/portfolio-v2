@@ -38,7 +38,7 @@ export function Hello() {
     <section id="hello" className="mx-auto w-full max-w-4xl px-6 pb-section sm:px-8 sm:pb-32">
       <motion.div
         {...inView}
-        className="flex flex-col gap-6 rounded-card bg-surface p-6 ring-1 ring-rule-soft sm:flex-row sm:items-center sm:justify-between sm:p-8"
+        className="flex flex-col gap-6 rounded-card bg-surface p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8"
       >
         <div>
           <p className="text-body text-ink">This page is a snapshot of how I work.</p>
@@ -49,7 +49,7 @@ export function Hello() {
             href={GITHUB}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-11 items-center rounded-full px-4 text-compact text-ink outline-offset-2 transition-[background-color,transform] duration-300 ease-fast hover:bg-hover focus-visible:outline-2 focus-visible:outline-ink active:scale-[0.97]"
+            className="inline-flex h-11 items-center rounded-full bg-control px-5 text-compact text-ink outline-offset-2 transition-[background-color,transform] duration-300 ease-fast hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-ink active:scale-[0.97]"
           >
             GitHub
           </a>

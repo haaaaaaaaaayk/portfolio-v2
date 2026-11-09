@@ -5,7 +5,7 @@
  *    itself, in miniature)
  *  - Spin: the real spinning word, started by hovering the card
  *  - The trail: teaches the hidden controls of the game above, and takes you back up ready to walk
- * Hover adds one thing per card: an arrow that slides in after the title (Caleb's 200ms slide), so it reads as a link.
+ * Each title carries an arrow (↗ elsewhere, ↑ up the page) that nudges toward where it goes on hover.
  */
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
@@ -26,14 +26,14 @@ export function Playground() {
       <motion.div {...inView}>
         {/* Caleb's section opening: a small label, then one sentence that says what this is */}
         <p className="text-compact text-ink-muted">Playground</p>
-        <h2 className="mt-2 text-balance text-heading text-ink sm:text-title">Small things I build to learn how things feel.</h2>
+        <h2 className="mt-2 text-balance text-body text-ink sm:text-heading">Small things I build to learn how things feel.</h2>
 
-        <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2">
+        <div className="mt-8 grid gap-x-4 gap-y-8 sm:mt-10 sm:grid-cols-2">
           <PlayCard
             className="sm:col-span-2"
             href={`${base}foggy_shinagawa/`}
             title="Fogged Glass"
-            meta="Interaction · 2026"
+            meta="Interaction"
             line="Write on the fogged-up windows of Shinagawa. Wipe this one with your cursor."
             media={() => <FogPane src={`${base}foggy_shinagawa/scenes/gate.jpg`} />}
             ratio="aspect-[16/9] sm:aspect-[16/7]"
@@ -42,7 +42,7 @@ export function Playground() {
             href="https://github.com/haaaaaaaaaayk/something-word"
             external
             title="Spin"
-            meta="Animation · 2026"
+            meta="Animation"
             line="A word that turns into what a product really asks for. Sixteen versions, one kept."
             media={(hover) => (
               <p className="pointer-events-none px-6 text-center text-body text-ink-muted">
@@ -56,7 +56,7 @@ export function Playground() {
           <PlayCard
             href="#top"
             title="The trail"
-            meta="Game · 2026"
+            meta="Game"
             line="The hike up top is playable. Hold the up arrow to walk him to the top."
             arrow="↑"
             onActivate={() => {
@@ -113,16 +113,16 @@ function PlayCard({
       onBlur={() => setHover(false)}
       className={`group block rounded-card outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${className}`}
     >
-      <div className={`relative grid place-items-center overflow-hidden rounded-media bg-surface ring-1 ring-rule-soft ${ratio}`}>
+      <div className={`relative grid place-items-center overflow-hidden rounded-media bg-surface ${ratio}`}>
         {media(hover)}
       </div>
       <div className="mt-3 flex items-baseline justify-between gap-4">
         <span className="flex items-baseline gap-2 text-body text-ink">
           {title}
-          {/* the arrow slides in from the left on hover, like Caleb's tooltips (200ms) */}
+          {/* always visible so the card reads as a link on touch too; on hover it nudges toward where it goes */}
           <span
             aria-hidden
-            className="-translate-x-2 text-ink-muted opacity-0 transition-[opacity,translate] duration-200 ease-fast group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+            className="text-ink-muted transition-[translate,color] duration-200 ease-fast group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-ink group-focus-visible:text-ink"
           >
             {arrow}
           </span>
@@ -303,7 +303,6 @@ function TrailKey({ active }: { active: boolean }) {
       >
         ↑
       </span>
-      <span className="text-compact text-ink-muted">hold to walk</span>
     </div>
   )
 }
