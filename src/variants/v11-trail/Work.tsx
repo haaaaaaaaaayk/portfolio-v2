@@ -1,5 +1,5 @@
 /**
- * Work: a wall of case-study tiles, after pdepablo.com. Fogged Glass leads, big and live; the rest are mixed shapes
+ * Work: a wall of case-study tiles, after pdepablo.com. Fogged Glass leads, big, as a loop recorded from the piece; the rest are mixed shapes
  * (square, landscape, portrait) that interlock in columns, and every column ends level so each band has a clean edge.
  *
  * Exact grid, all multiples of 4, inside the page's 912px boundary:
@@ -19,10 +19,9 @@
  * Placeholders show the exact asset size to export for each slot. In development, press G to see the columns.
  */
 import { motion, useReducedMotion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { reveal } from '../../lib/motion'
 import './work.css'
-import { FogPane } from './FogPane'
 
 type Shape = 'square' | 'landscape' | 'portrait'
 const SHAPE: Record<Shape, { ratio: string; label: string; asset: string }> = {
@@ -124,21 +123,51 @@ function WorkTile({ title, shape, href }: Extract<Tile, { kind: 'placeholder' }>
 }
 
 /**
- * The big one: Fogged Glass, live. Wipe the fog with the cursor (or press and drag to write); a still click opens
- * the piece. No hover zoom here, because it would slide the glass under the cursor while you wipe, and the name
- * pill sits in the bottom-left corner so it doesn't cover the glass. 560×560 on desktop, 16:9 across two columns.
+ * The big one: Fogged Glass, as a 10-second loop recorded from the real piece (its own Scribble drawing on the
+ * Shinagawa fog, dissolving back to clean glass so the loop has no seam). It loads late and plays only while on
+ * screen, pausing when scrolled away (Caleb's pattern); with reduced motion it stays on its poster frame. Same hover
+ * as every tile: the video eases to 1.02 and the name pill pops in at the centre. 560×560 on desktop, 16:9 across two
+ * columns on tablets.
  */
 function FogTile({ cols }: { cols: 1 | 2 | 3 }) {
+  const video = useRef<HTMLVideoElement>(null)
+  const reduced = useReducedMotion()
+  useEffect(() => {
+    const v = video.current
+    if (!v || reduced) return
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          if (!v.src) v.src = v.dataset.src!
+          v.play().catch(() => {})
+        } else v.pause()
+      },
+      { rootMargin: '200px 0px', threshold: 0.2 },
+    )
+    io.observe(v)
+    return () => io.disconnect()
+  }, [reduced])
+  const base = import.meta.env.BASE_URL
   return (
     <a
-      href={`${import.meta.env.BASE_URL}foggy_shinagawa/`}
+      href={`${base}foggy_shinagawa/`}
       aria-label="Fogged Glass: write on the fogged-up windows of Shinagawa"
-      className={`group relative block overflow-hidden rounded-card outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${cols === 2 ? 'aspect-video' : 'aspect-square'}`}
+      className={`group relative block overflow-hidden rounded-card bg-canvas outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${cols === 2 ? 'aspect-video' : 'aspect-square'}`}
     >
-      <FogPane src={`${import.meta.env.BASE_URL}foggy_shinagawa/scenes/gate.jpg`} />
-      <span className="pointer-events-none absolute bottom-4 left-4">
+      <video
+        ref={video}
+        data-src={`${base}work/fogged-glass.mp4`}
+        poster={`${base}work/fogged-glass.jpg`}
+        muted
+        loop
+        playsInline
+        preload="none"
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-[600ms] ease-reading group-hover:scale-[1.02] group-focus-visible:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+      />
+      <span className="pointer-events-none absolute inset-0 grid place-items-center">
         <span className="work-pill inline-flex h-9 items-center rounded-full bg-[rgb(20_20_20/72%)] px-4 text-secondary text-white backdrop-blur-xl backdrop-saturate-150">
-          Fogged Glass ↗
+          Fogged Glass
         </span>
       </span>
     </a>
