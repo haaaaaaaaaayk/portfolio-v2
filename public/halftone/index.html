@@ -157,13 +157,19 @@
     border: 0;
     border-radius: var(--radius-control);
     color: var(--ink);
-    transition: background-color 180ms ease, color 180ms ease;
+    transition: background-color 180ms ease, color 180ms ease, opacity 180ms ease, visibility 0s;
   }
   .pill svg { width: 16px; height: 16px; flex: none; }
   @media (hover: hover) and (pointer: fine) {
     .pill:hover { background: rgb(var(--glass-tint) / 92%); }
   }
-  .pill[aria-expanded="true"] { background: var(--ink); color: var(--on-ink); }
+  /* The panel is the open state, so the button that opens it steps away; it comes back on close. */
+  .pill[aria-expanded="true"] {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 180ms ease, visibility 0s 180ms;
+  }
 
   .hint {
     position: absolute;
