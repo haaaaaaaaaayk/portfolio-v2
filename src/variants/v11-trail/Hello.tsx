@@ -8,7 +8,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { reveal } from '../../lib/motion'
 import { RollingLabel } from './RollingLabel'
-import './playground.css'
+import './hello.css'
 
 /* TODO before publishing: Hayk's real contact address. Placeholder so the interaction can be seen. */
 const EMAIL = 'hello@example.com'
@@ -35,14 +35,14 @@ export function Hello() {
   }
 
   return (
-    <section id="hello" className="mx-auto w-full max-w-4xl px-6 pb-section sm:px-8 sm:pb-32">
+    <section id="hello" className="mx-auto w-full max-w-[912px] px-6 pb-section sm:px-8 sm:pb-32">
       <motion.div
         {...inView}
         className="flex flex-col gap-6 rounded-card bg-surface p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8"
       >
         <div>
           <p className="text-body text-ink">This page is a snapshot of how I work.</p>
-          <p className="mt-1 text-body text-ink-muted">Everything in the playground is open on GitHub.</p>
+          <p className="mt-1 text-body text-ink-muted">The case studies are on their way.</p>
         </div>
         <div className="flex items-center gap-2">
           <a

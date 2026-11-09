@@ -11,7 +11,7 @@ import { EASE_FAST, RollingLabel } from './RollingLabel'
 
 export const SECTIONS = [
   { id: 'about', label: 'About' },
-  { id: 'playground', label: 'Playground' },
+  { id: 'work', label: 'Work' },
   { id: 'hello', label: 'Say hello' },
 ] as const
 

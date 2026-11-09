@@ -5,8 +5,8 @@ import { profile } from '../../content'
 import { close, fadeUp, open } from '../../lib/motion'
 import { About } from './About'
 import { Hello } from './Hello'
-import { Playground } from './Playground'
 import { SectionPill } from './SectionPill'
+import { Work } from './Work'
 import { mountTrail, type TrailOptions } from './scene'
 
 type ThoughtStyle = TrailOptions['mode']
@@ -136,11 +136,11 @@ export default function Trail() {
         </section>
 
         <About />
-        <Playground />
+        <Work />
         <Hello />
 
         {/* case studies and scene settings are off for now */}
-        <footer className="mx-auto w-full max-w-4xl px-6 pb-16 text-caption text-ink-muted sm:px-8">
+        <footer className="mx-auto w-full max-w-[912px] px-6 pb-16 text-caption text-ink-muted sm:px-8">
           © {new Date().getFullYear()}, {profile.name}
         </footer>
       </main>
