@@ -11,7 +11,7 @@
  *  - 2 columns from 640px (each column holds one of each shape, so they also end level), 1 column on phones
  *
  * Hover or keyboard focus, as on pdepablo.com:
- *  - the image eases to 1.02 (600ms, ease-reading, which is his curve)
+ *  - the image eases to 1.02 (600ms, ease-reading, which is the ease-fast curve)
  *  - a dark glass pill with the project's name pops in at the tile's centre (fade 200ms, settle from 0.97 and 6px
  *    lower over 350ms). The blur keeps the name readable over any image.
  * Touch screens can't hover, so there the pill is always shown.
@@ -125,7 +125,7 @@ function WorkTile({ title, shape, href }: Extract<Tile, { kind: 'placeholder' }>
 /**
  * The big one: Fogged Glass, as a 10-second loop recorded from the real piece (its own Scribble drawing on the
  * Shinagawa fog, dissolving back to clean glass so the loop has no seam). It loads late and plays only while on
- * screen, pausing when scrolled away (Caleb's pattern); with reduced motion it stays on its poster frame. Same hover
+ * screen, pausing when scrolled away; with reduced motion it stays on its poster frame. Same hover
  * as every tile: the video eases to 1.02 and the name pill pops in at the centre. 560×560 on desktop, 16:9 across two
  * columns on tablets.
  */

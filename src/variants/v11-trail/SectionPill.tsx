@@ -1,8 +1,8 @@
 /**
  * Wayfinding for a page that grew past one screen: a small pill pinned to the top, "Hayk ▸ About", whose section
  * name rolls as you scroll into the next section. It stays hidden over the trail, so the first screen is still the
- * scene and nothing else, and appears the moment you scroll past it. Caleb Wu's rules: the pill forms first
- * (300ms), then the word rolls in (700ms, 150ms later), all on his curve; changing section rolls the word up and
+ * scene and nothing else, and appears the moment you scroll past it. The rules: the pill forms first
+ * (300ms), then the word rolls in (700ms, 150ms later), all on the ease-fast curve; changing section rolls the word up and
  * springs the pill to the new width. "Hayk" takes you back up to the trail.
  */
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'

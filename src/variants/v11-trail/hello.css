@@ -1,6 +1,6 @@
-/* The hello button's check, on Caleb's curve family. */
+/* The hello button's check. */
 
-/* the hello button's check: Caleb's sticker pop (0 → 1.25 → 0.92 → 1, 500ms), the one celebratory moment */
+/* the hello button's check: a sticker pop (0 → 1.25 → 0.92 → 1, 500ms), the one celebratory moment */
 @keyframes hello-pop {
   0% { opacity: 0; transform: scale(0); }
   60% { opacity: 1; transform: scale(1.25); }

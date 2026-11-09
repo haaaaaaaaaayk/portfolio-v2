@@ -80,7 +80,7 @@
   --ease-open: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-close: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-reading: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Caleb Wu's curve (calebwu.ca): even start, surge, long brake. Used by the section pill, the playground cards
+  /* even start, surge, long brake. Used by the section pill, the work tiles
      and the hello button, with his durations: 300ms for surfaces, 700ms for rolling words */
   --ease-fast: cubic-bezier(0.62, 0.61, 0.02, 1);
 

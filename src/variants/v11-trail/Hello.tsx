@@ -1,5 +1,5 @@
 /**
- * The ending, after Caleb's: lessons are in the about, so this is the invitation. A soft card, one line about the
+ * The ending: lessons are in the about, so this is the invitation. A soft card, one line about the
  * page, and a "Say hello" button that copies the email address. Copying is invisible, so the button says it worked:
  * its label rolls up to "Email copied" with a check that pops in (the one celebratory moment on the page), then
  * rolls back after a few seconds. If the clipboard is unavailable it opens the mail app instead.

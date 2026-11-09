@@ -1,7 +1,7 @@
 /**
  * A word in a one-line window that rolls when it changes: the old word leaves through the top, the new one
- * arrives from below, and the window springs to the new word's width so nothing around it jumps. Caleb Wu's
- * slot roll (700ms on his curve, always upward). Reduced motion swaps the words with a crossfade.
+ * arrives from below, and the window springs to the new word's width so nothing around it jumps. A
+ * slot roll (700ms on the ease-fast curve, always upward). Reduced motion swaps the words with a crossfade.
  */
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
