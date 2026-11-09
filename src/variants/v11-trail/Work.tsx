@@ -1,15 +1,12 @@
 /**
- * Work: a wall of case-study tiles, after pdepablo.com. Fogged Glass leads, big, as a loop recorded from the piece; Halftone Specimen
- * takes the first portrait, as a loop rendered from the piece; the rest are mixed shapes
- * (square, landscape, portrait) that interlock in columns, and every column ends level so each band has a clean edge.
+ * Work: a wall of live pieces, after pdepablo.com. For now three: Fogged Glass leads, big, as a loop recorded from the
+ * piece; Spin a word and Halftone Specimen stack beside it as squares. Every column ends level. The eight-placeholder
+ * wall (squares, landscapes, portraits) is saved at git tag `wall-placeholders`.
  *
  * Exact grid, all multiples of 4, inside the page's 912px boundary:
  *  - container 912px max, 32px side padding → 848px content = 3 columns × 272 + 2 gaps × 16
- *  - tiles: square 272×272, landscape 272×180 (≈3:2), portrait 272×364 (≈3:4)
- *  - columns: [square, square] · [landscape, portrait] · [portrait, landscape], each 560px tall
- *  - because landscape + portrait = 2 squares in height (180 + 364 = 544 = 2 × 272), the columns stay level at any
- *    width, not just the widest
- *  - 2 columns from 640px (each column holds one of each shape, so they also end level), 1 column on phones
+ *  - Fogged Glass 560×560 over two columns; beside it two 272×272 squares + a 16 gap = 560
+ *  - 2 columns from 640px (Fogged Glass full width at 16:9, then the two squares), 1 column on phones
  *
  * Hover or keyboard focus, as on pdepablo.com:
  *  - the image eases to 1.02 (600ms, ease-reading, which is the ease-fast curve)
@@ -17,7 +14,7 @@
  *    lower over 350ms). The blur keeps the name readable over any image.
  * Touch screens can't hover, so there the pill is always shown.
  *
- * Placeholders show the exact asset size to export for each slot. In development, press G to see the columns.
+ * In development, press G to see the columns.
  */
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
@@ -34,8 +31,7 @@ const SHAPE: Record<Shape, { ratio: string; label: string; asset: string }> = {
 
 /* A live piece shows as a 10-second loop made from the piece itself; `big` is the lead tile, whose shape follows the columns. */
 type Loop = { kind: 'loop'; id: string; name: string; label: string; path: string; media: string; shape: Shape | 'big' }
-type Tile = { kind: 'placeholder'; id: string; title: string; shape: Shape; href: string } | Loop | { kind: 'spin'; id: 'spin' }
-const tile = (n: number, shape: Shape): Tile => ({ kind: 'placeholder', id: `p${n}`, title: `Project ${String(n).padStart(2, '0')}`, shape, href: '#work' })
+type Tile = Loop | { kind: 'spin'; id: 'spin' }
 const FOG: Tile = {
   kind: 'loop', id: 'fog', name: 'Fogged Glass', label: 'Fogged Glass: write on the fogged-up windows of Shinagawa',
   path: 'foggy_shinagawa/', media: 'work/fogged-glass', shape: 'big',
@@ -43,25 +39,18 @@ const FOG: Tile = {
 const SPIN: Tile = { kind: 'spin', id: 'spin' }
 const HALFTONE: Tile = {
   kind: 'loop', id: 'halftone', name: 'Halftone Specimen', label: 'Halftone Specimen: an analog print press in the browser',
-  path: 'halftone/', media: 'work/halftone', shape: 'portrait',
+  path: 'halftone/', media: 'work/halftone', shape: 'square',
 }
 
-/* A band is a row of columns; a column can span two. Every column in a band ends level:
-   3 columns: [Fogged Glass 560×560 over two columns | portrait 364 + landscape 180 = 560]
-              [square + square | landscape + portrait | portrait + landscape], each 560
-   2 columns: [Fogged Glass full width, 16:9] then [P L P L | S S P L], each 4 widths + 3 gaps
-   1 column:  Fogged Glass first, then the rest */
+/* Three live pieces for now. The full wall with eight placeholder tiles is saved at git tag `wall-placeholders`.
+   3 columns: [Fogged Glass 560×560 over two columns | Spin 272 + Halftone 272 + gap 16 = 560], level
+   2 columns: Fogged Glass full width at 16:9, then Spin and Halftone side by side
+   1 column:  all three stacked */
 type Column = { span?: 2; tiles: Tile[] }
 const LAYOUT: Record<1 | 2 | 3, Column[][]> = {
-  3: [
-    [{ span: 2, tiles: [FOG] }, { tiles: [SPIN, tile(2, 'landscape')] }],
-    [{ tiles: [tile(3, 'square'), tile(4, 'square')] }, { tiles: [tile(5, 'landscape'), tile(6, 'portrait')] }, { tiles: [HALFTONE, tile(8, 'landscape')] }],
-  ],
-  2: [
-    [{ span: 2, tiles: [FOG] }],
-    [{ tiles: [SPIN, tile(2, 'landscape'), tile(6, 'portrait'), tile(5, 'landscape')] }, { tiles: [tile(3, 'square'), tile(4, 'square'), HALFTONE, tile(8, 'landscape')] }],
-  ],
-  1: [[{ tiles: [FOG, SPIN, tile(2, 'landscape'), tile(3, 'square'), tile(4, 'square'), tile(5, 'landscape'), tile(6, 'portrait'), HALFTONE, tile(8, 'landscape')] }]],
+  3: [[{ span: 2, tiles: [FOG] }, { tiles: [SPIN, HALFTONE] }]],
+  2: [[{ span: 2, tiles: [FOG] }], [{ tiles: [SPIN] }, { tiles: [HALFTONE] }]],
+  1: [[{ tiles: [FOG, SPIN, HALFTONE] }]],
 }
 
 function useColumns(): 1 | 2 | 3 {
@@ -96,7 +85,7 @@ export function Work() {
                 <ul key={c} className={`flex flex-col gap-4 ${column.span === 2 ? 'sm:col-span-2' : ''}`}>
                   {column.tiles.map((t) => (
                     <li key={t.id}>
-                      {t.kind === 'loop' ? <LoopTile {...t} cols={cols} /> : t.kind === 'spin' ? <SpinTile /> : <WorkTile {...t} />}
+                      {t.kind === 'loop' ? <LoopTile {...t} cols={cols} /> : <SpinTile />}
                     </li>
                   ))}
                 </ul>
@@ -110,35 +99,11 @@ export function Work() {
   )
 }
 
-function WorkTile({ title, shape, href }: Extract<Tile, { kind: 'placeholder' }>) {
-  const s = SHAPE[shape]
-  return (
-    <a
-      href={href}
-      aria-label={title}
-      className={`group relative block overflow-hidden rounded-card outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${s.ratio}`}
-    >
-      {/* the image (a placeholder for now): eases a little closer on hover */}
-      <div className="absolute inset-0 bg-canvas transition-transform duration-[600ms] ease-reading group-hover:scale-[1.02] group-focus-visible:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100">
-        <span className="absolute bottom-4 left-4 text-compact text-ink-muted tabular-nums">
-          {s.label} · {s.asset} @2x
-        </span>
-      </div>
-      {/* the name: a dark glass pill that pops in at the centre on hover; always shown where there's no hover */}
-      <span className="pointer-events-none absolute inset-0 grid place-items-center">
-        <span className="work-pill inline-flex h-9 items-center rounded-full bg-[rgb(20_20_20/72%)] px-4 text-secondary text-white backdrop-blur-xl backdrop-saturate-150">
-          {title}
-        </span>
-      </span>
-    </a>
-  )
-}
-
 /**
  * A live piece as a seamless 10-second loop made from the piece itself:
  *  - Fogged Glass (big): its own Scribble drawing on the Shinagawa fog, dissolving back to clean glass.
  *    560×560 on desktop, 16:9 across two columns on tablets.
- *  - Halftone Specimen (portrait): ten effects on the Golden Gate, each printing over the last (scripts/record-halftone).
+ *  - Halftone Specimen (square, cropped from its 3:4 loop): ten effects on the Golden Gate, each printing over the last (scripts/record-halftone).
  * It loads late and plays only while on screen, pausing when scrolled away; with reduced motion it stays on its poster
  * frame. Same hover as every tile: the video eases to 1.02 and the name pill pops in at the centre.
  */
@@ -209,7 +174,7 @@ function SpinTile() {
       ref={ref}
       href={`${base}spin/`}
       aria-label="Spin a word: nineteen ways a word can turn into another, with your own words"
-      className={`group relative grid place-items-center overflow-hidden rounded-card bg-canvas outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${SHAPE.portrait.ratio}`}
+      className={`group relative grid place-items-center overflow-hidden rounded-card bg-canvas outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${SHAPE.square.ratio}`}
     >
       <span aria-hidden className="scale-200 text-body text-ink transition-transform duration-[600ms] ease-reading group-hover:scale-[2.04] motion-reduce:transition-none">
         <SpinWord words={HELLOS} label="hello in five languages" driven={seen} silent />
