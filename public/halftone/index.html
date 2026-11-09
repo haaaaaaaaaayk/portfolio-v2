@@ -1,0 +1,2503 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Halftone Specimen</title>
+<style>
+  /* ============================================================
+     24th System tokens (from hayko.me). One family, one weight,
+     two type sizes, 4px grid. Hierarchy from size, space, color.
+     ============================================================ */
+  :root {
+    color-scheme: light;
+    --paper: #fafafa;
+    --surface: #ffffff;
+    --ink: #161616;
+    --ink-muted: #666666;
+    --ink-active: #111111;
+    --on-ink: #ffffff;
+    --pressed: #333333;
+    --control: #ededed;
+    --control-hover: #e3e3e3;
+    --field-border: rgb(0 0 0 / 18%);
+    --accent: #1aedc5;
+    --glass-tint: 255 255 255;
+    --shadow-glass:
+      0 1px 2px rgb(22 22 22 / 4%), 0 8px 16px -8px rgb(22 22 22 / 12%),
+      0 24px 64px -24px rgb(22 22 22 / 16%);
+
+    --font-sans: 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --text-caption: 12px;
+    --lh-caption: 20px;
+    --text-compact: 14px;
+    --lh-compact: 20px;
+
+    --radius-mark: 2px;
+    --radius-media: 12px;
+    --radius-card: 20px;
+    --radius-control: 9999px;
+
+    --ease-open: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    --panel-w: 320px;
+    --dock-gap: 24px;
+    --ar: calc(4 / 5);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #0e0e0e;
+      --surface: #181818;
+      --ink: #ededed;
+      --ink-muted: #9a9a9a;
+      --ink-active: #ffffff;
+      --on-ink: #111111;
+      --pressed: #cccccc;
+      --control: #262626;
+      --control-hover: #303030;
+      --field-border: rgb(255 255 255 / 20%);
+      --glass-tint: 30 30 30;
+      --shadow-glass: 0 1px 2px rgb(0 0 0 / 30%), 0 24px 64px -24px rgb(0 0 0 / 70%);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #0e0e0e;
+    --surface: #181818;
+    --ink: #ededed;
+    --ink-muted: #9a9a9a;
+    --ink-active: #ffffff;
+    --on-ink: #111111;
+    --pressed: #cccccc;
+    --control: #262626;
+    --control-hover: #303030;
+    --field-border: rgb(255 255 255 / 20%);
+    --glass-tint: 30 30 30;
+    --shadow-glass: 0 1px 2px rgb(0 0 0 / 30%), 0 24px 64px -24px rgb(0 0 0 / 70%);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink-muted);
+    font-family: var(--font-sans);
+    font-size: var(--text-compact);
+    line-height: var(--lh-compact);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    display: grid;
+    place-items: center;
+    padding: 20px 16px;
+    overflow-x: hidden;
+  }
+  h1, h2 { margin: 0; font: inherit; color: var(--ink); }
+  button, input { font: inherit; color: inherit; letter-spacing: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  ::selection { background: var(--accent); color: #161616; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* ---------- stage ---------- */
+  /* The card takes all the room it can: the width left beside the panel,
+     and the height left after the header and status rows (112 = 2 rows + gaps + page padding). */
+  .shell {
+    --avail-w: calc(100vw - 32px);
+    --card-w: min(var(--avail-w), calc((100dvh - 112px) * var(--ar)), 1400px, calc(1000px * var(--ar)));
+    width: var(--card-w);
+    display: grid;
+    gap: 12px;
+    transition: transform 300ms var(--ease-open), width 300ms var(--ease-open);
+  }
+  .masthead, .status {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .masthead span, .status { font-size: var(--text-caption); line-height: var(--lh-caption); }
+
+  .card-wrap { position: relative; }
+  .card {
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--ar);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--card-paper, #1C4DA8);
+    touch-action: none;
+  }
+  .card canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+  /* dashed edge = the drop target's boundary */
+  .card.is-drop::after {
+    content: "Drop to use this image";
+    position: absolute; inset: 12px;
+    display: grid; place-items: center;
+    border: 1px dashed rgb(255 255 255 / 70%);
+    border-radius: var(--radius-media);
+    background: rgb(22 22 22 / 64%);
+    color: #ffffff;
+  }
+
+  /* Glass has a job here: it keeps the control legible over a moving, any-colour shader. */
+  .glass {
+    background: rgb(var(--glass-tint) / 72%);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: blur(16px) saturate(1.4);
+  }
+  .pill {
+    position: absolute;
+    top: 12px; right: 12px;
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 32px;
+    padding: 0 12px 0 8px;
+    border: 0;
+    border-radius: var(--radius-control);
+    color: var(--ink);
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+  .pill svg { width: 16px; height: 16px; flex: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .pill:hover { background: rgb(var(--glass-tint) / 92%); }
+  }
+  .pill[aria-expanded="true"] { background: var(--ink); color: var(--on-ink); }
+
+  .hint {
+    position: absolute;
+    left: 12px; bottom: 12px;
+    padding: 4px 12px;
+    border-radius: var(--radius-control);
+    background: rgb(22 22 22 / 64%);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    color: #ffffff;
+    font-size: var(--text-caption);
+    line-height: var(--lh-caption);
+    pointer-events: none;
+    transition: opacity 600ms ease;
+  }
+  .hint.is-gone { opacity: 0; }
+  /* recording badge: tells people the card is being captured, so they can play with it on purpose */
+  .rec { display: inline-flex; align-items: center; gap: 8px; transition: none; }
+  .rec::before { content: ""; width: 8px; height: 8px; border-radius: var(--radius-control); background: #ff4d4d; }
+  .ctl:disabled { cursor: default; opacity: .6; }
+
+  /* ---------- panel ---------- */
+  .panel {
+    position: absolute;
+    top: 0;
+    left: calc(100% + var(--dock-gap));
+    width: var(--panel-w);
+    height: max(100%, 480px);
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    animation: pop-in 300ms var(--ease-open);
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (min-width: 860px) {
+    .shell.is-open {
+      --avail-w: calc(100vw - 64px - var(--panel-w) - var(--dock-gap));
+      transform: translateX(calc(-1 * (var(--panel-w) + var(--dock-gap)) / 2));
+    }
+  }
+  @media (max-width: 859px) {
+    .shell.is-open {
+      align-self: start;
+      width: min(var(--card-w), calc((44dvh - 88px) * var(--ar)));
+      justify-self: center;
+    }
+    /* The shadow has a job on phones: the sheet sits over the page. */
+    .panel {
+      position: fixed;
+      top: auto; left: 0; right: 0; bottom: 0;
+      width: auto;
+      height: auto;
+      max-height: 56dvh;
+      border-radius: var(--radius-card) var(--radius-card) 0 0;
+      box-shadow: var(--shadow-glass);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      z-index: 10;
+      animation-name: sheet-in;
+    }
+    @keyframes sheet-in {
+      from { transform: translateY(24px); opacity: 0; }
+      to { transform: none; opacity: 1; }
+    }
+  }
+
+  .panel-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 16px 8px 20px;
+  }
+  .panel-head h2 { margin-right: auto; }
+
+  /* 24th control: full radius, 36 on desktop, 44 on touch */
+  .ctl {
+    height: 44px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: var(--control);
+    color: var(--ink-muted);
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+  .ctl[data-size="compact"] { height: 32px; padding: 0 12px; }
+  .ctl-icon { width: 32px; padding: 0; display: grid; place-items: center; }
+  .ctl-icon svg { width: 16px; height: 16px; }
+  @media (min-width: 640px) and (pointer: fine) {
+    .ctl { height: 36px; }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .ctl-secondary:hover { background: var(--control-hover); color: var(--ink-active); }
+    .ctl-primary:hover { background: var(--ink-muted); }
+  }
+  .ctl-secondary:active { background: var(--pressed); color: var(--on-ink); }
+  .ctl-primary { background: var(--ink); color: var(--on-ink); }
+  .ctl-primary:active { background: var(--pressed); }
+
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 16px 20px 0;
+    display: grid;
+    align-content: start;
+    gap: 32px;
+  }
+  .sec { display: grid; gap: 12px; }
+  .sec-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    font-size: var(--text-caption); line-height: var(--lh-caption);
+  }
+  .sec-head h3 { margin: 0; font: inherit; color: var(--ink); }
+  .fields { display: grid; gap: 4px; }
+
+  .field-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  }
+  .field-head output { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  /* segmented: a control track, the picked option lifts to surface */
+  .seg {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 4), 1fr);
+    gap: 0;
+    padding: 4px;
+    border-radius: var(--radius-control);
+    background: var(--control);
+  }
+  .seg button {
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+  @media (min-width: 640px) and (pointer: fine) {
+    .seg button { height: 28px; }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .seg button:hover:not([aria-pressed="true"]) { color: var(--ink-active); }
+  }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); }
+
+  /* seven effects wrap into two rows, so the track rounds to the card radius instead of a pill */
+  .seg.wrap { grid-template-columns: repeat(4, 1fr); border-radius: var(--radius-card); }
+  .text-field {
+    display: flex; align-items: center;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: var(--radius-control);
+    box-shadow: inset 0 0 0 1px var(--field-border);
+  }
+  .text-field:focus-within { box-shadow: inset 0 0 0 2px var(--accent); }
+  .text-field input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: none; color: var(--ink); outline: none; }
+
+  .chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .chip {
+    position: relative;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-media);
+    overflow: hidden;
+    background: var(--chip-paper);
+    /* hairline has a job: light papers (Letter, Bloom) would vanish on the white panel */
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
+  }
+  .chip .bars { position: absolute; inset: 24% 20%; display: flex; flex-direction: column; gap: 4px; }
+  .chip .bars i { flex: 1; border-radius: var(--radius-mark); }
+  .chip[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+
+  /* token slider: 32px hit area (44 on touch), 4px track with ink progress */
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    display: block;
+    width: 100%; height: 44px; margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  @media (min-width: 640px) and (pointer: fine) {
+    input[type="range"] { height: 32px; }
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: var(--radius-control);
+    background: linear-gradient(to right, var(--ink) 0 var(--p, 0%), var(--control) var(--p, 0%) 100%);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; margin-top: -6px;
+    border: 2px solid var(--surface);
+    border-radius: var(--radius-control);
+    background: var(--ink);
+  }
+  input[type="range"]::-moz-range-track { height: 4px; border-radius: var(--radius-control); background: var(--control); }
+  input[type="range"]::-moz-range-progress { height: 4px; border-radius: var(--radius-control); background: var(--ink); }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    border: 2px solid var(--surface);
+    border-radius: var(--radius-control);
+    background: var(--ink);
+  }
+  input[type="range"]:focus-visible { outline: none; }
+  input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px var(--accent); }
+  input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(--accent); }
+
+  /* switch */
+  .toggle {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    min-height: 32px;
+    cursor: pointer;
+  }
+  .toggle input {
+    -webkit-appearance: none; appearance: none;
+    position: relative;
+    flex: none;
+    width: 36px; height: 20px; margin: 0;
+    border-radius: var(--radius-control);
+    background: var(--field-border);
+    cursor: pointer;
+    transition: background-color 180ms ease;
+  }
+  .toggle input::after {
+    content: "";
+    position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: var(--radius-control);
+    background: #ffffff;
+    transition: transform 180ms var(--ease-open);
+  }
+  .toggle input:checked { background: var(--ink); }
+  .toggle input:checked::after { transform: translateX(16px); background: var(--surface); }
+
+  /* ratio tiles: the shape is the label's picture */
+  .ratios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ratio {
+    display: grid; justify-items: center; align-content: center; gap: 4px;
+    height: 72px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-media);
+    background: var(--control);
+    color: var(--ink-muted);
+    font-size: var(--text-caption); line-height: var(--lh-caption);
+    font-variant-numeric: tabular-nums;
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+  .ratio .frame { width: 28px; height: 28px; display: grid; place-items: center; }
+  .ratio .frame i { display: block; background: currentColor; border-radius: var(--radius-mark); }
+  @media (hover: hover) and (pointer: fine) {
+    .ratio:hover:not([aria-pressed="true"]) { background: var(--control-hover); color: var(--ink-active); }
+  }
+  .ratio[aria-pressed="true"] { color: var(--ink); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+
+  /* shade editor: paper, then inks; native colour pickers drawn as round swatches */
+  .shades { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .swatch {
+    width: 36px; height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: var(--c);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
+  }
+  /* ring = this is the shade the open picker is editing */
+  .swatch[aria-expanded="true"] { box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%), 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+
+  /* ---------- colour picker popover ----------
+     The shadow has a job: the popover floats over the panel and the card. */
+  .picker {
+    position: fixed;
+    z-index: 30;
+    width: 248px;
+    padding: 12px;
+    display: grid;
+    gap: 12px;
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-glass), 0 0 0 1px rgb(0 0 0 / 6%);
+    animation: picker-in 180ms var(--ease-open);
+  }
+  @keyframes picker-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+  .sv {
+    position: relative;
+    height: 160px;
+    border-radius: var(--radius-media);
+    /* the gradients are the colour space itself */
+    background:
+      linear-gradient(to top, #000, transparent),
+      linear-gradient(to right, #fff, transparent),
+      hsl(var(--h) 100% 50%);
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .sv:focus-visible { outline-offset: 2px; }
+  .sv-thumb {
+    position: absolute;
+    left: var(--x); top: var(--y);
+    width: 16px; height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid #fff;
+    border-radius: var(--radius-control);
+    background: var(--c);
+    /* keeps the white ring visible on white */
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 24%);
+    pointer-events: none;
+  }
+  input.hue { height: 32px; }
+  @media (pointer: coarse) { input.hue { height: 44px; } }
+  input.hue::-webkit-slider-runnable-track {
+    height: 12px;
+    border-radius: var(--radius-control);
+    background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  }
+  input.hue::-webkit-slider-thumb {
+    width: 16px; height: 16px; margin-top: -2px;
+    border: 2px solid #fff;
+    background: hsl(var(--h) 100% 50%);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 24%);
+  }
+  input.hue::-moz-range-track { height: 12px; border-radius: var(--radius-control); background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+  input.hue::-moz-range-progress { background: transparent; }
+  input.hue::-moz-range-thumb {
+    border: 2px solid #fff;
+    background: hsl(var(--h) 100% 50%);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 24%);
+  }
+  .picker-row { display: flex; gap: 8px; }
+  .hex {
+    flex: 1;
+    display: flex; align-items: center; gap: 4px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: var(--radius-control);
+    box-shadow: inset 0 0 0 1px var(--field-border);
+    color: var(--ink-muted);
+  }
+  .hex:focus-within { box-shadow: inset 0 0 0 2px var(--accent); }
+  .hex input {
+    flex: 1; min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    text-transform: uppercase;
+    outline: none;
+  }
+  .picker .ctl-icon { width: 36px; height: 36px; flex: none; }
+  .shades .ctl-icon { width: 36px; height: 36px; }
+  .shades .ctl-icon:disabled { opacity: .4; cursor: default; }
+
+  .note { margin: 0; font-size: var(--text-caption); line-height: var(--lh-caption); }
+  .link {
+    padding: 0; border: 0; background: none;
+    color: var(--ink);
+    text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px;
+    text-decoration-color: rgb(128 128 128 / 50%);
+  }
+
+  .panel-foot {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    padding: 20px;
+  }
+
+  .fallback {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    padding: 24px;
+    text-align: center;
+    color: #ffffff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .picker, .ratio, .shell, .panel, .pill, .hint, .ctl, .seg button, .toggle input, .toggle input::after { transition: none; animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<main class="shell" id="shell">
+  <header class="masthead">
+    <h1>Halftone Specimen</h1>
+    <span id="ratio">4 : 5</span>
+  </header>
+
+  <div class="card-wrap">
+    <div class="card" id="card">
+      <canvas id="gl" aria-label="Interactive halftone shader. Move the pointer over it to disturb the pattern."></canvas>
+      <button class="pill glass" id="customize" type="button" aria-expanded="false" aria-controls="panel">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+          <path d="M2 4h7M12 4h2M2 12h2M7 12h7"/><rect x="9" y="2.5" width="3" height="3"/><rect x="4" y="10.5" width="3" height="3"/>
+        </svg>
+        Customize
+      </button>
+      <div class="hint" id="hint">Move across the card</div>
+      <div class="hint rec tnum" id="rec" hidden></div>
+    </div>
+
+    <section class="panel" id="panel" role="dialog" aria-labelledby="panel-title" hidden>
+      <div class="panel-head">
+        <h2 id="panel-title">Customize</h2>
+        <button class="ctl ctl-secondary" data-size="compact" id="reset" type="button">Reset</button>
+        <button class="ctl ctl-secondary ctl-icon" data-size="compact" id="close" type="button" aria-label="Close">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+
+      <div class="panel-body">
+        <div class="sec">
+          <div class="sec-head"><h3>Effect</h3></div>
+          <div class="seg wrap" id="effects" aria-label="Effect"></div>
+          <div class="fields" id="effect-fields"></div>
+          <div class="fields" id="letters-ui" hidden>
+            <div class="seg" id="letter-sets" aria-label="Letters"></div>
+            <label class="text-field" id="word-field"><input id="word" type="text" maxlength="64" spellcheck="false" autocomplete="off" aria-label="Your word or phrase"></label>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><h3>Aspect ratio</h3></div>
+          <div class="ratios" id="ratios" role="group" aria-label="Aspect ratio"></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><h3>Source</h3></div>
+          <div class="seg" id="sources" aria-label="Source"></div>
+          <p class="note" id="image-note" hidden>Using your image. Drop another file on the card, or <button class="link" id="replace" type="button">choose a new one</button>.</p>
+          <div class="fields" id="motion-fields"></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><h3>Color</h3><span><output id="palette-name"></output> <button class="link" id="restore" type="button" hidden>Restore</button></span></div>
+          <div class="chips" id="palettes"></div>
+          <div class="sec-head"><span>Background, then colors from light to strong</span></div>
+          <div class="shades" id="shades"></div>
+        </div>
+
+        <div class="sec" id="grid-sec">
+          <div class="sec-head"><h3>Grid</h3></div>
+          <div class="fields" id="grid-fields"></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><h3>Tone</h3></div>
+          <div class="fields" id="tone-fields"></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><h3>Pointer</h3><span>Drag on the card</span></div>
+          <div class="seg" id="pointers" aria-label="Pointer"></div>
+          <div class="fields" id="pointer-fields"></div>
+        </div>
+
+        <div class="sec" id="save-sec">
+          <div class="sec-head"><h3>Save</h3><output id="save-meta" class="tnum"></output></div>
+          <div class="seg" id="save-formats" aria-label="File type"></div>
+          <div class="seg" id="save-scales" aria-label="Image size"></div>
+          <div class="seg" id="save-lengths" aria-label="Video length"></div>
+          <div class="seg" id="code-kinds" aria-label="Code format"></div>
+          <button class="ctl ctl-secondary" id="copy-code" type="button">Copy code</button>
+          <p class="note" id="save-status" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="panel-foot">
+        <button class="ctl ctl-secondary" id="shuffle" type="button">Shuffle</button>
+                <button class="ctl ctl-primary" id="save" type="button">Save image</button>
+      </div>
+    </section>
+  </div>
+
+  <footer class="status" aria-live="off">
+    <span id="status-left"></span>
+    <span id="status-right"></span>
+  </footer>
+</main>
+
+<div class="picker" id="picker" role="dialog" aria-label="Pick a colour" hidden>
+  <div class="sv" id="sv" role="slider" tabindex="0" aria-label="Saturation and brightness"><span class="sv-thumb"></span></div>
+  <input class="hue" id="hue" type="range" min="0" max="360" step="1" aria-label="Hue">
+  <div class="picker-row">
+    <label class="hex"><span aria-hidden="true">#</span><input id="hex" type="text" inputmode="text" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Hex colour"></label>
+    <button class="ctl ctl-secondary ctl-icon" id="eyedrop" type="button" aria-label="Pick a colour from the screen" title="Pick from the screen" hidden>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 2.5l3 3-1.5 1.5-3-3zM9 4l3 3-6.5 6.5H2.5v-3z"/></svg>
+    </button>
+  </div>
+</div>
+
+<input type="file" id="file" accept="image/*" hidden>
+
+<script>
+/* =====================================================================
+   OWNER SETTINGS
+   Everything a visitor can pick comes from the lists below.
+   - PALETTES: add, remove or reorder freely.
+       paper = the background shade.
+       inks  = 1 to 5 shades, ordered from closest-to-paper to strongest.
+               Darker areas of the source use paper, brighter areas climb
+               through the inks in this order.
+   - EFFECTS / SOURCES / POINTERS: delete an entry to hide that option.
+   - DEFAULTS: the look a first-time visitor sees.
+   ===================================================================== */
+const PALETTES = [
+  // riso-style sets: real-world drum colours on uncoated stock
+  { id: 'riso',      name: 'Riso',      paper: '#F4EFE6', inks: ['#FFE800', '#FF48B0', '#0078BF'] },
+  { id: 'harbor',    name: 'Harbor',    paper: '#EFEDE6', inks: ['#FF665E', '#3255A4'] },
+  { id: 'sunflower', name: 'Sunflower', paper: '#F6F1E7', inks: ['#FFB511', '#00A95C', '#765BA7'] },
+  { id: 'midnight',  name: 'Midnight',  paper: '#1A1A2E', inks: ['#00A95C', '#FF48B0', '#FFE800'] },
+  { id: 'fog',       name: 'Fog',       paper: '#E8E6E1', inks: ['#AC936E', '#435060'] },
+  { id: 'klein',   name: 'Klein',   paper: '#1C4DA8', inks: ['#3F6CC0', '#9BB6E6', '#F2F5FB'] },
+  { id: 'repair',  name: 'Repair',  paper: '#0D5337', inks: ['#2F7453', '#86B39A', '#EEF4EE'] },
+  { id: 'signal',  name: 'Signal',  paper: '#141513', inks: ['#1E2FB8', '#3A5BFF', '#A6DB2F', '#DCFF45'] },
+  { id: 'gemini',  name: 'Gemini',  paper: '#2B45A2', inks: ['#C65CB3', '#E62A2D', '#D6E84E'] },
+  { id: 'moss',    name: 'Moss',    paper: '#343F16', inks: ['#62762A', '#9DB03D', '#A9CDEB'] },
+  { id: 'glacier', name: 'Glacier', paper: '#2A2621', inks: ['#6F8C90', '#BDEFFA'] },
+  { id: 'letter',  name: 'Letter',  paper: '#F1EFE8', inks: ['#A09E95', '#141414'] },
+  { id: 'bloom',   name: 'Bloom',   paper: '#F7E3F6', inks: ['#F6BDEE', '#FF7FE9', '#D93DB8'] },
+  { id: 'mint',    name: 'Mint',    paper: '#111210', inks: ['#2E5B3A', '#7FD69A'] },
+  { id: 'ember',   name: 'Ember',   paper: '#F08A12', inks: ['#FBB43A', '#FFE9F4'] },
+];
+
+// Standard frames: square and 4:5 feed posts, 3:4 and 3:2 photo, 9:16 stories/reels, 16:9 video and slides.
+const RATIOS = [
+  { id: '1x1',  w: 1,  h: 1 },
+  { id: '4x5',  w: 4,  h: 5 },
+  { id: '3x4',  w: 3,  h: 4 },
+  { id: '9x16', w: 9,  h: 16 },
+  { id: '3x2',  w: 3,  h: 2 },
+  { id: '16x9', w: 16, h: 9 },
+];
+
+const EFFECTS = [
+  { id: 'press',   name: 'Press' },
+  { id: 'letters', name: 'Letters' },
+  { id: 'binary', name: 'Binary', glyph: '01' },
+  { id: 'dots',   name: 'Dots',   glyph: '●' },
+  { id: 'blocks', name: 'Blocks', glyph: '■' },
+  { id: 'dither', name: 'Dither', glyph: '▚' },
+  { id: 'stitch', name: 'Stitch', glyph: '×' },
+];
+
+const SOURCES = [
+  { id: 'tide',  name: 'Tide' },
+  { id: 'flow',  name: 'Flow' },
+  { id: 'orbs',  name: 'Orbs' },
+  { id: 'image', name: 'Image' },
+];
+
+const POINTERS = [
+  { id: 'glow',  name: 'Glow' },
+  { id: 'push',  name: 'Push' },
+  { id: 'pull',  name: 'Pull' },
+  { id: 'twirl', name: 'Twirl' },
+];
+
+const LETTER_SETS = [
+  { id: 'word',     name: 'Word' },
+  { id: 'latin',    name: 'Latin',    chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' },
+  { id: 'armenian', name: 'Armenian', chars: 'ԱԲԳԴԵԶԷԸԹԺԻԼԽԾԿՀՁՂՃՄՅՆՇՈՉՊՋՌՍՎՏՐՑՒՓՔՕՖ' },
+];
+
+const SAVE_SCALES = [1, 2, 4];         // PNG size, times the card's on-screen size
+const SAVE_LENGTHS = [3, 6, 10];       // video seconds
+
+const DEFAULTS = {
+  effect: 'press',
+  palette: 'riso',
+  ratio: '4x5',
+  source: 'tide',
+  pointer: 'glow',
+  size: 10,        // px per cell
+  angle: 15,       // Press: first ink's screen angle; each next ink turns 30°
+  misreg: 30,      // Press: how far the ink layers land off register
+  gain: 35,        // Press: ink spread into the paper
+  letterSet: 'word',
+  word: 'SPECIMEN',
+  gap: 12,         // % of a cell
+  flicker: 40,     // % (Binary, Stitch)
+  merge: true,     // Blocks: fuse flat areas into bigger chunks
+  contrast: 130,   // %
+  brightness: 0,   // %
+  invert: false,
+  grain: true,
+  speed: 100,      // %
+  brush: 22,       // % of card height
+  force: 70,       // %
+  saveFormat: 'image',
+  saveScale: 2,
+  saveLength: 6,
+  codeKind: 'react',
+};
+/* ================== end of owner settings ================== */
+
+const MAX_LEVELS = 6;
+const EFFECT_CODE = { binary: 0, dots: 1, blocks: 2, dither: 3, stitch: 4, press: 5, letters: 6 };   // paper + up to 5 inks
+const TRAIL = 14;       // pointer trail samples
+
+const VERT = `#version 300 es
+in vec2 aPos;
+void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
+
+/* Pass 1: one tone value per cell, rendered into a tiny texture. */
+const TONE_FRAG = `#version 300 es
+precision highp float;
+uniform vec2 uRes;
+uniform vec2 uGrid;
+uniform float uCell;
+uniform float uTime;
+uniform int uSource;
+uniform int uPointer;
+uniform float uBrush;
+uniform float uForce;
+uniform float uContrast;
+uniform float uBright;
+uniform float uInvert;
+uniform vec3 uTrail[${TRAIL}];
+uniform sampler2D uImage;
+uniform float uImageAspect;
+out vec4 outColor;
+
+float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) { v += a * noise(p); p = p * 2.03 + vec2(1.7, 9.2); a *= 0.5; }
+  return v;
+}
+
+float srcFlow(vec2 p, float t) {
+  t *= 0.06;
+  vec2 q = vec2(fbm(p * 2.2 + vec2(0.0, t)), fbm(p * 2.2 + vec2(5.2, -t)));
+  vec2 r = vec2(fbm(p * 2.0 + 3.0 * q + vec2(1.7, 9.2) + t), fbm(p * 2.0 + 3.0 * q + vec2(8.3, 2.8) - t));
+  float v = fbm(p * 1.6 + 2.6 * r);
+  return smoothstep(0.28, 0.78, v);
+}
+
+float srcOrbs(vec2 p, float t, float aspect) {
+  t *= 0.22;
+  float s = 0.0;
+  for (int i = 0; i < 7; i++) {
+    float fi = float(i);
+    vec2 c = vec2(0.5 + 0.34 * aspect * sin(t * (0.55 + 0.13 * fi) + fi * 1.7),
+                  0.5 + 0.36 * cos(t * (0.47 + 0.11 * fi) + fi * 2.3));
+    float r = 0.075 + 0.035 * sin(fi * 3.1 + 1.0);
+    vec2 d = p - c;
+    s += r * r / (dot(d, d) + 1e-4);
+  }
+  s *= 0.7 + 0.6 * fbm(p * 7.0 + vec2(t, -t));
+  return smoothstep(0.35, 2.2, s);
+}
+
+float srcTide(vec2 p, float t) {
+  t *= 0.1;
+  float w = fbm(p * 1.4 + vec2(t * 0.5, 0.0));
+  float band = sin((p.x * 1.0 - p.y * 1.35) * 10.0 + w * 5.0 - t * 5.0);
+  float g = smoothstep(-0.35, 0.9, band);
+  float body = 0.35 + 0.65 * smoothstep(0.2, 0.75, fbm(p * 2.4 - vec2(t, t * 0.3)));
+  return g * body;
+}
+
+float srcImage(vec2 uv, float aspect) {
+  vec2 s = vec2(1.0);
+  if (uImageAspect > aspect) s.x = aspect / uImageAspect; else s.y = uImageAspect / aspect;
+  vec2 iuv = (uv - 0.5) * s + 0.5;
+  if (any(lessThan(iuv, vec2(0.0))) || any(greaterThan(iuv, vec2(1.0)))) return 0.0;
+  vec3 c = texture(uImage, iuv).rgb;
+  return dot(c, vec3(0.299, 0.587, 0.114));
+}
+
+void main() {
+  vec2 id = floor(gl_FragCoord.xy);
+  vec2 px = (id + 0.5 - uGrid * 0.5) * uCell + uRes * 0.5;
+  vec2 uv = px / uRes;
+  float aspect = uRes.x / uRes.y;
+  vec2 p = vec2((uv.x - 0.5) * aspect + 0.5, uv.y);
+
+  // Pointer: bend the sampling position, or add light.
+  float glow = 0.0;
+  vec2 q = p;
+  for (int i = 0; i < ${TRAIL}; i++) {
+    vec3 tp = uTrail[i];
+    if (tp.z <= 0.002) continue;
+    vec2 d = q - tp.xy;
+    float f = exp(-dot(d, d) / (uBrush * uBrush)) * tp.z * uForce;
+    if (uPointer == 0) {
+      glow += f * 0.55;
+    } else if (uPointer == 1) {
+      q -= d * f * 0.5;
+      glow += f * 0.05;
+    } else if (uPointer == 2) {
+      q += d * f * 0.5;
+      glow += f * 0.05;
+    } else {
+      float a = f * 1.6;
+      float cs = cos(a), sn = sin(a);
+      q = tp.xy + mat2(cs, -sn, sn, cs) * d;
+      glow += f * 0.05;
+    }
+  }
+
+  float v;
+  if (uSource == 0) v = srcTide(q, uTime);
+  else if (uSource == 1) v = srcFlow(q, uTime);
+  else if (uSource == 2) v = srcOrbs(q, uTime, aspect);
+  else v = srcImage(vec2((q.x - 0.5) / aspect + 0.5, q.y), aspect);
+
+  v = (v - 0.5) * uContrast + 0.5 + uBright;
+  v = clamp(v, 0.0, 1.0);
+  if (uInvert > 0.5) v = 1.0 - v;
+  v = clamp(v + glow, 0.0, 1.0);
+  outColor = vec4(v, 0.0, 0.0, 1.0);
+}`;
+
+/* Pass 2: draw each cell with the chosen effect. */
+const DRAW_FRAG = `#version 300 es
+precision highp float;
+uniform vec2 uRes;
+uniform vec2 uGrid;
+uniform float uCell;
+uniform float uTime;
+uniform int uEffect;
+uniform float uGap;
+uniform float uFlicker;
+uniform float uMerge;
+uniform float uGrain;
+uniform vec3 uLevels[${MAX_LEVELS}];
+uniform int uCount;
+uniform sampler2D uTone;
+uniform sampler2D uAtlas;
+uniform sampler2D uLetters;
+uniform int uText[64];
+uniform int uTextLen;
+uniform float uAngle;
+uniform float uMisreg;
+uniform float uGain;
+uniform int uPlate;
+out vec4 outColor;
+
+const float ATLAS = 4.0;
+const int G_DOT = 0, G_ZERO = 1, G_ONE = 2, G_SYM = 3;
+
+float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+
+float bayer2(vec2 a) { a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
+float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
+float bayer8(vec2 a) { return bayer4(0.5 * a) * 0.25 + bayer2(a); }
+
+float toneAt(ivec2 id) {
+  ivec2 g = ivec2(uGrid);
+  return texelFetch(uTone, clamp(id, ivec2(0), g - 1), 0).r;
+}
+int quant(float v) { return clamp(int(floor(v * float(uCount))), 0, uCount - 1); }
+float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+float glyph(int slot, vec2 lc, vec2 g) {
+  vec2 cell = vec2(mod(float(slot), ATLAS), floor(float(slot) / ATLAS));
+  vec2 uv = (cell + vec2(lc.x, 1.0 - lc.y)) / ATLAS;
+  return textureGrad(uAtlas, uv, dFdx(g) / ATLAS, dFdy(g) / ATLAS).r;
+}
+
+float letterGlyph(int slot, vec2 lc, vec2 g) {
+  vec2 cell = vec2(mod(float(slot), 8.0), floor(float(slot) / 8.0));
+  vec2 uv = (cell + vec2(lc.x, 1.0 - lc.y)) / 8.0;
+  return textureGrad(uLetters, uv, dFdx(g) / 8.0, dFdy(g) / 8.0).r;
+}
+
+// Press: how much of ink i (1..n) a tone gets. Neighbouring inks overlap so they overprint;
+// the strongest ink holds the highlights solid.
+float inkCover(float v, int i, int n) {
+  float fn = float(n), c = float(i) / (fn + 1.0), w = (fn + 1.0) * 0.75;
+  float bare = smoothstep(0.04, 0.2, v);   // the darkest tones stay bare background
+  if (i == n) return clamp((v - c) * w + 1.0, 0.0, 1.0) * bare;
+  return clamp(1.0 - abs(v - c) * w, 0.0, 1.0) * bare;
+}
+
+// Soft-edged square inset by 'pad' (in local 0..1 units).
+float box(vec2 lc, float pad, float aa) {
+  vec2 e = min(lc, 1.0 - lc);
+  float m = min(e.x, e.y);
+  return smoothstep(pad - aa * 0.5, pad + aa * 0.5, m);
+}
+
+// The palette shade that contrasts most with bg.
+vec3 contrastInk(vec3 bg) {
+  vec3 best = uLevels[0];
+  float bd = -1.0;
+  for (int i = 0; i < uCount; i++) {
+    float d = abs(lum(uLevels[i]) - lum(bg));
+    if (d > bd) { bd = d; best = uLevels[i]; }
+  }
+  return best;
+}
+
+void main() {
+  vec2 fc = gl_FragCoord.xy;
+  vec2 g = (fc - uRes * 0.5) / uCell + uGrid * 0.5;
+  ivec2 id = ivec2(floor(g));
+  vec2 lc = fract(g);
+  float aa = 1.2 / uCell;
+  vec3 paper = uLevels[0];
+  vec3 col = paper;
+  float v = toneAt(id);
+  float plateMask = 0.0;
+
+  if (uEffect == 0) {
+    // Binary: ones and zeros; quiet cells become faint dots.
+    int li = quant(v);
+    float h = hash(vec2(id));
+    float rate = mix(0.0, 3.5, uFlicker) * (0.35 + h);
+    float tick = floor(uTime * rate + h * 17.0);
+    float bit = step(0.5, hash(vec2(id) + tick * 0.618));
+    if (li == 0) {
+      float a = glyph(G_DOT, lc, g) * smoothstep(0.02, 0.12, v + 0.06);
+      col = mix(paper, uLevels[min(1, uCount - 1)], a * 0.8);
+    } else {
+      float a = glyph(bit > 0.5 ? G_ONE : G_ZERO, lc, g);
+      col = mix(paper, uLevels[li], a);
+    }
+  } else if (uEffect == 1) {
+    // Dots: radius follows tone, color follows tone band.
+    int li = max(1, quant(v));
+    float r = sqrt(v) * mix(0.64, 0.34, uGap);
+    float d = length(lc - 0.5);
+    float m = (1.0 - smoothstep(r - aa, r + aa * 0.25, d)) * step(0.015, v);
+    col = mix(paper, uLevels[min(li, uCount - 1)], m);
+  } else if (uEffect == 2) {
+    // Blocks: flat color chunks; optionally fuse flat 2x2 / 4x4 areas.
+    int span = 1;
+    ivec2 base = id;
+    if (uMerge > 0.5) {
+      for (int k = 2; k >= 1; k--) {
+        int s = 1 << k;
+        ivec2 b = (id / s) * s;
+        if (b.x + s > int(uGrid.x) || b.y + s > int(uGrid.y)) continue;
+        int q0 = quant(toneAt(b));
+        bool same = true;
+        for (int yy = 0; yy < 4; yy++) {
+          for (int xx = 0; xx < 4; xx++) {
+            if (xx >= s || yy >= s) continue;
+            if (quant(toneAt(b + ivec2(xx, yy))) != q0) same = false;
+          }
+        }
+        if (same) { span = s; base = b; break; }
+      }
+    }
+    float fs = float(span);
+    vec2 blc = (g - vec2(base)) / fs;
+    int li = quant(toneAt(base));
+    float pad = uGap * 0.5 / fs;
+    float m = uGap < 0.01 ? 1.0 : box(blc, pad, aa / fs);
+    col = mix(paper, uLevels[li], m);
+  } else if (uEffect == 3) {
+    // Dither: ordered 8x8 Bayer across the palette.
+    float b = bayer8(vec2(id));
+    int li = clamp(int(floor(v * float(uCount - 1) + b)), 0, uCount - 1);
+    float m = uGap < 0.01 ? 1.0 : box(lc, uGap * 0.5, aa);
+    col = mix(paper, uLevels[li], m);
+  } else if (uEffect == 5) {
+    // Press: every ink is its own screen, turned to its own angle and landing a little off register.
+    // Light paper takes ink like a riso (multiply); dark paper glows (screen).
+    bool lightPaper = lum(paper) > 0.5;
+    vec2 ctr = uRes * 0.5;
+    int n = uCount - 1;
+    float rough = hash(floor(fc / 1.5)) - 0.5;
+    for (int i = 1; i < ${MAX_LEVELS}; i++) {
+      if (i > n) break;
+      float fi = float(i);
+      float ang = radians(uAngle + (fi - 1.0) * 30.0) + uMisreg * 0.004 * (fi - 2.0);
+      vec2 off = vec2(cos(fi * 2.399 + 0.7), sin(fi * 2.399 + 0.7)) * uMisreg * uCell * 0.5;
+      float cs = cos(ang), sn = sin(ang);
+      mat2 rot = mat2(cs, sn, -sn, cs);
+      mat2 inv = mat2(cs, -sn, sn, cs);
+      vec2 q = inv * (fc - ctr - off) / uCell;
+      vec2 cid = floor(q);
+      vec2 qc = fract(q) - 0.5;
+      vec2 cpx = rot * ((cid + 0.5) * uCell) + ctr + off;
+      vec2 gq = (cpx - uRes * 0.5) / uCell + uGrid * 0.5;
+      float cov = inkCover(toneAt(ivec2(floor(gq))), i, n);
+      float r = sqrt(cov) * 0.7071 * (1.0 + uGain * 0.25);
+      float d = length(qc) + rough * uGain * 0.1;
+      float m = (1.0 - smoothstep(r - aa, r + aa, d)) * step(0.004, cov);
+      vec3 ink = uLevels[i];
+      vec3 over = lightPaper ? col * ink : 1.0 - (1.0 - col) * (1.0 - ink);
+      col = mix(col, over, m * 0.94);
+      if (i == uPlate) plateMask = m;
+    }
+  } else if (uEffect == 6) {
+    // Letters: the text runs through the cells in reading order; tone picks the ink.
+    int li = quant(v);
+    int cols = int(uGrid.x);
+    int idx = (int(uGrid.y) - 1 - id.y) * cols + id.x;
+    int slot = uText[idx % max(uTextLen, 1)];
+    if (li == 0 || slot < 0) {
+      float a = glyph(G_DOT, lc, g) * smoothstep(0.02, 0.12, v + 0.06) * (slot < 0 ? 0.0 : 1.0);
+      col = mix(paper, uLevels[min(1, uCount - 1)], a * 0.8);
+    } else {
+      col = mix(paper, uLevels[li], letterGlyph(slot, lc, g));
+    }
+  } else {
+    // Stitch: chart-style cells, a symbol per tone step, faint grid.
+    int li = quant(v);
+    vec3 bg = uLevels[li];
+    int sym = clamp(int(floor(v * 7.999)), 0, 7);
+    float h = hash(vec2(id) + floor(uTime * mix(0.0, 1.2, uFlicker) + hash(vec2(id)) * 9.0));
+    if (uFlicker > 0.01 && h > 0.93) sym = int(mod(float(sym) + 1.0, 8.0));
+    vec3 fg = contrastInk(bg);
+    float a = glyph(G_SYM + sym, lc, g);
+    col = mix(bg, fg, a * 0.92);
+    float line = 1.0 - box(lc, 0.6 / uCell, aa);
+    col = mix(col, fg, line * 0.22);
+  }
+
+  // Separation plate: black where this ink prints, white elsewhere.
+  if (uPlate > 0) { outColor = vec4(vec3(1.0 - plateMask), 1.0); return; }
+  if (uGrain > 0.5) col += (hash(fc + fract(uTime * 0.37) * 91.0) - 0.5) * 0.035;
+  outColor = vec4(col, 1.0);
+}`;
+
+/* ---------------- state ---------------- */
+const STORE_KEY = 'halftone-specimen:v1';
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function loadState() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch (e) { saved = {}; }
+  const s = { ...DEFAULTS, ...saved };
+  if (!s.paletteEdits || typeof s.paletteEdits !== 'object') s.paletteEdits = {};
+  for (const [id, e] of Object.entries(s.paletteEdits)) {
+    if (!PALETTES.some(p => p.id === id) || !e || !Array.isArray(e.inks) || !e.inks.length) delete s.paletteEdits[id];
+  }
+  delete s.custom;
+  if (!paletteList(s).some(p => p.id === s.palette)) s.palette = PALETTES[0].id;
+  if (!RATIOS.some(r => r.id === s.ratio)) s.ratio = DEFAULTS.ratio;
+  if (!['react', 'js', 'html'].includes(s.codeKind)) s.codeKind = DEFAULTS.codeKind;
+  if (!LETTER_SETS.some(l => l.id === s.letterSet)) s.letterSet = DEFAULTS.letterSet;
+  if (typeof s.word !== 'string') s.word = DEFAULTS.word;
+  if (!EFFECTS.some(p => p.id === s.effect)) s.effect = EFFECTS[0].id;
+  if (!POINTERS.some(p => p.id === s.pointer)) s.pointer = POINTERS[0].id;
+  if (s.source === 'image' || !SOURCES.some(p => p.id === s.source)) {
+    s.source = SOURCES.find(x => x.id !== 'image')?.id || 'tide';
+  }
+  if (reducedMotion && saved.speed === undefined) s.speed = 0;
+  return s;
+}
+function saveState() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+}
+// A visitor's colour edits are stored per preset and laid over it.
+function paletteList(s = state) {
+  return PALETTES.map(p => s.paletteEdits[p.id] ? { ...p, ...s.paletteEdits[p.id], edited: true } : p);
+}
+const currentPalette = () => byId(paletteList(), state.palette);
+const state = loadState();
+
+const hexToRgb = h => {
+  const n = parseInt(h.replace('#', ''), 16);
+  return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+};
+const indexOf = (list, id) => Math.max(0, list.findIndex(x => x.id === id));
+const byId = (list, id) => list[indexOf(list, id)];
+
+/* ---------------- webgl ---------------- */
+const canvas = document.getElementById('gl');
+const card = document.getElementById('card');
+const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false });
+
+function fail(msg) {
+  const d = document.createElement('div');
+  d.className = 'fallback';
+  d.textContent = msg;
+  card.appendChild(d);
+}
+
+function compile(type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+  return sh;
+}
+function program(fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.bindAttribLocation(p, 0, 'aPos');
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {};
+  const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) {
+    const info = gl.getActiveUniform(p, i);
+    const name = info.name.replace(/\[0\]$/, '');
+    u[name] = gl.getUniformLocation(p, info.name);
+  }
+  return { p, u };
+}
+
+function makeTexture(filter) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter === gl.LINEAR_MIPMAP_LINEAR ? gl.LINEAR : filter);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+
+/* Glyph atlas: 4x4 slots, white on black. 0 dot, 1 zero, 2 one, 3-10 stitch symbols. */
+function drawAtlas() {
+  const S = 128, c = document.createElement('canvas');
+  c.width = c.height = S * 4;
+  const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height);
+  x.fillStyle = '#fff'; x.strokeStyle = '#fff';
+  x.lineCap = 'square'; x.lineJoin = 'miter';
+  const at = (slot, fn) => {
+    x.save();
+    x.translate((slot % 4) * S, Math.floor(slot / 4) * S);
+    x.beginPath();
+    fn();
+    x.restore();
+  };
+  const text = (ch, size, weight) => {
+    x.font = `${weight} ${size}px "SF Mono", ui-monospace, Menlo, monospace`;
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    const m = x.measureText(ch);
+    const dy = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+    x.fillText(ch, S / 2, S / 2 + dy);
+  };
+  const star = (cx, cy, R, r) => {
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r : R;
+      x[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+    }
+    x.closePath();
+  };
+
+  at(0, () => { x.arc(S / 2, S / 2, S * 0.09, 0, Math.PI * 2); x.fill(); });
+  at(1, () => text('0', S * 0.86, 500));
+  at(2, () => text('1', S * 0.86, 500));
+  // stitch symbols, lightest to heaviest
+  x.lineWidth = S * 0.075;
+  at(3, () => { x.arc(S / 2, S / 2, S * 0.2, 0, Math.PI * 2); x.stroke(); });
+  at(4, () => { x.moveTo(S * .3, S * .3); x.lineTo(S * .7, S * .7); x.moveTo(S * .7, S * .3); x.lineTo(S * .3, S * .7); x.stroke(); });
+  at(5, () => { x.moveTo(S * .27, S * .52); x.lineTo(S * .43, S * .68); x.lineTo(S * .74, S * .32); x.stroke(); });
+  at(6, () => text('2', S * 0.62, 700));
+  at(7, () => { x.moveTo(S / 2, S * .24); x.lineTo(S * .76, S / 2); x.lineTo(S / 2, S * .76); x.lineTo(S * .24, S / 2); x.closePath(); x.fill(); });
+  at(8, () => { x.moveTo(S / 2, S * .24); x.lineTo(S * .78, S * .74); x.lineTo(S * .22, S * .74); x.closePath(); x.fill(); });
+  at(9, () => { star(S / 2, S * .53, S * .31, S * .13); x.fill(); });
+  at(10, () => {
+    x.rect(S * .22, S * .22, S * .56, S * .56); x.fill();
+    x.fillStyle = '#000'; x.beginPath(); x.arc(S / 2, S / 2, S * .09, 0, Math.PI * 2); x.fill();
+  });
+  return c;
+}
+
+/* Letters atlas: 8x8 slots, white on black, each glyph fitted to its slot. */
+function drawLetters(chars) {
+  const S = 128, c = document.createElement('canvas');
+  c.width = c.height = S * 8;
+  const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height);
+  x.fillStyle = '#fff';
+  x.textAlign = 'center';
+  x.textBaseline = 'alphabetic';
+  chars.forEach((ch, i) => {
+    let size = S * 0.8;
+    x.font = `600 ${size}px -apple-system, "SF Pro Text", "Noto Sans Armenian", "Helvetica Neue", Arial, sans-serif`;
+    let m = x.measureText(ch);
+    const h = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+    const k = Math.min(1, (S * 0.84) / Math.max(1, m.width), (S * 0.8) / Math.max(1, h));
+    if (k < 1) { size *= k; x.font = x.font.replace(/\d+(\.\d+)?px/, size + 'px'); m = x.measureText(ch); }
+    const dy = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+    x.fillText(ch, (i % 8) * S + S / 2, Math.floor(i / 8) * S + S / 2 + dy);
+  });
+  return c;
+}
+
+let lettersTex, textLen = 1, plateIndex = 0;
+const textSlots = new Int32Array(64).fill(-1);
+function letterSequence() {
+  const set = byId(LETTER_SETS, state.letterSet);
+  const seq = Array.from(set.chars || state.word || '').slice(0, 64);
+  return seq.length ? seq : Array.from('SPECIMEN');
+}
+function updateLetters() {
+  if (!ok) return;
+  const seq = letterSequence();
+  const uniq = [...new Set(seq.filter(ch => ch.trim()))].slice(0, 64);
+  textSlots.fill(-1);
+  seq.forEach((ch, i) => { textSlots[i] = uniq.indexOf(ch); });
+  textLen = seq.length;
+  gl.bindTexture(gl.TEXTURE_2D, lettersTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, drawLetters(uniq));
+  gl.generateMipmap(gl.TEXTURE_2D);
+}
+
+let toneProg, drawProg, quad, atlasTex, imageTex, toneTex, toneFbo;
+let ok = !!gl;
+
+if (!gl) {
+  fail('This browser has WebGL 2 turned off, so the shader cannot run. Try a current Chrome, Safari or Firefox.');
+} else {
+  try {
+    toneProg = program(TONE_FRAG);
+    drawProg = program(DRAW_FRAG);
+  } catch (err) {
+    ok = false;
+    console.error(err);
+    fail('The shader failed to compile on this device. The console has the details.');
+  }
+}
+
+function uploadAtlas() {
+  gl.bindTexture(gl.TEXTURE_2D, atlasTex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, drawAtlas());
+  gl.generateMipmap(gl.TEXTURE_2D);
+}
+
+let imageAspect = 1, hasImage = false;
+
+if (ok) {
+  quad = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  atlasTex = makeTexture(gl.LINEAR_MIPMAP_LINEAR);
+  uploadAtlas();
+
+  lettersTex = makeTexture(gl.LINEAR_MIPMAP_LINEAR);
+
+  imageTex = makeTexture(gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+
+  toneTex = makeTexture(gl.NEAREST);
+  toneFbo = gl.createFramebuffer();
+}
+
+function setImage(img) {
+  if (!ok) return;
+  const max = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  let src = img, w = img.naturalWidth, h = img.naturalHeight;
+  const cap = Math.min(max, 2048);
+  if (Math.max(w, h) > cap) {
+    const k = cap / Math.max(w, h);
+    const c = document.createElement('canvas');
+    c.width = Math.round(w * k); c.height = Math.round(h * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    src = c; w = c.width; h = c.height;
+  }
+  gl.bindTexture(gl.TEXTURE_2D, imageTex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  imageAspect = w / h;
+  hasImage = true;
+}
+
+/* ---------------- sizing ---------------- */
+let W = 0, H = 0, dpr = 1, cols = 0, rows = 0;
+
+function resize() {
+  if (!ok) return;
+  const d = Math.min(window.devicePixelRatio || 1, 2);
+  const r = canvas.getBoundingClientRect();
+  setSize(Math.max(1, Math.round(r.width * d)), Math.max(1, Math.round(r.height * d)), d);
+}
+function setSize(w, h, d) {
+  dpr = d;
+  if (w !== W || h !== H) {
+    W = canvas.width = w;
+    H = canvas.height = h;
+  }
+  const cs = state.size * dpr;
+  const c = 2 * Math.ceil(W / (2 * cs));
+  const rr = 2 * Math.ceil(H / (2 * cs));
+  if (c !== cols || rr !== rows) {
+    cols = c; rows = rr;
+    gl.bindTexture(gl.TEXTURE_2D, toneTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, cols, rows, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, toneFbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, toneTex, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+}
+new ResizeObserver(resize).observe(canvas);
+
+/* ---------------- pointer ---------------- */
+const trail = new Float32Array(TRAIL * 3);
+let head = 0;
+const pointer = { x: 0.5, y: 0.5, sx: 0.5, sy: 0.5, inside: false, down: false, last: -1e9, moved: false };
+
+function toP(e) {
+  const r = canvas.getBoundingClientRect();
+  const u = (e.clientX - r.left) / r.width;
+  const v = 1 - (e.clientY - r.top) / r.height;
+  return { x: (u - 0.5) * (r.width / r.height) + 0.5, y: v };
+}
+canvas.addEventListener('pointermove', e => {
+  const p = toP(e);
+  pointer.x = p.x; pointer.y = p.y;
+  if (!pointer.inside) { pointer.sx = p.x; pointer.sy = p.y; }
+  pointer.inside = true;
+  pointer.last = performance.now();
+  pointer.moved = true;
+});
+canvas.addEventListener('pointerdown', e => {
+  pointer.down = true;
+  canvas.setPointerCapture(e.pointerId);
+  const p = toP(e);
+  pointer.x = pointer.sx = p.x; pointer.y = pointer.sy = p.y;
+  pointer.inside = true;
+  pointer.last = performance.now();
+  hideHint();
+});
+const release = () => { pointer.down = false; };
+canvas.addEventListener('pointerup', release);
+canvas.addEventListener('pointercancel', release);
+canvas.addEventListener('pointerleave', () => { pointer.inside = false; });
+
+const hint = document.getElementById('hint');
+let hintTimer = setTimeout(hideHint, 6000);
+function hideHint() { hint.classList.add('is-gone'); clearTimeout(hintTimer); }
+
+let stamp = 0;
+function stepTrail(now, t) {
+  const idle = now - pointer.last > 2600;
+  let tx, ty, power;
+  if (!idle && pointer.inside || pointer.down) {
+    tx = pointer.x; ty = pointer.y; power = pointer.down ? 1.35 : 1;
+    if (pointer.moved) hideHint();
+  } else if (!reducedMotion) {
+    // A slow ghost pointer keeps the card alive when nobody is touching it.
+    const aspect = W / H || 1;
+    const k = now * 0.00018;
+    tx = 0.5 + aspect * 0.32 * Math.sin(k * 1.3) * Math.cos(k * 0.37);
+    ty = 0.5 + 0.32 * Math.sin(k * 0.9 + 1.2);
+    power = 0.75;
+  } else {
+    power = 0;
+  }
+
+  if (power > 0) {
+    pointer.sx += (tx - pointer.sx) * 0.22;
+    pointer.sy += (ty - pointer.sy) * 0.22;
+  }
+  for (let i = 0; i < TRAIL; i++) trail[i * 3 + 2] *= 0.9;
+  stamp++;
+  if (power > 0 && stamp % 2 === 0) {
+    const i = head * 3;
+    trail[i] = pointer.sx; trail[i + 1] = pointer.sy; trail[i + 2] = power / TRAIL * 3.2;
+    head = (head + 1) % TRAIL;
+  }
+  pointer.moved = false;
+}
+
+/* ---------------- render ---------------- */
+let time = 0, prev = performance.now();
+let fps = 60, frames = 0, fpsClock = prev;
+const levelBuf = new Float32Array(MAX_LEVELS * 3);
+let levelCount = 2;
+
+function applyPalette() {
+  const pal = currentPalette();
+  const shades = [pal.paper, ...pal.inks].slice(0, MAX_LEVELS);
+  levelBuf.fill(0);
+  shades.forEach((h, i) => levelBuf.set(hexToRgb(h), i * 3));
+  levelCount = shades.length;
+  card.style.setProperty('--card-paper', pal.paper);
+}
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!ok || !W) return;
+  const dt = Math.min(0.05, (now - prev) / 1000);
+  prev = now;
+  time += dt * (state.speed / 100);
+  stepTrail(now, time);
+
+  frames++;
+  if (now - fpsClock > 600) {
+    fps = Math.round(frames * 1000 / (now - fpsClock));
+    frames = 0; fpsClock = now;
+    updateStatus();
+  }
+
+  render();
+}
+
+function render() {
+  const cs = state.size * dpr;
+  const sourceCode = { tide: 0, flow: 1, orbs: 2, image: 3 }[byId(SOURCES, state.source).id];
+  const pointerCode = { glow: 0, push: 1, pull: 2, twirl: 3 }[byId(POINTERS, state.pointer).id];
+
+  // pass 1: tones
+  gl.bindFramebuffer(gl.FRAMEBUFFER, toneFbo);
+  gl.viewport(0, 0, cols, rows);
+  gl.useProgram(toneProg.p);
+  let u = toneProg.u;
+  gl.uniform2f(u.uRes, W, H);
+  gl.uniform2f(u.uGrid, cols, rows);
+  gl.uniform1f(u.uCell, cs);
+  gl.uniform1f(u.uTime, time);
+  gl.uniform1i(u.uSource, sourceCode === 3 && !hasImage ? 0 : sourceCode);
+  gl.uniform1i(u.uPointer, pointerCode);
+  gl.uniform1f(u.uBrush, state.brush / 100);
+  gl.uniform1f(u.uForce, state.force / 100);
+  gl.uniform1f(u.uContrast, state.contrast / 100);
+  gl.uniform1f(u.uBright, state.brightness / 100);
+  gl.uniform1f(u.uInvert, state.invert ? 1 : 0);
+  gl.uniform3fv(u.uTrail, trail);
+  gl.uniform1f(u.uImageAspect, imageAspect);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, imageTex);
+  gl.uniform1i(u.uImage, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  // pass 2: effect
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, W, H);
+  gl.useProgram(drawProg.p);
+  u = drawProg.u;
+  gl.uniform2f(u.uRes, W, H);
+  gl.uniform2f(u.uGrid, cols, rows);
+  gl.uniform1f(u.uCell, cs);
+  gl.uniform1f(u.uTime, time);
+  gl.uniform1i(u.uEffect, EFFECT_CODE[state.effect]);
+  gl.uniform1f(u.uAngle, state.angle);
+  gl.uniform1f(u.uMisreg, state.misreg / 100);
+  gl.uniform1f(u.uGain, state.gain / 100);
+  gl.uniform1i(u.uPlate, plateIndex);
+  gl.uniform1iv(u.uText, textSlots);
+  gl.uniform1i(u.uTextLen, textLen);
+  gl.uniform1f(u.uGap, state.gap / 100);
+  gl.uniform1f(u.uFlicker, state.flicker / 100);
+  gl.uniform1f(u.uMerge, state.merge ? 1 : 0);
+  gl.uniform1f(u.uGrain, state.grain ? 1 : 0);
+  gl.uniform3fv(u.uLevels, levelBuf);
+  gl.uniform1i(u.uCount, levelCount);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, toneTex);
+  gl.uniform1i(u.uTone, 0);
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, atlasTex);
+  gl.uniform1i(u.uAtlas, 1);
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, lettersTex);
+  gl.uniform1i(u.uLetters, 2);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+/* ---------------- controls ---------------- */
+const $ = id => document.getElementById(id);
+
+const SLIDERS = {
+  angle:      { label: 'Screen angle',    min: 0, max: 90,  unit: '°', parent: 'effect-fields', only: ['press'] },
+  misreg:     { label: 'Misregistration', min: 0, max: 100, unit: '%', parent: 'effect-fields', only: ['press'] },
+  gain:       { label: 'Dot gain',        min: 0, max: 100, unit: '%', parent: 'effect-fields', only: ['press'] },
+  size:       { label: 'Cell size',  min: 4,   max: 40,  unit: 'px', parent: 'grid-fields' },
+  gap:        { label: 'Gap',        min: 0,   max: 60,  unit: '%',  parent: 'grid-fields', only: ['dots', 'blocks', 'dither'] },
+  flicker:    { label: 'Flicker',    min: 0,   max: 100, unit: '%',  parent: 'grid-fields', only: ['binary', 'stitch'] },
+  contrast:   { label: 'Contrast',   min: 50,  max: 250, unit: '%',  parent: 'tone-fields' },
+  brightness: { label: 'Brightness', min: -50, max: 50,  unit: '',   parent: 'tone-fields', signed: true },
+  speed:      { label: 'Motion',     min: 0,   max: 200, unit: '%',  parent: 'motion-fields' },
+  brush:      { label: 'Brush size', min: 6,   max: 45,  unit: '%',  parent: 'pointer-fields' },
+  force:      { label: 'Force',      min: 0,   max: 100, unit: '%',  parent: 'pointer-fields' },
+};
+const TOGGLES = {
+  merge:  { label: 'Merge flat areas', parent: 'grid-fields', only: ['blocks'] },
+  invert: { label: 'Invert tones',     parent: 'tone-fields' },
+  grain:  { label: 'Grain',            parent: 'tone-fields' },
+};
+
+const paintSlider = input => {
+  const p = (input.value - input.min) / (input.max - input.min) * 100;
+  input.style.setProperty('--p', p + '%');
+};
+
+const fmt = (key, v) => {
+  const d = SLIDERS[key];
+  const sign = d.signed && v > 0 ? '+' : '';
+  return `${sign}${v}${d.unit === '°' ? '°' : d.unit ? ' ' + d.unit : ''}`;
+};
+
+function buildFields() {
+  for (const [key, d] of Object.entries(SLIDERS)) {
+    const wrap = document.createElement('div');
+    wrap.className = 'field';
+    wrap.dataset.key = key;
+    wrap.innerHTML = `
+      <div class="field-head"><label for="f-${key}">${d.label}</label><output id="o-${key}" for="f-${key}"></output></div>
+      <input type="range" id="f-${key}" min="${d.min}" max="${d.max}" step="1">`;
+    $(d.parent).appendChild(wrap);
+    const input = wrap.querySelector('input');
+    input.addEventListener('input', () => {
+      state[key] = Number(input.value);
+      paintSlider(input);
+      $(`o-${key}`).textContent = fmt(key, state[key]);
+      if (key === 'size') resize();
+      saveState();
+      updateStatus();
+    });
+  }
+  for (const [key, d] of Object.entries(TOGGLES)) {
+    const label = document.createElement('label');
+    label.className = 'toggle';
+    label.dataset.key = key;
+    label.htmlFor = `t-${key}`;
+    label.innerHTML = `<span>${d.label}</span><input type="checkbox" role="switch" id="t-${key}">`;
+    $(d.parent).appendChild(label);
+    label.querySelector('input').addEventListener('change', e => {
+      state[key] = e.target.checked;
+      saveState();
+    });
+  }
+}
+
+function buildSeg(containerId, list, key, render, onPick) {
+  const el = $(containerId);
+  el.style.setProperty('--cols', list.length);
+  el.setAttribute('role', 'group');
+  list.forEach((item, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.id = `${containerId}-${item.id}`;
+    b.dataset.id = item.id;
+    b.innerHTML = render(item);
+    b.addEventListener('click', () => onPick(item));
+    el.appendChild(b);
+  });
+}
+
+function buildPalettes() {
+  const el = $('palettes');
+  el.setAttribute('role', 'group');
+  el.setAttribute('aria-label', 'Color palettes');
+  el.textContent = '';
+  paletteList().forEach(p => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.id = `pal-${p.id}`;
+    b.dataset.id = p.id;
+    b.title = p.name;
+    b.setAttribute('aria-label', p.name);
+    b.style.setProperty('--chip-paper', p.paper);
+    b.innerHTML = `<span class="bars">${p.inks.map(c => `<i style="background:${c}"></i>`).join('')}</span>`;
+    b.addEventListener('click', () => { state.palette = p.id; applyPalette(); buildShades(); sync(); saveState(); });
+    el.appendChild(b);
+  });
+}
+
+/* Editing a shade changes the selected preset itself; the edit is kept for next time. */
+function editable() {
+  const id = state.palette;
+  if (!state.paletteEdits[id]) {
+    const p = currentPalette();
+    state.paletteEdits[id] = { paper: p.paper, inks: [...p.inks] };
+  }
+  return state.paletteEdits[id];
+}
+const lighten = hex => {
+  const [r, g, b] = hexToRgb(hex).map(v => Math.round((v + (1 - v) * 0.5) * 255));
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+};
+function buildShades() {
+  closePicker(false);
+  const el = $('shades');
+  el.textContent = '';
+  const pal = currentPalette();
+  const shades = [pal.paper, ...pal.inks];
+  shades.forEach((hex, i) => {
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.className = 'swatch';
+    sw.style.setProperty('--c', hex);
+    const name = i === 0 ? 'Background' : `Color ${i}`;
+    sw.title = name;
+    sw.setAttribute('aria-label', `${name} colour, ${hex.toUpperCase()}`);
+    sw.setAttribute('aria-haspopup', 'dialog');
+    sw.setAttribute('aria-expanded', 'false');
+    sw.addEventListener('click', () => {
+      if (picker.anchor === sw) { closePicker(); return; }
+      openPicker(sw, hex, value => {
+        const e = editable();
+        if (i === 0) e.paper = value; else e.inks[i - 1] = value;
+        sw.style.setProperty('--c', value);
+        sw.setAttribute('aria-label', `${name} colour, ${value.toUpperCase()}`);
+        hex = value;
+        applyPalette(); buildPalettes(); sync(); saveState();
+      });
+    });
+    el.appendChild(sw);
+  });
+  const btn = (label, svg, disabled, fn) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ctl ctl-secondary ctl-icon';
+    b.setAttribute('aria-label', label);
+    b.title = label;
+    b.disabled = disabled;
+    b.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">${svg}</svg>`;
+    b.addEventListener('click', () => { fn(editable()); applyPalette(); buildPalettes(); buildShades(); sync(); saveState(); });
+    el.appendChild(b);
+  };
+  btn('Add a color', '<path d="M8 3v10M3 8h10"/>', pal.inks.length >= MAX_LEVELS - 1,
+    e => e.inks.push(lighten(e.inks[e.inks.length - 1])));
+  btn('Remove the strongest color', '<path d="M3 8h10"/>', pal.inks.length <= 1,
+    e => e.inks.pop());
+}
+
+/* ---------------- colour picker ---------------- */
+const picker = { el: null, anchor: null, onChange: null, h: 0, s: 0, v: 0 };
+function hexToHsv(hex) {
+  const [r, g, b] = hexToRgb(hex);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0;
+  if (d) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h = (h * 60 + 360) % 360;
+  }
+  return { h, s: max ? d / max : 0, v: max };
+}
+function hsvToHex(h, s, v) {
+  const f = n => {
+    const k = (n + h / 60) % 6;
+    return v - v * s * Math.max(0, Math.min(k, 4 - k, 1));
+  };
+  return '#' + [f(5), f(3), f(1)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+}
+function paintPicker(skipHex) {
+  const el = picker.el, hex = hsvToHex(picker.h, picker.s, picker.v);
+  el.style.setProperty('--h', picker.h);
+  el.style.setProperty('--c', hex);
+  el.style.setProperty('--x', picker.s * 100 + '%');
+  el.style.setProperty('--y', (1 - picker.v) * 100 + '%');
+  $('hue').value = Math.round(picker.h);
+  $('sv').setAttribute('aria-valuetext', `Saturation ${Math.round(picker.s * 100)}%, brightness ${Math.round(picker.v * 100)}%`);
+  if (!skipHex) $('hex').value = hex.slice(1).toUpperCase();
+  return hex;
+}
+function commitPicker(skipHex) {
+  const hex = paintPicker(skipHex);
+  picker.onChange?.(hex);
+}
+function placePicker() {
+  const a = picker.anchor.getBoundingClientRect(), el = picker.el;
+  const w = el.offsetWidth, h = el.offsetHeight, pad = 12;
+  let left = Math.min(Math.max(pad, a.left + a.width / 2 - w / 2), innerWidth - w - pad);
+  let top = a.bottom + 8;
+  if (top + h > innerHeight - pad) top = Math.max(pad, a.top - 8 - h);
+  el.style.left = Math.round(left) + 'px';
+  el.style.top = Math.round(top) + 'px';
+}
+function openPicker(anchor, hex, onChange) {
+  if (picker.anchor) picker.anchor.setAttribute('aria-expanded', 'false');
+  picker.anchor = anchor;
+  picker.onChange = onChange;
+  Object.assign(picker, hexToHsv(hex));
+  anchor.setAttribute('aria-expanded', 'true');
+  picker.el.hidden = false;
+  paintPicker();
+  placePicker();
+  $('sv').focus({ preventScroll: true });
+}
+function closePicker(refocus = true) {
+  if (!picker.anchor) return;
+  const a = picker.anchor;
+  picker.el.hidden = true;
+  a.setAttribute('aria-expanded', 'false');
+  picker.anchor = picker.onChange = null;
+  if (refocus && a.isConnected) a.focus({ preventScroll: true });
+}
+function setupPicker() {
+  picker.el = $('picker');
+  const sv = $('sv');
+  const fromPointer = e => {
+    const r = sv.getBoundingClientRect();
+    picker.s = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    picker.v = 1 - Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    commitPicker();
+  };
+  sv.addEventListener('pointerdown', e => { sv.setPointerCapture(e.pointerId); fromPointer(e); });
+  sv.addEventListener('pointermove', e => { if (sv.hasPointerCapture(e.pointerId)) fromPointer(e); });
+  sv.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 0.1 : 0.01;
+    const moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] };
+    const m = moves[e.key];
+    if (!m) return;
+    e.preventDefault();
+    picker.s = Math.min(1, Math.max(0, picker.s + m[0]));
+    picker.v = Math.min(1, Math.max(0, picker.v + m[1]));
+    commitPicker();
+  });
+  $('hue').addEventListener('input', e => { picker.h = Number(e.target.value); commitPicker(); });
+  const hexInput = $('hex');
+  hexInput.addEventListener('input', () => {
+    let v = hexInput.value.replace(/[^0-9a-f]/gi, '');
+    if (v.length === 3) v = v.split('').map(c => c + c).join('');
+    if (v.length !== 6) return;
+    Object.assign(picker, hexToHsv('#' + v));
+    commitPicker(true);
+  });
+  hexInput.addEventListener('blur', () => { if (picker.anchor) paintPicker(); });
+  hexInput.addEventListener('keydown', e => { if (e.key === 'Enter') closePicker(); });
+  // Sampling straight off the card (or the uploaded photo) is the reason this button exists.
+  if ('EyeDropper' in window) {
+    const drop = $('eyedrop');
+    drop.hidden = false;
+    drop.addEventListener('click', async () => {
+      try {
+        const { sRGBHex } = await new EyeDropper().open();
+        Object.assign(picker, hexToHsv(sRGBHex));
+        commitPicker();
+      } catch (e) { /* cancelled */ }
+    });
+  }
+  document.addEventListener('pointerdown', e => {
+    if (picker.anchor && !picker.el.contains(e.target) && !picker.anchor.contains(e.target)) closePicker(false);
+  });
+  addEventListener('resize', () => picker.anchor && placePicker());
+  $('panel').querySelector('.panel-body').addEventListener('scroll', () => closePicker(false), { passive: true });
+}
+
+function applyRatio() {
+  const r = byId(RATIOS, state.ratio);
+  document.documentElement.style.setProperty('--ar', `${r.w} / ${r.h}`);
+  $('ratio').textContent = `${r.w} : ${r.h}`;
+}
+function buildRatios() {
+  const el = $('ratios');
+  RATIOS.forEach(r => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ratio';
+    b.dataset.id = r.id;
+    const k = 28 / Math.max(r.w, r.h);
+    b.innerHTML = `<span class="frame" aria-hidden="true"><i style="width:${r.w * k}px;height:${r.h * k}px"></i></span><span>${r.w}:${r.h}</span>`;
+    b.addEventListener('click', () => { state.ratio = r.id; applyRatio(); sync(); saveState(); });
+    el.appendChild(b);
+  });
+}
+
+function sync() {
+  const eff = byId(EFFECTS, state.effect);
+  const pal = currentPalette();
+  const src = byId(SOURCES, state.source);
+
+  document.querySelectorAll('#effects button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === state.effect));
+  document.querySelectorAll('#sources button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === state.source));
+  document.querySelectorAll('#pointers button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === state.pointer));
+  document.querySelectorAll('#ratios .ratio').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === state.ratio));
+  document.querySelectorAll('#palettes .chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === state.palette));
+
+  $('palette-name').textContent = `${pal.name}${pal.edited ? ' (edited)' : ''} · ${pal.inks.length + 1} colors`;
+  $('restore').hidden = !pal.edited;
+  $('letters-ui').hidden = state.effect !== 'letters';
+  $('word-field').hidden = state.letterSet !== 'word';
+  document.querySelectorAll('#letter-sets button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === state.letterSet));
+  if (document.activeElement !== $('word')) $('word').value = state.word;
+  if (downloads) buildSaveFormats();
+  $('image-note').hidden = src.id !== 'image';
+
+  for (const [key, d] of Object.entries(SLIDERS)) {
+    const input = $(`f-${key}`);
+    input.value = state[key];
+    paintSlider(input);
+    $(`o-${key}`).textContent = fmt(key, state[key]);
+    input.closest('.field').hidden = !!d.only && !d.only.includes(state.effect);
+  }
+  for (const [key, d] of Object.entries(TOGGLES)) {
+    $(`t-${key}`).checked = !!state[key];
+    $(`t-${key}`).closest('.toggle').hidden = !!d.only && !d.only.includes(state.effect);
+  }
+  if (downloads) syncSave();
+  updateStatus();
+}
+
+function updateStatus() {
+  const eff = byId(EFFECTS, state.effect);
+  const pal = currentPalette();
+  $('status-left').textContent = `${eff.name} · ${pal.name}`;
+  $('status-right').textContent = ok
+    ? `${(cols * rows).toLocaleString('en-US')} cells · ${fps} fps`
+    : 'WebGL unavailable';
+}
+
+/* ---------------- panel ---------------- */
+const shell = $('shell');
+const panel = $('panel');
+const pill = $('customize');
+
+function openPanel(focus) {
+  panel.hidden = false;
+  shell.classList.add('is-open');
+  pill.setAttribute('aria-expanded', 'true');
+  if (focus) panel.querySelector('#effects button[aria-pressed="true"]')?.focus();
+}
+function closePanel() {
+  closePicker(false);
+  panel.hidden = true;
+  shell.classList.remove('is-open');
+  pill.setAttribute('aria-expanded', 'false');
+  pill.focus({ preventScroll: true });
+}
+pill.addEventListener('click', () => (panel.hidden ? openPanel(true) : closePanel()));
+$('close').addEventListener('click', closePanel);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (picker.anchor) closePicker();
+  else if (!panel.hidden) closePanel();
+});
+
+$('reset').addEventListener('click', () => {
+  Object.assign(state, DEFAULTS);
+  updateLetters();
+  applyPalette(); applyRatio(); buildShades(); resize(); sync(); saveState();
+});
+
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const rand = (a, b) => Math.round(a + Math.random() * (b - a));
+$('shuffle').addEventListener('click', () => {
+  state.effect = pick(EFFECTS.filter(e => e.id !== state.effect)).id;
+  state.palette = pick(paletteList().filter(p => p.id !== state.palette)).id;
+  const sources = SOURCES.filter(s => s.id !== 'image' || hasImage);
+  state.source = pick(sources).id;
+  state.pointer = pick(POINTERS).id;
+  state.size = rand(7, 20);
+  state.gap = rand(0, 30);
+  state.contrast = rand(100, 180);
+  state.merge = Math.random() > 0.35;
+  applyPalette(); buildShades(); resize(); sync(); saveState();
+});
+
+/* ---------------- saving ---------------- */
+// Until claude.ai's save prompt answers (or where it never will: a local copy), save with a plain browser download.
+const browserDownload = {
+  async save({ filename, data }) {
+    const blob = data instanceof Blob ? data : new Blob([data]);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    return { status: 'saved' };
+  },
+};
+let downloads = browserDownload, recording = false;
+const canRecord = ok && typeof MediaRecorder !== 'undefined' && !!canvas.captureStream;
+// Plates only exist for Press: it is the one effect built from separate ink screens.
+const saveFormats = () => [
+  { id: 'image', name: 'Image' },
+  ...(state.effect === 'press' ? [{ id: 'plates', name: 'Plates' }] : []),
+  ...(canRecord ? [{ id: 'video', name: 'Video' }] : []),
+  { id: 'code', name: 'Code' },
+];
+let builtFormats = '';
+function buildSaveFormats() {
+  const list = saveFormats();
+  if (!list.some(f => f.id === state.saveFormat)) state.saveFormat = 'image';
+  const key = list.map(f => f.id).join();
+  if (key === builtFormats) return;
+  builtFormats = key;
+  $('save-formats').textContent = '';
+  buildSeg('save-formats', list, 'saveFormat', f => f.name, f => { state.saveFormat = f.id; syncSave(); saveState(); });
+  syncSave();
+}
+
+/* Minimal ZIP writer (stored, no compression: PNGs are compressed already). */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+const crc32 = buf => { let c = ~0; for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 255] ^ (c >>> 8); return ~c >>> 0; };
+function zip(files) {
+  const enc = new TextEncoder(), parts = [], central = [];
+  let offset = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), data = f.data, crc = crc32(data);
+    const head = new DataView(new ArrayBuffer(30));
+    head.setUint32(0, 0x04034b50, true); head.setUint16(4, 20, true); head.setUint16(8, 0, true);
+    head.setUint32(14, crc, true); head.setUint32(18, data.length, true); head.setUint32(22, data.length, true);
+    head.setUint16(26, name.length, true);
+    parts.push(head, name, data);
+    const cd = new DataView(new ArrayBuffer(46));
+    cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true); cd.setUint16(6, 20, true);
+    cd.setUint32(16, crc, true); cd.setUint32(20, data.length, true); cd.setUint32(24, data.length, true);
+    cd.setUint16(28, name.length, true); cd.setUint32(42, offset, true);
+    central.push(cd, name);
+    offset += 30 + name.length + data.length;
+  }
+  const size = central.reduce((a, p) => a + p.byteLength, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, size, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, end], { type: 'application/zip' });
+}
+
+async function snapshotPlates(k) {
+  const pal = currentPalette(), [w, h, kk] = imagePx(k);
+  setSize(w, h, kk);
+  const shots = [];
+  pal.inks.forEach((ink, i) => {
+    plateIndex = i + 1; render();
+    shots.push(new Promise(res => canvas.toBlob(res, 'image/png')));
+  });
+  plateIndex = 0; render();
+  shots.push(new Promise(res => canvas.toBlob(res, 'image/png')));
+  resize();
+  const blobs = await Promise.all(shots);
+  const bytes = await Promise.all(blobs.map(b => b.arrayBuffer().then(a => new Uint8Array(a))));
+  const files = pal.inks.map((ink, i) => ({
+    name: `plate-${i + 1}-${ink.slice(1).toUpperCase()}-${(state.angle + i * 30) % 180}deg.png`,
+    data: bytes[i],
+  }));
+  files.push({ name: 'proof.png', data: bytes[bytes.length - 1] });
+  const notes = [
+    `Halftone Specimen plates: ${pal.name}, ${w} x ${h} px`,
+    `Paper: ${pal.paper.toUpperCase()}`,
+    'Black = ink. Print in this order:',
+    ...pal.inks.map((ink, i) => `  ${i + 1}. ${ink.toUpperCase()} at ${(state.angle + i * 30) % 180} degrees`),
+    `Misregistration ${state.misreg}%, dot gain ${state.gain}%, cell ${state.size}px.`,
+    'proof.png shows all inks together.',
+  ].join('\n');
+  files.push({ name: 'plates.txt', data: new TextEncoder().encode(notes) });
+  return zip(files);
+}
+let lastImage = null;   // kept so a Code export can carry the visitor's photo
+
+/* The exported file runs this function on its own. It must reference only its arguments and browser globals. */
+function halftoneEmbed(el, C, VERT, TONE_FRAG, DRAW_FRAG, drawAtlas, drawLetters) {
+  const TRAIL = 14, MAX_LEVELS = 6;
+  const code = (list, name) => Math.max(0, list.indexOf(name));
+  const EFFECT = code(['binary', 'dots', 'blocks', 'dither', 'stitch', 'press', 'letters'], C.effect);
+  const SOURCE = code(['tide', 'flow', 'orbs', 'image'], C.source);
+  const POINTER = code(['glow', 'push', 'pull', 'twirl'], C.pointer);
+  const LEVELS = [C.background, ...C.colors].slice(0, MAX_LEVELS);
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
+  el.appendChild(canvas);
+  const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false });
+  if (!gl) { el.textContent = 'WebGL 2 is needed to show this.'; return () => {}; }
+  const compile = (type, src) => {
+    const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+    return sh;
+  };
+  const program = fs => {
+    const p = gl.createProgram();
+    gl.attachShader(p, compile(gl.VERTEX_SHADER, VERT)); gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+    gl.bindAttribLocation(p, 0, 'aPos'); gl.linkProgram(p);
+    const u = {};
+    for (let i = 0; i < gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i++) {
+      const info = gl.getActiveUniform(p, i);
+      u[info.name.replace(/\[0\]$/, '')] = gl.getUniformLocation(p, info.name);
+    }
+    return { p, u };
+  };
+  const tex = filter => {
+    const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter === gl.LINEAR_MIPMAP_LINEAR ? gl.LINEAR : filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return t;
+  };
+  const toneProg = program(TONE_FRAG), drawProg = program(DRAW_FRAG);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const atlas = tex(gl.LINEAR_MIPMAP_LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, drawAtlas()); gl.generateMipmap(gl.TEXTURE_2D);
+  const seq = Array.from(C.text || 'SPECIMEN').slice(0, 64);
+  const uniq = [...new Set(seq.filter(ch => ch.trim()))].slice(0, 64);
+  const slots = new Int32Array(64).fill(-1);
+  seq.forEach((ch, i) => { slots[i] = uniq.indexOf(ch); });
+  const letters = tex(gl.LINEAR_MIPMAP_LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, drawLetters(uniq)); gl.generateMipmap(gl.TEXTURE_2D);
+  const image = tex(gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+  let imageAspect = 1, hasImage = false;
+  if (C.image) {
+    const img = new Image();
+    img.onload = () => {
+      gl.bindTexture(gl.TEXTURE_2D, image); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      imageAspect = img.naturalWidth / img.naturalHeight; hasImage = true;
+    };
+    img.src = C.image;
+  }
+  const tone = tex(gl.NEAREST), fbo = gl.createFramebuffer();
+  const levels = new Float32Array(MAX_LEVELS * 3);
+  LEVELS.forEach((h, i) => { const n = parseInt(h.slice(1), 16); levels.set([(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255], i * 3); });
+
+  let W = 0, H = 0, dpr = 1, cols = 0, rows = 0;
+  const resize = () => {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    const r = canvas.getBoundingClientRect();
+    W = canvas.width = Math.max(1, Math.round(r.width * dpr)); H = canvas.height = Math.max(1, Math.round(r.height * dpr));
+    const cs = C.size * dpr, c = 2 * Math.ceil(W / (2 * cs)), rr = 2 * Math.ceil(H / (2 * cs));
+    if (c !== cols || rr !== rows) {
+      cols = c; rows = rr;
+      gl.bindTexture(gl.TEXTURE_2D, tone);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, cols, rows, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tone, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+  };
+  const ro = new ResizeObserver(resize);
+  ro.observe(canvas);
+
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const trail = new Float32Array(TRAIL * 3);
+  const pt = { x: .5, y: .5, sx: .5, sy: .5, inside: false, down: false, last: -1e9 };
+  let head = 0, stamp = 0;
+  const toP = e => {
+    const r = canvas.getBoundingClientRect();
+    return { x: ((e.clientX - r.left) / r.width - .5) * (r.width / r.height) + .5, y: 1 - (e.clientY - r.top) / r.height };
+  };
+  canvas.addEventListener('pointermove', e => { const p = toP(e); pt.x = p.x; pt.y = p.y; if (!pt.inside) { pt.sx = p.x; pt.sy = p.y; } pt.inside = true; pt.last = performance.now(); });
+  canvas.addEventListener('pointerdown', e => { pt.down = true; canvas.setPointerCapture(e.pointerId); const p = toP(e); pt.x = pt.sx = p.x; pt.y = pt.sy = p.y; pt.inside = true; pt.last = performance.now(); });
+  const up = () => { pt.down = false; };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('pointerleave', () => { pt.inside = false; });
+
+  let time = 0, prev = performance.now();
+  let raf = 0;
+  const frame = now => {
+    raf = requestAnimationFrame(frame);
+    if (!W) return;
+    time += Math.min(.05, (now - prev) / 1000) * (still ? 0 : C.speed / 100); prev = now;
+    let tx, ty, power = 0;
+    if ((now - pt.last < 2600 && pt.inside) || pt.down) { tx = pt.x; ty = pt.y; power = pt.down ? 1.35 : 1; }
+    else if (!still) { const a = W / H || 1, k = now * .00018; tx = .5 + a * .32 * Math.sin(k * 1.3) * Math.cos(k * .37); ty = .5 + .32 * Math.sin(k * .9 + 1.2); power = .75; }
+    if (power) { pt.sx += (tx - pt.sx) * .22; pt.sy += (ty - pt.sy) * .22; }
+    for (let i = 0; i < TRAIL; i++) trail[i * 3 + 2] *= .9;
+    if (power && ++stamp % 2 === 0) { trail.set([pt.sx, pt.sy, power / TRAIL * 3.2], head * 3); head = (head + 1) % TRAIL; }
+
+    const cs = C.size * dpr;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.viewport(0, 0, cols, rows); gl.useProgram(toneProg.p);
+    let u = toneProg.u;
+    gl.uniform2f(u.uRes, W, H); gl.uniform2f(u.uGrid, cols, rows); gl.uniform1f(u.uCell, cs); gl.uniform1f(u.uTime, time);
+    gl.uniform1i(u.uSource, SOURCE === 3 && !hasImage ? 0 : SOURCE); gl.uniform1i(u.uPointer, POINTER);
+    gl.uniform1f(u.uBrush, C.brush / 100); gl.uniform1f(u.uForce, C.force / 100);
+    gl.uniform1f(u.uContrast, C.contrast / 100); gl.uniform1f(u.uBright, C.brightness / 100); gl.uniform1f(u.uInvert, C.invert ? 1 : 0);
+    gl.uniform3fv(u.uTrail, trail); gl.uniform1f(u.uImageAspect, imageAspect);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, image); gl.uniform1i(u.uImage, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H); gl.useProgram(drawProg.p);
+    u = drawProg.u;
+    gl.uniform2f(u.uRes, W, H); gl.uniform2f(u.uGrid, cols, rows); gl.uniform1f(u.uCell, cs); gl.uniform1f(u.uTime, time);
+    gl.uniform1i(u.uEffect, EFFECT); gl.uniform1f(u.uGap, C.gap / 100); gl.uniform1f(u.uFlicker, C.flicker / 100);
+    gl.uniform1f(u.uMerge, C.merge ? 1 : 0); gl.uniform1f(u.uGrain, C.grain ? 1 : 0);
+    gl.uniform3fv(u.uLevels, levels); gl.uniform1i(u.uCount, LEVELS.length);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tone); gl.uniform1i(u.uTone, 0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, atlas); gl.uniform1i(u.uAtlas, 1);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, letters); gl.uniform1i(u.uLetters, 2);
+    gl.uniform1f(u.uAngle, C.angle); gl.uniform1f(u.uMisreg, C.misreg / 100); gl.uniform1f(u.uGain, C.gain / 100);
+    gl.uniform1i(u.uPlate, 0); gl.uniform1iv(u.uText, slots); gl.uniform1i(u.uTextLen, seq.length);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  };
+  raf = requestAnimationFrame(frame);
+  // Call the returned function to stop and clean up (React effects do this on unmount).
+  return () => {
+    cancelAnimationFrame(raf);
+    ro.disconnect();
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    canvas.remove();
+  };
+}
+
+function exportConfig() {
+  const pal = currentPalette(), r = byId(RATIOS, state.ratio);
+  let image = null;
+  if (state.source === 'image' && lastImage) {
+    const k = Math.min(1, 1600 / Math.max(lastImage.naturalWidth, lastImage.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(lastImage.naturalWidth * k); c.height = Math.round(lastImage.naturalHeight * k);
+    c.getContext('2d').drawImage(lastImage, 0, 0, c.width, c.height);
+    image = c.toDataURL('image/jpeg', 0.9);
+  }
+  const C = {
+    effect: state.effect,
+    background: pal.paper.toUpperCase(),
+    colors: pal.inks.map(c => c.toUpperCase()),
+    ratio: `${r.w}:${r.h}`,
+    source: state.source === 'image' && !image ? 'tide' : state.source,
+    pointer: state.pointer,
+    size: state.size, gap: state.gap, flicker: state.flicker, merge: state.merge,
+    angle: state.angle, misreg: state.misreg, gain: state.gain,
+    contrast: state.contrast, brightness: state.brightness, invert: state.invert, grain: state.grain,
+    speed: state.speed, brush: state.brush, force: state.force,
+  };
+  if (state.effect === 'letters') C.text = letterSequence().join('');
+  if (image) C.image = image;
+  return { C, pal, r, eff: byId(EFFECTS, state.effect).name };
+}
+
+const CONFIG_DOC = `/* Settings, exactly as you left them in Halftone Specimen. Change any value to tweak the look.
+   effect      press | letters | binary | dots | blocks | dither | stitch
+   background  the base colour; colors run from light to strong (1 to 5 of them)
+   source      tide | flow | orbs | image        pointer  glow | push | pull | twirl
+   size        cell size in px                   gap, flicker, angle, misreg, gain, contrast, brightness, speed, brush, force: numbers as on the panel */`;
+
+function coreSource(C) {
+  return `${CONFIG_DOC}
+const CONFIG = ${JSON.stringify(C, null, 2)};
+
+/* ---- engine (no need to edit below) ---- */
+const VERT = ${JSON.stringify(VERT)};
+const TONE_FRAG = ${JSON.stringify(TONE_FRAG)};
+const DRAW_FRAG = ${JSON.stringify(DRAW_FRAG)};
+${drawAtlas.toString()}
+${drawLetters.toString()}
+${halftoneEmbed.toString()}`;
+}
+
+const CODE_KINDS = [
+  { id: 'react', name: 'React', file: 'Halftone.jsx' },
+  { id: 'js',    name: 'JS',    file: 'halftone.js' },
+  { id: 'html',  name: 'HTML',  file: 'halftone.html' },
+];
+
+function buildCode(kind = state.codeKind) {
+  const { C, pal, r, eff } = exportConfig();
+  const head = `/* Halftone Specimen export: ${eff}, ${pal.name}, ${r.w}:${r.h}. Needs WebGL 2. */`;
+  const box = `aspect-ratio: ${r.w} / ${r.h}; border-radius: 20px; overflow: hidden; background: ${C.background}; cursor: crosshair;`;
+  if (kind === 'react') {
+    return `'use client';
+${head}
+import { useEffect, useRef } from 'react';
+
+${coreSource(C)}
+
+/* <Halftone /> fills its width and keeps the ratio. Pass className/style to size it. */
+export default function Halftone({ className, style, config = CONFIG }) {
+  const ref = useRef(null);
+  useEffect(() => halftoneEmbed(ref.current, config, VERT, TONE_FRAG, DRAW_FRAG, drawAtlas, drawLetters), [config]);
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{ aspectRatio: '${r.w} / ${r.h}', borderRadius: 20, overflow: 'hidden', background: '${C.background}', cursor: 'crosshair', ...style }}
+    />
+  );
+}
+`;
+  }
+  if (kind === 'js') {
+    return `${head}
+/* Usage:
+     <div id="halftone" style="${box}"></div>
+     <script type="module">
+       import { mountHalftone } from './halftone.js';
+       const stop = mountHalftone(document.getElementById('halftone'));   // stop() cleans up
+     </` + `script>
+*/
+
+${coreSource(C)}
+
+export function mountHalftone(el, config = CONFIG) {
+  return halftoneEmbed(el, config, VERT, TONE_FRAG, DRAW_FRAG, drawAtlas, drawLetters);
+}
+export { CONFIG };
+`;
+  }
+  const close = '</' + 'script>';
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halftone · ${eff} · ${pal.name}</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { display: grid; place-items: center; background: #fafafa; }
+  /* Drop .halftone anywhere: it fills its width and keeps the ratio. */
+  .halftone { width: min(100vw - 32px, (100dvh - 32px) * ${r.w} / ${r.h}); ${box} }
+</style>
+</head>
+<body>
+<div class="halftone" id="halftone"></div>
+<script>
+${head}
+${coreSource(C)}
+halftoneEmbed(document.getElementById('halftone'), CONFIG, VERT, TONE_FRAG, DRAW_FRAG, drawAtlas, drawLetters);
+${close}
+</body>
+</html>
+`;
+}
+
+function codeFile() {
+  const kind = byId(CODE_KINDS, state.codeKind);
+  const text = buildCode(kind.id);
+  // .html saves directly; .jsx/.js are not downloadable types here, so they travel in a zip with a README.
+  if (kind.id === 'html') return { filename: `${fileBase()}.html`, data: text };
+  const readme = kind.id === 'react'
+    ? `# Halftone\n\nCopy Halftone.jsx into your components, then:\n\n\`\`\`jsx\nimport Halftone from './Halftone';\n\n<Halftone style={{ width: 480 }} />\n\`\`\`\n\nAll settings live in CONFIG at the top of the file. Works in Next.js (it is a client component) and any React 18+ app.\n`
+    : `# Halftone\n\nCopy halftone.js into your project, add a sized element and mount it:\n\n\`\`\`html\n<div id="halftone" style="width: 480px"></div>\n<script type="module">\n  import { mountHalftone } from './halftone.js';\n  mountHalftone(document.getElementById('halftone'));\n</` + `script>\n\`\`\`\n\nAll settings live in CONFIG at the top of the file. mountHalftone returns a function that stops it.\n`;
+  const enc = new TextEncoder();
+  return {
+    filename: `${fileBase()}-${kind.id}.zip`,
+    data: zip([{ name: kind.file, data: enc.encode(text) }, { name: 'README.md', data: enc.encode(readme) }]),
+  };
+}
+
+async function copyCode() {
+  const kind = byId(CODE_KINDS, state.codeKind), text = buildCode(kind.id), status = $('save-status');
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    const okCopy = document.execCommand('copy');
+    ta.remove();
+    if (!okCopy) { status.textContent = 'Copying is blocked here. Use Save code instead.'; return; }
+  }
+  status.textContent = `Copied ${kind.file} (${Math.round(text.length / 1024)} KB). Paste it into your project.`;
+}
+
+const cssSize = () => { const r = canvas.getBoundingClientRect(); return [r.width, r.height]; };
+const maxPx = () => !ok ? 8192 : Math.min(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), gl.getParameter(gl.MAX_VIEWPORT_DIMS)[0], 8192);
+const imagePx = k => {
+  const [w, h] = cssSize();
+  const kk = Math.min(k, maxPx() / Math.max(w, h));
+  return [Math.round(w * kk), Math.round(h * kk), kk];
+};
+const fileBase = () => `halftone-${state.effect}-${currentPalette().id}`;
+
+function videoType() {
+  return ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm']
+    .find(t => MediaRecorder.isTypeSupported(t)) || '';
+}
+
+function syncSave() {
+  const isImg = state.saveFormat === 'image';
+  document.querySelectorAll('#save-formats button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === state.saveFormat));
+  document.querySelectorAll('#save-scales button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.id) === state.saveScale));
+  document.querySelectorAll('#save-lengths button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.id) === state.saveLength));
+  const isCode = state.saveFormat === 'code', isPlates = state.saveFormat === 'plates';
+  $('save-scales').hidden = !(isImg || isPlates);
+  $('save-lengths').hidden = state.saveFormat !== 'video';
+  $('code-kinds').hidden = $('copy-code').hidden = !isCode;
+  document.querySelectorAll('#code-kinds button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === state.codeKind));
+  if (isCode) {
+    $('save-meta').textContent = { react: 'React component · Halftone.jsx', js: 'JS module · halftone.js', html: 'Standalone page · .html' }[state.codeKind];
+  } else if (isPlates) {
+    const [w, h] = imagePx(state.saveScale);
+    $('save-meta').textContent = `${currentPalette().inks.length} plates · ${w.toLocaleString('en-US')} × ${h.toLocaleString('en-US')} px ZIP`;
+  } else if (isImg) {
+    const [w, h] = imagePx(state.saveScale);
+    $('save-meta').textContent = `${w.toLocaleString('en-US')} × ${h.toLocaleString('en-US')} px PNG`;
+  } else {
+    $('save-meta').textContent = `${W.toLocaleString('en-US')} × ${H.toLocaleString('en-US')} px ${videoType().includes('mp4') ? 'MP4' : 'WebM'}`;
+  }
+  if (!recording) $('save').textContent = isCode ? 'Save code' : isPlates ? 'Save plates' : isImg ? 'Save image' : `Record ${state.saveLength}s`;
+}
+
+async function snapshotPNG(k) {
+  const [w, h, kk] = imagePx(k);
+  setSize(w, h, kk);   // cells scale with kk, so the export matches the screen, only sharper
+  render();
+  const blob = new Promise(res => canvas.toBlob(res, 'image/png'));   // bitmap is copied now
+  resize();
+  return blob;
+}
+
+function recordVideo(seconds) {
+  return new Promise((resolve, reject) => {
+    const type = videoType();
+    const stream = canvas.captureStream(60);
+    const rec = new MediaRecorder(stream, type ? { mimeType: type, videoBitsPerSecond: 16e6 } : undefined);
+    const chunks = [];
+    rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+    rec.onerror = e => reject(e.error || e);
+    rec.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      resolve({ blob: new Blob(chunks, { type: rec.mimeType }), ext: rec.mimeType.includes('mp4') ? 'mp4' : 'webm' });
+    };
+    const badge = $('rec'), btn = $('save');
+    let left = seconds;
+    const tick = () => {
+      badge.textContent = `Recording · ${left}s`;
+      btn.textContent = `Recording · ${left}s`;
+    };
+    badge.hidden = false; tick();
+    const timer = setInterval(() => { left--; if (left > 0) tick(); }, 1000);
+    rec.start(250);
+    setTimeout(() => { clearInterval(timer); badge.hidden = true; rec.stop(); }, seconds * 1000);
+  });
+}
+
+async function save() {
+  if (!downloads || recording) return;
+  const status = $('save-status'), btn = $('save');
+  status.textContent = '';
+  let file;
+  try {
+    if (state.saveFormat === 'plates') {
+      file = { filename: `${fileBase()}-plates.zip`, data: await snapshotPlates(state.saveScale) };
+    } else if (state.saveFormat === 'code') {
+      file = codeFile();
+    } else if (state.saveFormat === 'image') {
+      file = { filename: `${fileBase()}.png`, data: await snapshotPNG(state.saveScale) };
+    } else {
+      recording = true; btn.disabled = true;
+      hideHint();
+      const { blob, ext } = await recordVideo(state.saveLength);
+      file = { filename: `${fileBase()}.${ext}`, data: blob };
+    }
+  } catch (e) {
+    console.error(e);
+    status.textContent = 'Could not make the file in this browser.';
+  } finally {
+    recording = false; btn.disabled = false; syncSave();
+  }
+  if (!file || !file.data) return;
+  try {
+    await downloads.save(file);
+    status.textContent = `Saved ${file.filename}.`;
+  } catch (e) {
+    const code = e && e.code;
+    if (code === 'declined') status.textContent = 'Not saved.';
+    else if (code === 'rate_limited') status.textContent = 'A save is already waiting for an answer.';
+    else if (code === 'too_large') status.textContent = 'That file is too big. Try a smaller size or a shorter video.';
+    else status.textContent = 'Saving is not available here.';
+  }
+}
+
+function buildSave() {
+  buildSeg('save-scales', SAVE_SCALES.map(k => ({ id: String(k), name: `${k}×` })), 'saveScale',
+    k => k.name, k => { state.saveScale = Number(k.id); syncSave(); saveState(); });
+  buildSeg('save-lengths', SAVE_LENGTHS.map(n => ({ id: String(n), name: `${n}s` })), 'saveLength',
+    n => n.name, n => { state.saveLength = Number(n.id); syncSave(); saveState(); });
+  $('save').addEventListener('click', save);
+  buildSeg('code-kinds', CODE_KINDS, 'codeKind', k => k.name, k => { state.codeKind = k.id; syncSave(); saveState(); });
+  $('copy-code').addEventListener('click', copyCode);
+  new ResizeObserver(() => syncSave()).observe(canvas);
+  buildSaveFormats();
+  syncSave();
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('downloads').then(d => { if (d) downloads = d; }).catch(() => {});
+  }
+}
+
+$('restore').addEventListener('click', () => {
+  delete state.paletteEdits[state.palette];
+  applyPalette(); buildPalettes(); buildShades(); sync(); saveState();
+});
+
+/* ---------------- image input ---------------- */
+const fileInput = $('file');
+function readFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    setImage(img);
+    lastImage = img;
+    URL.revokeObjectURL(url);
+    state.source = 'image';
+    sync();
+  };
+  img.onerror = () => URL.revokeObjectURL(url);
+  img.src = url;
+}
+fileInput.addEventListener('change', () => { readFile(fileInput.files[0]); fileInput.value = ''; });
+$('replace').addEventListener('click', () => fileInput.click());
+
+['dragenter', 'dragover'].forEach(t => card.addEventListener(t, e => {
+  e.preventDefault();
+  card.classList.add('is-drop');
+}));
+['dragleave', 'drop'].forEach(t => card.addEventListener(t, e => {
+  e.preventDefault();
+  card.classList.remove('is-drop');
+}));
+card.addEventListener('drop', e => readFile(e.dataTransfer?.files?.[0]));
+
+/* ---------------- boot ---------------- */
+buildSeg('effects', EFFECTS, 'effect',
+  e => e.name,
+  e => { state.effect = e.id; sync(); saveState(); });
+buildSeg('sources', SOURCES, 'source',
+  s => s.name,
+  s => {
+    if (s.id === 'image' && !hasImage) { fileInput.click(); return; }
+    state.source = s.id; sync(); saveState();
+  });
+buildSeg('pointers', POINTERS, 'pointer',
+  p => p.name,
+  p => { state.pointer = p.id; sync(); saveState(); });
+setupPicker();
+buildSave();
+buildSeg('letter-sets', LETTER_SETS, 'letterSet', l => l.name,
+  l => { state.letterSet = l.id; updateLetters(); sync(); saveState(); });
+$('word').addEventListener('input', e => { state.word = e.target.value; updateLetters(); saveState(); });
+updateLetters();
+buildPalettes();
+buildShades();
+buildRatios();
+buildFields();
+applyPalette();
+applyRatio();
+resize();
+sync();
+if (matchMedia('(min-width: 860px)').matches) openPanel(false);
+if (ok) requestAnimationFrame(frame);
+</script>
+
+</body>
+</html>
