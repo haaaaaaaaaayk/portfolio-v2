@@ -75,7 +75,7 @@ export function Work() {
     <section id="work" className="relative mx-auto w-full max-w-[912px] px-6 py-section sm:px-8 sm:py-32">
       <motion.div {...inView}>
         <p className="text-compact text-ink-muted">Work</p>
-        <h2 className="mt-2 text-balance text-body text-ink sm:text-heading">Selected case studies.</h2>
+        <h2 className="mt-2 text-balance text-body text-ink sm:text-heading">Selected projects.</h2>
 
         <div className="mt-8 flex flex-col gap-4 sm:mt-10">
           {LAYOUT[cols].map((band, b) => (

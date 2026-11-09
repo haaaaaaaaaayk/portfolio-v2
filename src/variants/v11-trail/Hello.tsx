@@ -70,7 +70,7 @@ export function Hello() {
       >
         <div>
           <p className="text-body text-ink">This page is a snapshot of how I work.</p>
-          <p className="mt-1 text-body text-ink-muted">The case studies are on their way.</p>
+          <p className="mt-1 text-body text-ink-muted">More projects are on their way.</p>
         </div>
         <div className="flex items-center gap-2">
           {SOCIAL.filter((p) => p.href).map((p) => (
