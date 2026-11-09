@@ -1,0 +1,38 @@
+/* Playground and hello-card motion that Tailwind classes can't express. All on Caleb's curve (--ease-fast). */
+
+/* the trail card: a solid line walks up the dotted trail while hovered (line drawing, 1.2s), and slides back fast */
+.trail-path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 300ms var(--ease-fast);
+}
+.trail-path[data-active='true'] {
+  stroke-dashoffset: 0;
+  transition-duration: 1200ms;
+}
+
+/* the up key, pressed in a walking rhythm while hovered: down 2px with a shorter shadow, about two steps a second */
+@keyframes trail-keypress {
+  0%, 100% { translate: 0 0; box-shadow: 0 2px 0 rgb(0 0 0 / 12%), 0 0 0 1px rgb(0 0 0 / 8%); }
+  40%, 60% { translate: 0 2px; box-shadow: 0 0 0 rgb(0 0 0 / 12%), 0 0 0 1px rgb(0 0 0 / 8%); }
+}
+.trail-key[data-active='true'] {
+  animation: trail-keypress 560ms var(--ease-fast) infinite;
+}
+
+/* the hello button's check: Caleb's sticker pop (0 → 1.25 → 0.92 → 1, 500ms), the one celebratory moment */
+@keyframes hello-pop {
+  0% { opacity: 0; transform: scale(0); }
+  60% { opacity: 1; transform: scale(1.25); }
+  80% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+.hello-check {
+  animation: hello-pop 500ms linear both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trail-path { transition: none; }
+  .trail-key[data-active='true'] { animation: none; }
+  .hello-check { animation: none; }
+}

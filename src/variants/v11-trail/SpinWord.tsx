@@ -39,7 +39,18 @@ function ring(count: number) {
   return { faces, step, radius: 14 / Math.tan(((step / 2) * Math.PI) / 180) }
 }
 
-export function SpinWord({ words, label, restOnly = false }: { words: readonly string[]; label: string; restOnly?: boolean }) {
+export function SpinWord({
+  words,
+  label,
+  restOnly = false,
+  driven,
+}: {
+  words: readonly string[]
+  label: string
+  restOnly?: boolean
+  /** when set, something outside drives it (a card hovered as a whole): true spins and loops, false spins back */
+  driven?: boolean
+}) {
   const { faces: FACES, step: STEP, radius: RADIUS } = useMemo(() => ring(words.length), [words.length])
   const isRest = (angle: number) => (((Math.round(angle / STEP) % FACES) + FACES) % FACES) % words.length === 0
 
@@ -79,6 +90,17 @@ export function SpinWord({ words, label, restOnly = false }: { words: readonly s
   }
   useEffect(() => () => (clearTimeout(timer.current), anim.current?.stop()), [])
   const onPointerEnter = useHoverZone(start, stop)
+  const firstDrive = useRef(true)
+  useEffect(() => {
+    if (driven === undefined) return
+    if (firstDrive.current) {
+      firstDrive.current = false
+      if (!driven) return // nothing to undo on mount
+    }
+    if (driven && !active.current) start()
+    else if (!driven && active.current) stop()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driven])
   // a click each time a word crosses the front (rot passes a face's angle), like a split-flap board
   const lastFace = useRef(0)
   const lastClick = useRef(0)
@@ -104,7 +126,7 @@ export function SpinWord({ words, label, restOnly = false }: { words: readonly s
     <button
       type="button"
       aria-label={label}
-      onPointerEnter={onPointerEnter}
+      onPointerEnter={driven === undefined ? onPointerEnter : undefined}
       onClick={() => (on ? stop() : start())}
       className="relative inline-block cursor-pointer touch-manipulation select-none text-left text-ink outline-offset-2 focus-visible:rounded-mark focus-visible:outline-2 focus-visible:outline-ink after:pointer-events-none after:absolute after:inset-x-0 after:bottom-[3px] after:border-b after:border-dotted after:border-ink-muted"
     >
