@@ -345,6 +345,12 @@
   }
   .chip .bars { position: absolute; inset: 24% 20%; display: flex; flex-direction: column; gap: 4px; }
   .chip .bars i { flex: 1; border-radius: var(--radius-mark); }
+  /* "+" tile: starts a palette from scratch; a control, so it wears the control colour */
+  .chip.add { display: grid; place-items: center; background: var(--control); box-shadow: none; color: var(--ink-muted); transition: background-color 180ms ease, color 180ms ease; }
+  .chip.add svg { width: 16px; height: 16px; }
+  @media (hover: hover) and (pointer: fine) {
+    .chip.add:hover { background: var(--control-hover); color: var(--ink-active); }
+  }
   .chip[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
 
   /* token slider: 32px hit area (44 on touch), 4px track with ink progress */
@@ -1191,6 +1197,8 @@ function loadState() {
     if (!PALETTES.some(p => p.id === id) || !e || !Array.isArray(e.inks) || !e.inks.length) delete s.paletteEdits[id];
   }
   delete s.custom;
+  if (!Array.isArray(s.userPalettes)) s.userPalettes = [];
+  s.userPalettes = s.userPalettes.filter(p => p && typeof p.id === 'string' && typeof p.paper === 'string' && Array.isArray(p.inks) && p.inks.length).slice(0, MAX_USER_PALETTES);
   if (!paletteList(s).some(p => p.id === s.palette)) s.palette = PALETTES[0].id;
   if (!RATIOS.some(r => r.id === s.ratio)) s.ratio = DEFAULTS.ratio;
   if (!['react', 'js', 'html'].includes(s.codeKind)) s.codeKind = DEFAULTS.codeKind;
@@ -1208,9 +1216,14 @@ function saveState() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
 }
 // A visitor's colour edits are stored per preset and laid over it.
+// Presets (with the visitor's edits laid over them), then the palettes they made from scratch.
 function paletteList(s = state) {
-  return PALETTES.map(p => s.paletteEdits[p.id] ? { ...p, ...s.paletteEdits[p.id], edited: true } : p);
+  return [
+    ...PALETTES.map(p => s.paletteEdits[p.id] ? { ...p, ...s.paletteEdits[p.id], edited: true } : p),
+    ...s.userPalettes.map(p => ({ ...p, user: true })),
+  ];
 }
+const MAX_USER_PALETTES = 10;
 const currentPalette = () => byId(paletteList(), state.palette);
 const state = loadState();
 
@@ -1714,11 +1727,34 @@ function buildPalettes() {
     b.addEventListener('click', () => { state.palette = p.id; applyPalette(); buildShades(); sync(); saveState(); });
     el.appendChild(b);
   });
+  if (state.userPalettes.length < MAX_USER_PALETTES) {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'chip add';
+    add.title = 'New palette';
+    add.setAttribute('aria-label', 'New palette');
+    add.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>';
+    add.addEventListener('click', newPalette);
+    el.appendChild(add);
+  }
+}
+
+/* A palette from scratch: a plain light background and one black, then straight into the picker. */
+function newPalette() {
+  let n = 1;
+  while (state.userPalettes.some(p => p.name === `Palette ${n}`)) n++;
+  const p = { id: 'u' + Date.now().toString(36), name: `Palette ${n}`, paper: '#F4EFE6', inks: ['#161616'] };
+  state.userPalettes.push(p);
+  state.palette = p.id;
+  applyPalette(); buildPalettes(); buildShades(); sync(); saveState();
+  $('shades').querySelector('.swatch')?.click();
 }
 
 /* Editing a shade changes the selected preset itself; the edit is kept for next time. */
 function editable() {
   const id = state.palette;
+  const own = state.userPalettes.find(p => p.id === id);
+  if (own) return own;
   if (!state.paletteEdits[id]) {
     const p = currentPalette();
     state.paletteEdits[id] = { paper: p.paper, inks: [...p.inks] };
@@ -1770,7 +1806,8 @@ function buildShades() {
     el.appendChild(b);
   };
   btn('Add a color', '<path d="M8 3v10M3 8h10"/>', pal.inks.length >= MAX_LEVELS - 1,
-    e => e.inks.push(lighten(e.inks[e.inks.length - 1])));
+    // the new shade is a lighter step of the strongest colour, so it slots in just before it
+    e => e.inks.splice(e.inks.length - 1, 0, lighten(e.inks[e.inks.length - 1])));
   btn('Remove the strongest color', '<path d="M3 8h10"/>', pal.inks.length <= 1,
     e => e.inks.pop());
 }
@@ -1921,7 +1958,8 @@ function sync() {
   document.querySelectorAll('#palettes .chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === state.palette));
 
   $('palette-name').textContent = `${pal.name}${pal.edited ? ' (edited)' : ''} · ${pal.inks.length + 1} colors`;
-  $('restore').hidden = !pal.edited;
+  $('restore').hidden = !(pal.edited || pal.user);
+  $('restore').textContent = pal.user ? 'Delete' : 'Restore';
   $('letters-ui').hidden = state.effect !== 'letters';
   if (document.activeElement !== $('word')) $('word').value = state.word;
   if (downloads) buildSaveFormats();
@@ -2514,7 +2552,15 @@ function buildSave() {
 }
 
 $('restore').addEventListener('click', () => {
-  delete state.paletteEdits[state.palette];
+  const i = state.userPalettes.findIndex(p => p.id === state.palette);
+  if (i >= 0) {
+    // Delete one of the visitor's own palettes and land on its neighbour.
+    state.userPalettes.splice(i, 1);
+    const list = paletteList();
+    state.palette = (state.userPalettes[i] || state.userPalettes[i - 1] || list[0]).id;
+  } else {
+    delete state.paletteEdits[state.palette];
+  }
   applyPalette(); buildPalettes(); buildShades(); sync(); saveState();
 });
 
