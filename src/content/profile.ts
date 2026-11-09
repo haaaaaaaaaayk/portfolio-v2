@@ -30,8 +30,8 @@ export const profile = {
 
 export const links = [
   { id: 'email', label: 'Email', href: '#', note: '[LINK: mailto]' },
-  { id: 'linkedin', label: 'LinkedIn', href: '#', note: '[LINK: linkedin]' },
-  { id: 'instagram', label: 'Instagram', href: '#', note: '[LINK: instagram]' },
+  { id: 'linkedin', label: 'LinkedIn', href: 'https://www.linkedin.com/in/sargsyan-hayk--/' },
+  { id: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/haykhateshiking/' },
   { id: 'github', label: 'GitHub', href: '#', note: '[LINK: github]' },
 ] as const
 
