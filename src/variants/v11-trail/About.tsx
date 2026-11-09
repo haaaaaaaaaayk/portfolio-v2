@@ -101,9 +101,8 @@ type AboutText = typeof saved
 const SPINS: Record<string, { words: readonly string[]; label: string; restOnly?: boolean }> = {
   '{ask}': { words: ['attention', 'money', 'data'], label: 'money, data, attention' },
   '{cities}': {
-    words: ['six cities', 'San Francisco', 'Tokyo', 'Berlin', 'Seoul', 'Buenos Aires', 'Taipei'],
-    label: 'six cities: San Francisco, Tokyo, Berlin, Seoul, Buenos Aires and Taipei',
-    restOnly: true,
+    words: ['San Francisco', 'Tokyo', 'Berlin', 'Seoul', 'Buenos Aires', 'Taipei'],
+    label: 'San Francisco, Tokyo, Berlin, Seoul, Buenos Aires and Taipei',
   },
 }
 function withSpins(copy: string) {
