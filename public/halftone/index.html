@@ -588,8 +588,7 @@
           <div class="seg wrap" id="effects" aria-label="Effect"></div>
           <div class="fields" id="effect-fields"></div>
           <div class="fields" id="letters-ui" hidden>
-            <div class="seg" id="letter-sets" aria-label="Letters"></div>
-            <label class="text-field" id="word-field"><input id="word" type="text" maxlength="64" spellcheck="false" autocomplete="off" aria-label="Your word or phrase"></label>
+            <label class="text-field" id="word-field"><input id="word" type="text" maxlength="64" spellcheck="false" autocomplete="off" placeholder="Type a word in any language" aria-label="Your word or phrase"></label>
           </div>
         </div>
 
@@ -730,12 +729,6 @@ const POINTERS = [
   { id: 'twirl', name: 'Twirl' },
 ];
 
-const LETTER_SETS = [
-  { id: 'word',     name: 'Word' },
-  { id: 'latin',    name: 'Latin',    chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' },
-  { id: 'armenian', name: 'Armenian', chars: 'ԱԲԳԴԵԶԷԸԹԺԻԼԽԾԿՀՁՂՃՄՅՆՇՈՉՊՋՌՍՎՏՐՑՒՓՔՕՖ' },
-];
-
 const SAVE_SCALES = [1, 2, 4];         // PNG size, times the card's on-screen size
 const SAVE_LENGTHS = [3, 6, 10];       // video seconds
 
@@ -749,7 +742,6 @@ const DEFAULTS = {
   angle: 15,       // Press: first ink's screen angle; each next ink turns 30°
   misreg: 30,      // Press: how far the ink layers land off register
   gain: 35,        // Press: ink spread into the paper
-  letterSet: 'word',
   word: 'SPECIMEN',
   gap: 12,         // % of a cell
   flicker: 40,     // % (Binary, Stitch)
@@ -1113,7 +1105,7 @@ function loadState() {
   if (!paletteList(s).some(p => p.id === s.palette)) s.palette = PALETTES[0].id;
   if (!RATIOS.some(r => r.id === s.ratio)) s.ratio = DEFAULTS.ratio;
   if (!['react', 'js', 'html'].includes(s.codeKind)) s.codeKind = DEFAULTS.codeKind;
-  if (!LETTER_SETS.some(l => l.id === s.letterSet)) s.letterSet = DEFAULTS.letterSet;
+  delete s.letterSet;
   if (typeof s.word !== 'string') s.word = DEFAULTS.word;
   if (!EFFECTS.some(p => p.id === s.effect)) s.effect = EFFECTS[0].id;
   if (!POINTERS.some(p => p.id === s.pointer)) s.pointer = POINTERS[0].id;
@@ -1261,8 +1253,8 @@ function drawLetters(chars) {
 let lettersTex, textLen = 1, plateIndex = 0;
 const textSlots = new Int32Array(64).fill(-1);
 function letterSequence() {
-  const set = byId(LETTER_SETS, state.letterSet);
-  const seq = Array.from(set.chars || state.word || '').slice(0, 64);
+  // Any script works: people type the word in their own language.
+  const seq = Array.from(state.word || '').slice(0, 64);
   return seq.length ? seq : Array.from('SPECIMEN');
 }
 function updateLetters() {
@@ -1842,8 +1834,6 @@ function sync() {
   $('palette-name').textContent = `${pal.name}${pal.edited ? ' (edited)' : ''} · ${pal.inks.length + 1} colors`;
   $('restore').hidden = !pal.edited;
   $('letters-ui').hidden = state.effect !== 'letters';
-  $('word-field').hidden = state.letterSet !== 'word';
-  document.querySelectorAll('#letter-sets button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === state.letterSet));
   if (document.activeElement !== $('word')) $('word').value = state.word;
   if (downloads) buildSaveFormats();
   $('image-note').hidden = src.id !== 'image';
@@ -2483,8 +2473,6 @@ buildSeg('pointers', POINTERS, 'pointer',
   p => { state.pointer = p.id; sync(); saveState(); });
 setupPicker();
 buildSave();
-buildSeg('letter-sets', LETTER_SETS, 'letterSet', l => l.name,
-  l => { state.letterSet = l.id; updateLetters(); sync(); saveState(); });
 $('word').addEventListener('input', e => { state.word = e.target.value; updateLetters(); saveState(); });
 updateLetters();
 buildPalettes();
