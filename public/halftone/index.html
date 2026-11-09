@@ -1073,14 +1073,13 @@ void main() {
       float ang = radians(uAngle + (fi - 1.0) * 30.0) + uMisreg * 0.004 * (fi - 2.0);
       vec2 off = vec2(cos(fi * 2.399 + 0.7), sin(fi * 2.399 + 0.7)) * uMisreg * uCell * 0.5;
       float cs = cos(ang), sn = sin(ang);
-      mat2 rot = mat2(cs, sn, -sn, cs);
       mat2 inv = mat2(cs, -sn, sn, cs);
       vec2 q = inv * (fc - ctr - off) / uCell;
-      vec2 cid = floor(q);
       vec2 qc = fract(q) - 0.5;
-      vec2 cpx = rot * ((cid + 0.5) * uCell) + ctr + off;
-      vec2 gq = (cpx - uRes * 0.5) / uCell + uGrid * 0.5;
-      float cov = inkCover(toneAt(ivec2(floor(gq))), i, n);
+      // Size each dot from the tone under the pixel, not one value per cell: coarse rotated screens
+      // make straight edges look tilted (the Zöllner illusion); this keeps verticals vertical.
+      // A misregistered layer carries its whole image off register, so it reads the tone at its offset.
+      float cov = inkCover(toneSmooth(g - off / uCell), i, n);
       float r = sqrt(cov) * 0.7071 * (1.0 + uGain * 0.25);
       float d = length(qc) + rough * uGain * 0.1;
       float m = (1.0 - smoothstep(r - aa, r + aa, d)) * step(0.004, cov);
