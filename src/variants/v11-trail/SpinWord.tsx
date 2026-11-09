@@ -44,12 +44,15 @@ export function SpinWord({
   label,
   restOnly = false,
   driven,
+  silent = false,
 }: {
   words: readonly string[]
   label: string
   restOnly?: boolean
   /** when set, something outside drives it (a card hovered as a whole): true spins and loops, false spins back */
   driven?: boolean
+  /** no clicks: for loops that run on their own, like a Work tile, where nobody asked for sound */
+  silent?: boolean
 }) {
   const { faces: FACES, step: STEP, radius: RADIUS } = useMemo(() => ring(words.length), [words.length])
   const isRest = (angle: number) => (((Math.round(angle / STEP) % FACES) + FACES) % FACES) % words.length === 0
@@ -111,7 +114,7 @@ export function SpinWord({
     const now = performance.now()
     if (now - lastClick.current < 30 || !soundOn()) return
     lastClick.current = now
-    play('key', { pitch: 0.92 + Math.random() * 0.16 })
+    if (!silent) play('key', { pitch: 0.92 + Math.random() * 0.16 })
   })
 
   // reduced motion swaps words by re-rendering which face is in front (no rotation to follow)

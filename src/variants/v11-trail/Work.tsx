@@ -22,6 +22,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { reveal } from '../../lib/motion'
+import { SpinWord } from './SpinWord'
 import './work.css'
 
 type Shape = 'square' | 'landscape' | 'portrait'
@@ -33,12 +34,13 @@ const SHAPE: Record<Shape, { ratio: string; label: string; asset: string }> = {
 
 /* A live piece shows as a 10-second loop made from the piece itself; `big` is the lead tile, whose shape follows the columns. */
 type Loop = { kind: 'loop'; id: string; name: string; label: string; path: string; media: string; shape: Shape | 'big' }
-type Tile = { kind: 'placeholder'; id: string; title: string; shape: Shape; href: string } | Loop
+type Tile = { kind: 'placeholder'; id: string; title: string; shape: Shape; href: string } | Loop | { kind: 'spin'; id: 'spin' }
 const tile = (n: number, shape: Shape): Tile => ({ kind: 'placeholder', id: `p${n}`, title: `Project ${String(n).padStart(2, '0')}`, shape, href: '#work' })
 const FOG: Tile = {
   kind: 'loop', id: 'fog', name: 'Fogged Glass', label: 'Fogged Glass: write on the fogged-up windows of Shinagawa',
   path: 'foggy_shinagawa/', media: 'work/fogged-glass', shape: 'big',
 }
+const SPIN: Tile = { kind: 'spin', id: 'spin' }
 const HALFTONE: Tile = {
   kind: 'loop', id: 'halftone', name: 'Halftone Specimen', label: 'Halftone Specimen: an analog print press in the browser',
   path: 'halftone/', media: 'work/halftone', shape: 'portrait',
@@ -52,14 +54,14 @@ const HALFTONE: Tile = {
 type Column = { span?: 2; tiles: Tile[] }
 const LAYOUT: Record<1 | 2 | 3, Column[][]> = {
   3: [
-    [{ span: 2, tiles: [FOG] }, { tiles: [HALFTONE, tile(2, 'landscape')] }],
-    [{ tiles: [tile(3, 'square'), tile(4, 'square')] }, { tiles: [tile(5, 'landscape'), tile(6, 'portrait')] }, { tiles: [tile(7, 'portrait'), tile(8, 'landscape')] }],
+    [{ span: 2, tiles: [FOG] }, { tiles: [SPIN, tile(2, 'landscape')] }],
+    [{ tiles: [tile(3, 'square'), tile(4, 'square')] }, { tiles: [tile(5, 'landscape'), tile(6, 'portrait')] }, { tiles: [HALFTONE, tile(8, 'landscape')] }],
   ],
   2: [
     [{ span: 2, tiles: [FOG] }],
-    [{ tiles: [HALFTONE, tile(2, 'landscape'), tile(6, 'portrait'), tile(5, 'landscape')] }, { tiles: [tile(3, 'square'), tile(4, 'square'), tile(7, 'portrait'), tile(8, 'landscape')] }],
+    [{ tiles: [SPIN, tile(2, 'landscape'), tile(6, 'portrait'), tile(5, 'landscape')] }, { tiles: [tile(3, 'square'), tile(4, 'square'), HALFTONE, tile(8, 'landscape')] }],
   ],
-  1: [[{ tiles: [FOG, HALFTONE, tile(2, 'landscape'), tile(3, 'square'), tile(4, 'square'), tile(5, 'landscape'), tile(6, 'portrait'), tile(7, 'portrait'), tile(8, 'landscape')] }]],
+  1: [[{ tiles: [FOG, SPIN, tile(2, 'landscape'), tile(3, 'square'), tile(4, 'square'), tile(5, 'landscape'), tile(6, 'portrait'), HALFTONE, tile(8, 'landscape')] }]],
 }
 
 function useColumns(): 1 | 2 | 3 {
@@ -94,7 +96,7 @@ export function Work() {
                 <ul key={c} className={`flex flex-col gap-4 ${column.span === 2 ? 'sm:col-span-2' : ''}`}>
                   {column.tiles.map((t) => (
                     <li key={t.id}>
-                      {t.kind === 'loop' ? <LoopTile {...t} cols={cols} /> : <WorkTile {...t} />}
+                      {t.kind === 'loop' ? <LoopTile {...t} cols={cols} /> : t.kind === 'spin' ? <SpinTile /> : <WorkTile {...t} />}
                     </li>
                   ))}
                 </ul>
@@ -179,6 +181,42 @@ function LoopTile({ name, label, path, media, shape, cols }: Loop & { cols: 1 | 
       <span className="pointer-events-none absolute inset-0 grid place-items-center">
         <span className="work-pill inline-flex h-9 items-center rounded-full bg-[rgb(20_20_20/72%)] px-4 text-secondary text-white backdrop-blur-xl backdrop-saturate-150">
           {name}
+        </span>
+      </span>
+    </a>
+  )
+}
+
+/**
+ * Spin a word (hayko.me/spin): the tile is the piece itself, not a recording. The site's own spinning word, at
+ * twice the paragraph size, loops through "hello" in five languages while the tile is on screen (silent: it runs
+ * on its own, so it doesn't click). Hover keeps it looping and shows the name pill like every tile.
+ */
+const HELLOS = ['hello', 'բարև', 'hola', 'こんにちは', 'bonjour'] as const
+function SpinTile() {
+  const ref = useRef<HTMLAnchorElement>(null)
+  const [seen, setSeen] = useState(false)
+  useEffect(() => {
+    const a = ref.current
+    if (!a) return
+    const io = new IntersectionObserver(([e]) => setSeen(e.isIntersecting), { threshold: 0.4 })
+    io.observe(a)
+    return () => io.disconnect()
+  }, [])
+  const base = import.meta.env.BASE_URL
+  return (
+    <a
+      ref={ref}
+      href={`${base}spin/`}
+      aria-label="Spin a word: nineteen ways a word can turn into another, with your own words"
+      className={`group relative grid place-items-center overflow-hidden rounded-card bg-canvas outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${SHAPE.portrait.ratio}`}
+    >
+      <span aria-hidden className="scale-200 text-body text-ink transition-transform duration-[600ms] ease-reading group-hover:scale-[2.04] motion-reduce:transition-none">
+        <SpinWord words={HELLOS} label="hello in five languages" driven={seen} silent />
+      </span>
+      <span className="pointer-events-none absolute inset-0 grid place-items-center">
+        <span className="work-pill inline-flex h-9 items-center rounded-full bg-[rgb(20_20_20/72%)] px-4 text-secondary text-white backdrop-blur-xl backdrop-saturate-150">
+          Spin a word
         </span>
       </span>
     </a>
