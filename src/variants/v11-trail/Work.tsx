@@ -1,5 +1,6 @@
 /**
- * Work: a wall of case-study tiles, after pdepablo.com. Fogged Glass leads, big, as a loop recorded from the piece; the rest are mixed shapes
+ * Work: a wall of case-study tiles, after pdepablo.com. Fogged Glass leads, big, as a loop recorded from the piece; Halftone Specimen
+ * takes the first portrait, as a loop rendered from the piece; the rest are mixed shapes
  * (square, landscape, portrait) that interlock in columns, and every column ends level so each band has a clean edge.
  *
  * Exact grid, all multiples of 4, inside the page's 912px boundary:
@@ -30,9 +31,18 @@ const SHAPE: Record<Shape, { ratio: string; label: string; asset: string }> = {
   portrait: { ratio: 'aspect-[272/364]', label: 'Portrait', asset: '544 × 728' },
 }
 
-type Tile = { kind: 'placeholder'; id: string; title: string; shape: Shape; href: string } | { kind: 'fog' }
+/* A live piece shows as a 10-second loop made from the piece itself; `big` is the lead tile, whose shape follows the columns. */
+type Loop = { kind: 'loop'; id: string; name: string; label: string; path: string; media: string; shape: Shape | 'big' }
+type Tile = { kind: 'placeholder'; id: string; title: string; shape: Shape; href: string } | Loop
 const tile = (n: number, shape: Shape): Tile => ({ kind: 'placeholder', id: `p${n}`, title: `Project ${String(n).padStart(2, '0')}`, shape, href: '#work' })
-const FOG: Tile = { kind: 'fog' }
+const FOG: Tile = {
+  kind: 'loop', id: 'fog', name: 'Fogged Glass', label: 'Fogged Glass: write on the fogged-up windows of Shinagawa',
+  path: 'foggy_shinagawa/', media: 'work/fogged-glass', shape: 'big',
+}
+const HALFTONE: Tile = {
+  kind: 'loop', id: 'halftone', name: 'Halftone Specimen', label: 'Halftone Specimen: an analog print press in the browser',
+  path: 'halftone/', media: 'work/halftone', shape: 'portrait',
+}
 
 /* A band is a row of columns; a column can span two. Every column in a band ends level:
    3 columns: [Fogged Glass 560×560 over two columns | portrait 364 + landscape 180 = 560]
@@ -42,14 +52,14 @@ const FOG: Tile = { kind: 'fog' }
 type Column = { span?: 2; tiles: Tile[] }
 const LAYOUT: Record<1 | 2 | 3, Column[][]> = {
   3: [
-    [{ span: 2, tiles: [FOG] }, { tiles: [tile(1, 'portrait'), tile(2, 'landscape')] }],
+    [{ span: 2, tiles: [FOG] }, { tiles: [HALFTONE, tile(2, 'landscape')] }],
     [{ tiles: [tile(3, 'square'), tile(4, 'square')] }, { tiles: [tile(5, 'landscape'), tile(6, 'portrait')] }, { tiles: [tile(7, 'portrait'), tile(8, 'landscape')] }],
   ],
   2: [
     [{ span: 2, tiles: [FOG] }],
-    [{ tiles: [tile(1, 'portrait'), tile(2, 'landscape'), tile(6, 'portrait'), tile(5, 'landscape')] }, { tiles: [tile(3, 'square'), tile(4, 'square'), tile(7, 'portrait'), tile(8, 'landscape')] }],
+    [{ tiles: [HALFTONE, tile(2, 'landscape'), tile(6, 'portrait'), tile(5, 'landscape')] }, { tiles: [tile(3, 'square'), tile(4, 'square'), tile(7, 'portrait'), tile(8, 'landscape')] }],
   ],
-  1: [[{ tiles: [FOG, tile(1, 'portrait'), tile(2, 'landscape'), tile(3, 'square'), tile(4, 'square'), tile(5, 'landscape'), tile(6, 'portrait'), tile(7, 'portrait'), tile(8, 'landscape')] }]],
+  1: [[{ tiles: [FOG, HALFTONE, tile(2, 'landscape'), tile(3, 'square'), tile(4, 'square'), tile(5, 'landscape'), tile(6, 'portrait'), tile(7, 'portrait'), tile(8, 'landscape')] }]],
 }
 
 function useColumns(): 1 | 2 | 3 {
@@ -83,8 +93,8 @@ export function Work() {
               {band.map((column, c) => (
                 <ul key={c} className={`flex flex-col gap-4 ${column.span === 2 ? 'sm:col-span-2' : ''}`}>
                   {column.tiles.map((t) => (
-                    <li key={t.kind === 'fog' ? 'fog' : t.id}>
-                      {t.kind === 'fog' ? <FogTile cols={cols} /> : <WorkTile {...t} />}
+                    <li key={t.id}>
+                      {t.kind === 'loop' ? <LoopTile {...t} cols={cols} /> : <WorkTile {...t} />}
                     </li>
                   ))}
                 </ul>
@@ -123,13 +133,14 @@ function WorkTile({ title, shape, href }: Extract<Tile, { kind: 'placeholder' }>
 }
 
 /**
- * The big one: Fogged Glass, as a 10-second loop recorded from the real piece (its own Scribble drawing on the
- * Shinagawa fog, dissolving back to clean glass so the loop has no seam). It loads late and plays only while on
- * screen, pausing when scrolled away; with reduced motion it stays on its poster frame. Same hover
- * as every tile: the video eases to 1.02 and the name pill pops in at the centre. 560×560 on desktop, 16:9 across two
- * columns on tablets.
+ * A live piece as a seamless 10-second loop made from the piece itself:
+ *  - Fogged Glass (big): its own Scribble drawing on the Shinagawa fog, dissolving back to clean glass.
+ *    560×560 on desktop, 16:9 across two columns on tablets.
+ *  - Halftone Specimen (portrait): ten effects on the Golden Gate, each printing over the last (scripts/record-halftone).
+ * It loads late and plays only while on screen, pausing when scrolled away; with reduced motion it stays on its poster
+ * frame. Same hover as every tile: the video eases to 1.02 and the name pill pops in at the centre.
  */
-function FogTile({ cols }: { cols: 1 | 2 | 3 }) {
+function LoopTile({ name, label, path, media, shape, cols }: Loop & { cols: 1 | 2 | 3 }) {
   const video = useRef<HTMLVideoElement>(null)
   const reduced = useReducedMotion()
   useEffect(() => {
@@ -150,14 +161,14 @@ function FogTile({ cols }: { cols: 1 | 2 | 3 }) {
   const base = import.meta.env.BASE_URL
   return (
     <a
-      href={`${base}foggy_shinagawa/`}
-      aria-label="Fogged Glass: write on the fogged-up windows of Shinagawa"
-      className={`group relative block overflow-hidden rounded-card bg-canvas outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${cols === 2 ? 'aspect-video' : 'aspect-square'}`}
+      href={`${base}${path}`}
+      aria-label={label}
+      className={`group relative block overflow-hidden rounded-card bg-canvas outline-offset-4 focus-visible:outline-2 focus-visible:outline-ink ${shape === 'big' ? (cols === 2 ? 'aspect-video' : 'aspect-square') : SHAPE[shape].ratio}`}
     >
       <video
         ref={video}
-        data-src={`${base}work/fogged-glass.mp4`}
-        poster={`${base}work/fogged-glass.jpg`}
+        data-src={`${base}${media}.mp4`}
+        poster={`${base}${media}.jpg`}
         muted
         loop
         playsInline
@@ -167,7 +178,7 @@ function FogTile({ cols }: { cols: 1 | 2 | 3 }) {
       />
       <span className="pointer-events-none absolute inset-0 grid place-items-center">
         <span className="work-pill inline-flex h-9 items-center rounded-full bg-[rgb(20_20_20/72%)] px-4 text-secondary text-white backdrop-blur-xl backdrop-saturate-150">
-          Fogged Glass
+          {name}
         </span>
       </span>
     </a>
