@@ -3,6 +3,8 @@
 // (houses, waterfalls, critters) and keyboard control are additions.
 
 /** Live options, read every frame: `mode` picks the thought style (1–5). */
+import { SETS } from './palette'
+
 export interface TrailOptions {
   mode: 1 | 2 | 3 | 4 | 5
   /** style 5 renders the thought in the page; called whenever it changes (null = none) */
@@ -183,14 +185,7 @@ function butterfly(c,x,y,F0,flap,col){const F=F0*1.7;
 }
 
 /* ---------- palette: Ridge colors plus aquamarine; split-tone hills ---------- */
-const SETS=[
-  ['#2c4c9e','#3f8d62','#a6cf5a'],
-  ['#2fae98','#6fe0c4','#c8f5e6'],
-  ['#2c4c9e','#4fa3c9','#7fe6cf'],
-  ['#3f8d62','#a6cf5a','#e9f08a'],
-  ['#7d9fc0','#d9a7bf','#f3d2e0'],
-  ['#2a6a4a','#2fae98','#7fe6cf'],
-  ['#2fae98','#6fe0c4','#c8f5e6']];
+/* the hill colours live in palette.ts, shared with the cursor's trace */
 /* the waterfall's shape, shared by its sprite and the water that moves on it */
 function fallGeo(F){return{cw:F*1.6,ch:F*1.45,lip:F*.06,pool:F*.42,fw:F*.26}}
 function bell(s,x0,by,w,h,px){const p=w*px;s.beginPath();s.moveTo(x0,by);s.bezierCurveTo(x0+p*.45,by,x0+p*.55,by-h,x0+p,by-h);s.bezierCurveTo(x0+p+(w-p)*.45,by-h,x0+p+(w-p)*.55,by,x0+w,by);s.closePath()}

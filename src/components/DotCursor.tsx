@@ -8,22 +8,31 @@
  * - Trace dots go onto the page, not the screen. When you scroll they move with the content, like ink would.
  * - Their spacing is left uneven on purpose. A dot drops on each move once you've gone 4px, so slow moves leave a
  *   dense line and fast flicks leave a scatter, and the trace shows how you moved.
- * - With the hand cursor gone, the dot takes over its job: over anything you can click it grows to 2×.
+ * - The trace is painted in the hiking scene's hill colours, so the cursor carries the valley down the page.
+ *   Each hill is three tones; the trace takes the shade and the middle tone and drops the pale highlight,
+ *   which would vanish on the paper. The dot itself stays the accent: it's the signature, the trace is the
+ *   landscape it walked through. `?cursor=accent` brings back the all-turquoise trace for comparison.
+ * - With the hand cursor gone, the dot takes over its job: over anything you can click it grows from 12 to
+ *   16px. That's enough to notice, and small enough not to cover what you're pointing at.
  * - Text fields keep the system I-beam, because placing a caret needs it, and the dot steps aside there.
  *   The hiking scene has its own ring cursor, so the dot steps aside there too.
  * - The cursor only appears with a mouse or trackpad (fine pointer + hover); touch screens get nothing.
  *   Under reduced motion the dot stays, since it's the cursor, but the trace is off.
  */
 import { useEffect, useRef } from 'react'
+import { SETS } from '../variants/v11-trail/palette'
 
 const ACCENT = '#1aedc5'
+const HILLS = [...new Set(SETS.flatMap(([shade, mid]) => [shade, mid]))]
+const INKS =
+  new URLSearchParams(window.location.search).get('cursor') === 'accent' ? [ACCENT] : HILLS
 const HOLD = 1000 // ms a trace dot sits still at full strength
 const FADE = 320 // ms it then takes to shrink and fade away
 const STEP = 4 // px of travel before another dot drops
 const INTERACTIVE = 'a, button, [role="button"], summary, label, select, [data-cursor="grow"]'
 const STEP_ASIDE = 'input, textarea, [contenteditable], [data-cursor="own"], canvas[role="application"]'
 
-type Mark = { x: number; y: number; r: number; born: number }
+type Mark = { x: number; y: number; r: number; born: number; ink: string }
 
 export function DotCursor() {
   const dot = useRef<HTMLDivElement>(null)
@@ -55,8 +64,8 @@ export function DotCursor() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight)
       marks = marks.filter((m) => now - m.born < HOLD + FADE)
-      ctx.fillStyle = ACCENT
       for (const m of marks) {
+        ctx.fillStyle = m.ink
         const t = Math.max(0, now - m.born - HOLD) / FADE // 0 while holding, then 0→1
         const k = 1 - t * t // eases out slowly at first, then lets go
         ctx.globalAlpha = k
@@ -85,7 +94,7 @@ export function DotCursor() {
       const y = e.clientY + window.scrollY
       if (last && Math.hypot(x - last.x, y - last.y) < STEP) return
       last = { x, y }
-      marks.push({ x, y, r: 2 + Math.random() * 2, born: performance.now() }) // 4–8px across
+      marks.push({ x, y, r: 2 + Math.random() * 2, born: performance.now(), ink: INKS[Math.floor(Math.random() * INKS.length)] }) // 4–8px across
       wake()
     }
     const leave = () => {
