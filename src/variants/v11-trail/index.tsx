@@ -9,6 +9,7 @@ import { Hello } from './Hello'
 import { SectionPill } from './SectionPill'
 import { Work } from './Work'
 import { mountTrail, type TrailOptions } from './scene'
+import { DotCursor } from '../../components/DotCursor'
 
 type ThoughtStyle = TrailOptions['mode']
 
@@ -93,6 +94,7 @@ export default function Trail() {
 
   return (
     <div className="relative min-h-svh bg-paper">
+      <DotCursor />
       <SectionPill />
       <main>
         {/* the first screen is the scene and nothing else; everything about him comes after it */}
