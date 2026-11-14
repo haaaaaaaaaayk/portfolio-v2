@@ -563,7 +563,7 @@ html.dot-cursor :is(input:not([type='range'], [type='checkbox'], [type='radio'])
     opacity 160ms var(--ease-open);
 }
 .dot-cursor-mark[data-state='grow'] > span {
-  transform: scale(2);
+  transform: scale(1.3333); /* 12 → 16px */
 }
 .dot-cursor-mark:is([data-state='aside'], [data-state='gone']) > span {
   opacity: 0;
