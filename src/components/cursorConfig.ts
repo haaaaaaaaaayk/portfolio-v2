@@ -36,22 +36,22 @@ export type CursorConfig = {
 }
 
 export const CURSOR: CursorConfig = {
-  dot: { size: 12, hoverSize: 16, color: '#1aedc5', shape: 'circle', follow: 1, hoverMs: 200 },
+  dot: { size: 6, hoverSize: 12, color: '#1aedc5', shape: 'circle', follow: 1, hoverMs: 180 },
   trace: {
     on: true,
-    colors: HILL_COLORS,
+    colors: ['#1aedc5'],
     order: 'random',
-    minSize: 4,
+    minSize: 1,
     maxSize: 8,
-    snap: false,
-    step: 4,
-    hold: 1000,
-    fade: 320,
+    snap: true,
+    step: 8,
+    hold: 1450,
+    fade: 780,
     ending: 'fade-shrink',
     shrinkTo: 0.4,
     opacity: 1,
     shape: 'circle',
-    anchor: 'page',
-    blend: 'normal',
+    anchor: 'screen',
+    blend: 'multiply',
   },
 }
