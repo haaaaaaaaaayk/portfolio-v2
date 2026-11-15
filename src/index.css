@@ -543,34 +543,4 @@ html.dot-cursor :is(input:not([type='range'], [type='checkbox'], [type='radio'])
 html.dot-cursor :is(input:not([type='range'], [type='checkbox'], [type='radio']), textarea, [contenteditable]) * {
   cursor: text !important;
 }
-.dot-cursor-mark {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 9999;
-  pointer-events: none;
-}
-.dot-cursor-mark > span {
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  width: 12px;
-  height: 12px;
-  border-radius: 9999px;
-  background: var(--color-accent);
-  transition:
-    transform 200ms var(--ease-open),
-    opacity 160ms var(--ease-open);
-}
-.dot-cursor-mark[data-state='grow'] > span {
-  transform: scale(1.3333); /* 12 → 16px */
-}
-.dot-cursor-mark:is([data-state='aside'], [data-state='gone']) > span {
-  opacity: 0;
-  transform: scale(0.5);
-}
-@media (prefers-reduced-motion: reduce) {
-  .dot-cursor-mark > span {
-    transition: opacity 160ms linear;
-  }
-}
+/* the dot and its trace are styled from cursorConfig.ts by cursorEngine.ts */
