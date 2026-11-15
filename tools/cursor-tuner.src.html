@@ -1,0 +1,428 @@
+<title>Cursor Tuner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: the stage dominates on the left; one quiet column of controls on the right, copy button pinned at its foot. */
+:root {
+  --paper: #fafafa;
+  --surface: #ffffff;
+  --ink: #161616;
+  --muted: #666666;
+  --rule: rgb(0 0 0 / 10%);
+  --control: #ededed;
+  --accent: #1aedc5;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --mono: Menlo, ui-monospace, monospace;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #111112; --surface: #19191b; --ink: #f2f2f2; --muted: #9a9a9a; --rule: rgb(255 255 255 / 12%); --control: #2a2a2c; color-scheme: dark }
+}
+:root[data-theme="dark"] { --paper: #111112; --surface: #19191b; --ink: #f2f2f2; --muted: #9a9a9a; --rule: rgb(255 255 255 / 12%); --control: #2a2a2c; color-scheme: dark }
+
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 400 14px/20px var(--font); -webkit-font-smoothing: antialiased;
+}
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 100%; }
+
+/* ---------- stage ---------- */
+.stage { position: relative; min-width: 0; overflow: hidden; }
+.scroller { position: absolute; inset: 0; overflow-y: auto; cursor: none; }
+.scroller :is(input) { cursor: text; }
+.scroller * { cursor: none; }
+.scroller input { cursor: text; }
+.trace { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.dot { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; }
+.ground { position: absolute; inset: 0; z-index: 0; transition: background 240ms var(--ease); }
+.ground canvas { width: 100%; height: 100%; display: block; }
+.page {
+  position: relative; z-index: 1; display: flex; flex-direction: column; gap: 64px;
+  max-width: 560px; margin: 0 auto; padding: 96px 32px 480px;
+}
+.page h1 { margin: 0; font-size: 24px; line-height: 32px; font-weight: 400; text-wrap: balance; }
+.page p { margin: 0; color: var(--stage-muted, var(--muted)); max-width: 44ch; }
+.page .block { display: flex; flex-direction: column; gap: 16px; }
+.page a { color: inherit; text-underline-offset: 4px; }
+.page .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.page button.say { height: 44px; padding: 0 20px; border: 0; border-radius: 9999px; background: #161616; color: #fff; font: inherit; }
+.page input { height: 36px; padding: 0 16px; border: 0; border-radius: 9999px; background: rgb(0 0 0 / 6%); font: inherit; color: inherit; min-width: 0; }
+.stage[data-ground="ink"] .page, .stage[data-ground="valley"] .page { color: #f6f6f6; --stage-muted: rgb(255 255 255 / 72%); }
+.stage[data-ground="ink"] .page input { background: rgb(255 255 255 / 12%); }
+.stage[data-ground="valley"] .page { color: #161616; --stage-muted: #3a3a3a; }
+.stage[data-ground="valley"] .page input { background: rgb(255 255 255 / 60%); }
+.stage-bar {
+  position: absolute; z-index: 4; left: max(16px, env(safe-area-inset-left, 0px)); bottom: 16px;
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+
+/* ---------- controls ---------- */
+.panel { display: flex; flex-direction: column; min-height: 0; background: var(--surface); border-left: 1px solid var(--rule); }
+.controls { flex: 1; overflow-y: auto; padding: 24px 24px 32px; display: flex; flex-direction: column; gap: 32px; }
+.group { display: flex; flex-direction: column; gap: 12px; }
+.group > h2 { margin: 0; font: inherit; font-size: 12px; line-height: 20px; color: var(--muted); }
+.field { display: grid; grid-template-columns: 96px minmax(0, 1fr) 48px; align-items: center; gap: 12px; }
+.field label, .field .name { font-size: 12px; line-height: 20px; color: var(--muted); }
+.field output { font-size: 12px; line-height: 20px; text-align: right; font-variant-numeric: tabular-nums; }
+.field.wide { grid-template-columns: 96px minmax(0, 1fr); }
+
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: var(--control); }
+input[type=range]::-moz-range-track { height: 4px; border-radius: 4px; background: var(--control); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 9999px; background: var(--ink); }
+input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 9999px; background: var(--ink); }
+input[type=range]:focus-visible { outline: none; }
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--accent); }
+
+.seg { display: flex; gap: 4px; flex-wrap: wrap; }
+.seg button, .chip {
+  height: 28px; padding: 0 12px; border: 0; border-radius: 9999px; background: transparent; color: var(--muted);
+  font: inherit; font-size: 12px; line-height: 20px; cursor: pointer; transition: background 160ms var(--ease), color 160ms var(--ease);
+}
+.seg button:hover, .chip:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--control); color: var(--ink); }
+.seg button:focus-visible, .chip:focus-visible, .copy:focus-visible, .swatch:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.stage-bar .chip { background: rgb(0 0 0 / 6%); color: #161616; }
+.stage[data-ground="ink"] .stage-bar .chip { background: rgb(255 255 255 / 12%); color: #f6f6f6; }
+.stage-bar .chip[aria-pressed="true"] { background: #161616; color: #fff; }
+.stage[data-ground="ink"] .stage-bar .chip[aria-pressed="true"] { background: #f6f6f6; color: #161616; }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.swatch {
+  position: relative; width: 24px; height: 24px; border: 0; border-radius: 9999px; padding: 0; cursor: pointer;
+  transition: transform 160ms var(--ease), opacity 160ms var(--ease);
+}
+.swatch[aria-pressed="false"] { opacity: 0.2; transform: scale(0.67); }
+.swatch-add { position: relative; width: 24px; height: 24px; border-radius: 9999px; background: var(--control); display: grid; place-items: center; color: var(--muted); font-size: 14px; overflow: hidden; }
+.swatch-add input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.color { display: flex; align-items: center; gap: 8px; }
+.color input[type=color] { width: 24px; height: 24px; border: 0; padding: 0; border-radius: 9999px; background: none; cursor: pointer; }
+.color input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+.color input[type=color]::-webkit-color-swatch { border: 0; border-radius: 9999px; }
+.color input[type=color]::-moz-color-swatch { border: 0; border-radius: 9999px; }
+.color code { font: 12px/20px var(--mono); color: var(--muted); }
+
+.toggle { width: 36px; height: 20px; border: 0; padding: 0; border-radius: 9999px; background: var(--control); position: relative; cursor: pointer; transition: background 160ms var(--ease); }
+.toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 9999px; background: var(--surface); transition: transform 160ms var(--ease); }
+.toggle[aria-checked="true"] { background: var(--ink); }
+.toggle[aria-checked="true"]::after { transform: translateX(16px); }
+.toggle:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.foot { padding: 16px 24px; border-top: 1px solid var(--rule); display: flex; gap: 12px; align-items: center; padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+.copy { flex: 1; height: 44px; border: 0; border-radius: 9999px; background: var(--ink); color: var(--paper); font: inherit; cursor: pointer; transition: opacity 160ms var(--ease); }
+.copy:hover { opacity: 0.85; }
+.foot .note { font-size: 12px; line-height: 20px; color: var(--muted); }
+textarea.out { position: absolute; left: -9999px; }
+
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 56svh minmax(0, 1fr); }
+  .panel { border-left: 0; border-top: 1px solid var(--rule); }
+  .page { padding: 48px 16px 320px; gap: 32px; }
+  .controls { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <section class="stage" id="stage" data-ground="paper" aria-label="Cursor preview">
+    <div class="ground" id="ground"></div>
+    <div class="scroller" id="scroller">
+      <div class="page">
+        <div class="block">
+          <h1>Move your mouse anywhere in here.</h1>
+          <p>Slow moves leave a dense line and fast flicks leave a scatter. Scroll down to see where the trace stays.</p>
+        </div>
+        <div class="block">
+          <p>Hover these to check the grow: <a href="#" onclick="return false">Foggy Shinagawa</a>, <a href="#" onclick="return false">Spin a word</a>, <a href="#" onclick="return false">Halftone Specimen</a>.</p>
+          <div class="row">
+            <button class="say" type="button">Say hello</button>
+            <input id="sample-email" type="text" placeholder="The dot steps aside in text fields" aria-label="Sample text field">
+          </div>
+        </div>
+        <div class="block">
+          <p>Keep scrolling. With the trace anchored to the page, dots ride up with this text. Anchored to the screen, they stay put while the page moves under them.</p>
+        </div>
+        <div class="block"><p>That's the bottom.</p></div>
+      </div>
+    </div>
+    <canvas class="trace" id="trace" aria-hidden="true"></canvas>
+    <div class="dot" id="dot" aria-hidden="true"><span></span></div>
+    <div class="stage-bar">
+      <div class="seg" role="group" aria-label="Background">
+        <button class="chip" type="button" data-ground="paper" aria-pressed="true">Paper</button>
+        <button class="chip" type="button" data-ground="valley" aria-pressed="false">Valley</button>
+        <button class="chip" type="button" data-ground="ink" aria-pressed="false">Dark</button>
+      </div>
+      <button class="chip" type="button" id="replay">Draw a test stroke</button>
+    </div>
+  </section>
+
+  <aside class="panel" aria-label="Cursor settings">
+    <div class="controls" id="controls">
+      <div class="group">
+        <h2>Start from</h2>
+        <div class="seg" role="group" aria-label="Presets" id="presets"></div>
+      </div>
+      <div class="group" id="g-dot"><h2>Dot</h2></div>
+      <div class="group" id="g-colors"><h2>Trace colours</h2></div>
+      <div class="group" id="g-trace"><h2>Trace</h2></div>
+      <div class="group" id="g-end"><h2>How dots go away</h2></div>
+    </div>
+    <div class="foot">
+      <button class="copy" type="button" id="copy">Copy config</button>
+      <span class="note" id="note" aria-live="polite">Paste into cursorConfig.ts</span>
+    </div>
+    <textarea class="out" id="out" aria-hidden="true" tabindex="-1"></textarea>
+  </aside>
+</div>
+
+<script>
+/*__ENGINE__*/
+</script>
+<script>
+(() => {
+  const { createCursor, CURSOR, HILL_COLORS, SETS } = CursorEngine
+  const ACCENT = '#1aedc5'
+  const ADAM = ['#c7f3c6', '#eaff00', '#f5320b', '#948eff', '#dbff00', '#fdceeb', '#0095ff', '#cde0f5', '#e362d3', '#01a451']
+  const clone = (o) => JSON.parse(JSON.stringify(o))
+  const PRESETS = {
+    Mine: clone(CURSOR),
+    'Adam Ho': {
+      dot: { size: 10, hoverSize: 10, color: '#161616', shape: 'square', follow: 1, hoverMs: 0 },
+      trace: { on: true, colors: ADAM, order: 'random', minSize: 3, maxSize: 8, snap: false, step: 0, hold: 1250, fade: 0, ending: 'cut', shrinkTo: 1, opacity: 0.8, shape: 'square', anchor: 'page', blend: 'normal' },
+    },
+    Turquoise: { ...clone(CURSOR), trace: { ...clone(CURSOR.trace), colors: [ACCENT] } },
+  }
+  const KEY = 'cursor-tuner'
+  let cfg = clone(CURSOR)
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.dot && s.trace) cfg = s } catch (_) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)) } catch (_) {} }
+
+  const stage = document.getElementById('stage')
+  const scroller = document.getElementById('scroller')
+  const still = matchMedia('(prefers-reduced-motion: reduce)')
+  const cursor = createCursor(cfg, {
+    scope: scroller, area: stage, scroller,
+    dot: document.getElementById('dot'), canvas: document.getElementById('trace'),
+    still: () => false, // the tuner always shows the trace; the site turns it off under reduced motion
+  })
+
+  /* ---------- controls ---------- */
+  const fields = []
+  const el = (tag, props = {}, kids = []) => { const e = Object.assign(document.createElement(tag), props); kids.forEach((k) => e.append(k)); return e }
+  let uid = 0
+
+  function slider(group, label, path, min, max, step, unit = '') {
+    const id = 'f' + uid++
+    const input = el('input', { type: 'range', id, min, max, step })
+    const out = el('output', { htmlFor: id })
+    const row = el('div', { className: 'field' }, [el('label', { htmlFor: id, textContent: label }), input, out])
+    const sync = () => { input.value = get(path); out.textContent = fmt(get(path)) + unit }
+    const fmt = (v) => (step < 1 ? Number(v).toFixed(2) : String(v))
+    input.addEventListener('input', () => { set(path, Number(input.value)); out.textContent = fmt(input.value) + unit })
+    document.getElementById(group).append(row)
+    fields.push(sync)
+  }
+  function choice(group, label, path, options) {
+    const seg = el('div', { className: 'seg', role: 'group' })
+    seg.setAttribute('aria-label', label)
+    const btns = options.map(([v, text]) => {
+      const b = el('button', { type: 'button', textContent: text })
+      b.addEventListener('click', () => { set(path, v); sync() })
+      seg.append(b)
+      return [v, b]
+    })
+    const sync = () => btns.forEach(([v, b]) => b.setAttribute('aria-pressed', String(get(path) === v)))
+    document.getElementById(group).append(el('div', { className: 'field wide' }, [el('span', { className: 'name', textContent: label }), seg]))
+    fields.push(sync)
+  }
+  function toggle(group, label, path) {
+    const id = 'f' + uid++
+    const b = el('button', { type: 'button', className: 'toggle', id, role: 'switch' })
+    b.addEventListener('click', () => { set(path, !get(path)); sync() })
+    const sync = () => b.setAttribute('aria-checked', String(!!get(path)))
+    document.getElementById(group).append(el('div', { className: 'field wide' }, [el('label', { htmlFor: id, textContent: label }), el('div', {}, [b])]))
+    fields.push(sync)
+  }
+  function color(group, label, path) {
+    const id = 'f' + uid++
+    const input = el('input', { type: 'color', id })
+    const code = el('code')
+    input.addEventListener('input', () => { set(path, input.value); code.textContent = input.value })
+    const sync = () => { input.value = get(path); code.textContent = get(path) }
+    document.getElementById(group).append(el('div', { className: 'field wide' }, [el('label', { htmlFor: id, textContent: label }), el('div', { className: 'color' }, [input, code])]))
+    fields.push(sync)
+  }
+
+  const get = (p) => p.split('.').reduce((o, k) => o[k], cfg)
+  function set(p, v) {
+    const ks = p.split('.'); const last = ks.pop()
+    const o = ks.reduce((o, k) => o[k], cfg); o[last] = v
+    if (p === 'trace.minSize' && v > cfg.trace.maxSize) cfg.trace.maxSize = v
+    if (p === 'trace.maxSize' && v < cfg.trace.minSize) cfg.trace.minSize = v
+    cursor.restyle(); save(); fields.forEach((f) => f())
+  }
+
+  /* dot */
+  slider('g-dot', 'Size', 'dot.size', 4, 32, 1, 'px')
+  slider('g-dot', 'Hover size', 'dot.hoverSize', 4, 48, 1, 'px')
+  slider('g-dot', 'Grow time', 'dot.hoverMs', 0, 600, 10, 'ms')
+  slider('g-dot', 'Follow', 'dot.follow', 0.05, 1, 0.01)
+  color('g-dot', 'Colour', 'dot.color')
+  choice('g-dot', 'Shape', 'dot.shape', [['circle', 'Circle'], ['square', 'Square']])
+
+  /* colours: palette presets + a swatch per colour, tap to drop it */
+  const palettes = {
+    Hills: HILL_COLORS,
+    'All hill tones': [...new Set(SETS.flat())],
+    Accent: [ACCENT],
+    'Adam Ho': ADAM,
+    'Same as dot': null,
+  }
+  const pal = el('div', { className: 'seg', role: 'group' }); pal.setAttribute('aria-label', 'Palette')
+  const palBtns = Object.entries(palettes).map(([name, list]) => {
+    const b = el('button', { type: 'button', textContent: name })
+    b.addEventListener('click', () => { pool = list ? [...list] : [cfg.dot.color]; set('trace.colors', [...pool]) })
+    pal.append(b); return [list, b]
+  })
+  const sw = el('div', { className: 'swatches' })
+  let pool = [...new Set([...cfg.trace.colors])]
+  document.getElementById('g-colors').append(pal, sw)
+  const same = (a, b) => a && b && a.length === b.length && a.every((c, i) => c.toLowerCase() === b[i].toLowerCase())
+  function drawSwatches() {
+    sw.replaceChildren()
+    for (const c of pool) {
+      const on = cfg.trace.colors.includes(c)
+      const b = el('button', { type: 'button', className: 'swatch', title: c })
+      b.style.background = c
+      b.setAttribute('aria-pressed', String(on))
+      b.setAttribute('aria-label', (on ? 'Remove ' : 'Add ') + c)
+      b.addEventListener('click', () => {
+        const next = on ? cfg.trace.colors.filter((x) => x !== c) : pool.filter((x) => x === c || cfg.trace.colors.includes(x))
+        set('trace.colors', next)
+      })
+      sw.append(b)
+    }
+    const add = el('label', { className: 'swatch-add', title: 'Add a colour', textContent: '+' })
+    const pick = el('input', { type: 'color', value: '#e0563c' })
+    pick.setAttribute('aria-label', 'Add a colour')
+    pick.addEventListener('change', () => { if (!pool.includes(pick.value)) pool.push(pick.value); set('trace.colors', [...cfg.trace.colors, pick.value]) })
+    add.append(pick); sw.append(add)
+    palBtns.forEach(([list, b]) => b.setAttribute('aria-pressed', String(same(list || [cfg.dot.color], cfg.trace.colors))))
+  }
+  fields.push(drawSwatches)
+  choice('g-colors', 'Order', 'trace.order', [['random', 'Random'], ['cycle', 'In order']])
+
+  /* trace */
+  toggle('g-trace', 'Trace on', 'trace.on')
+  slider('g-trace', 'Smallest', 'trace.minSize', 1, 24, 1, 'px')
+  slider('g-trace', 'Largest', 'trace.maxSize', 1, 32, 1, 'px')
+  toggle('g-trace', 'Snap to 4px', 'trace.snap')
+  slider('g-trace', 'Spacing', 'trace.step', 0, 48, 1, 'px')
+  slider('g-trace', 'Opacity', 'trace.opacity', 0.1, 1, 0.01)
+  choice('g-trace', 'Shape', 'trace.shape', [['circle', 'Circle'], ['square', 'Square']])
+  choice('g-trace', 'Stays on', 'trace.anchor', [['page', 'Page'], ['screen', 'Screen']])
+  choice('g-trace', 'Blend', 'trace.blend', [['normal', 'Normal'], ['multiply', 'Multiply']])
+
+  /* ending */
+  slider('g-end', 'Hold', 'trace.hold', 0, 4000, 50, 'ms')
+  slider('g-end', 'Fade', 'trace.fade', 0, 2000, 10, 'ms')
+  choice('g-end', 'Ending', 'trace.ending', [['fade-shrink', 'Fade + shrink'], ['fade', 'Fade'], ['shrink', 'Shrink'], ['cut', 'Cut']])
+  slider('g-end', 'Shrinks to', 'trace.shrinkTo', 0, 1, 0.05)
+
+  /* presets */
+  const presetRow = document.getElementById('presets')
+  for (const [name, p] of Object.entries(PRESETS)) {
+    const b = el('button', { type: 'button', textContent: name })
+    b.addEventListener('click', () => {
+      Object.assign(cfg.dot, clone(p.dot)); Object.assign(cfg.trace, clone(p.trace))
+      pool = [...new Set([...HILL_COLORS, ...cfg.trace.colors])]
+      if (name === 'Adam Ho') pool = [...ADAM]
+      cursor.clear(); cursor.restyle(); save(); fields.forEach((f) => f())
+    })
+    presetRow.append(b)
+  }
+  fields.forEach((f) => f())
+
+  /* ---------- backgrounds ---------- */
+  const ground = document.getElementById('ground')
+  function valley() {
+    const c = el('canvas'); ground.replaceChildren(c)
+    const r = ground.getBoundingClientRect(); const d = Math.min(devicePixelRatio || 1, 2)
+    c.width = r.width * d; c.height = r.height * d
+    const g = c.getContext('2d'); g.scale(d, d)
+    g.fillStyle = '#e9edc8'; g.fillRect(0, 0, r.width, r.height)
+    g.filter = 'blur(24px)'
+    let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+    for (let i = 0; i < 18; i++) {
+      const C = SETS[Math.floor(rnd() * SETS.length)]
+      const w = 160 + rnd() * 220, h = w * (0.5 + rnd() * 0.3), x = rnd() * r.width - w / 2, by = 80 + rnd() * (r.height + 40)
+      const gr = g.createLinearGradient(x, by - h, x + w, by); gr.addColorStop(0, C[2]); gr.addColorStop(0.5, C[1]); gr.addColorStop(1, C[0])
+      g.fillStyle = gr; g.globalAlpha = 0.7
+      g.beginPath(); g.moveTo(x, by); g.bezierCurveTo(x + w * 0.2, by, x + w * 0.35, by - h, x + w * 0.5, by - h); g.bezierCurveTo(x + w * 0.65, by - h, x + w * 0.8, by, x + w, by); g.fill()
+    }
+    g.globalAlpha = 1
+  }
+  function setGround(name) {
+    stage.dataset.ground = name
+    ground.replaceChildren()
+    ground.style.background = name === 'ink' ? '#161616' : name === 'paper' ? '#fafafa' : ''
+    if (name === 'valley') valley()
+    stage.querySelectorAll('[data-ground]').forEach((b) => b !== stage && b.setAttribute('aria-pressed', String(b.dataset.ground === name)))
+  }
+  stage.querySelectorAll('.stage-bar [data-ground]').forEach((b) => b.addEventListener('click', () => setGround(b.dataset.ground)))
+  addEventListener('resize', () => stage.dataset.ground === 'valley' && valley())
+  setGround('paper')
+
+  /* ---------- a test stroke: a slow start, a fast middle, a slow end ---------- */
+  document.getElementById('replay').addEventListener('click', async () => {
+    const r = stage.getBoundingClientRect(); const n = 120
+    for (let i = 0; i <= n; i++) {
+      const u = i / n; const t = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2
+      const x = r.left + r.width * (0.12 + 0.76 * t)
+      const y = r.top + r.height * (0.45 + Math.sin(t * Math.PI * 2) * 0.2)
+      const target = document.elementFromPoint(x, y) || scroller
+      target.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x, clientY: y, pointerType: 'mouse' }))
+      await new Promise((res) => requestAnimationFrame(res))
+    }
+  })
+
+  /* ---------- copy as cursorConfig.ts ---------- */
+  const q = (s) => `'${s}'`
+  function asConfig() {
+    const d = cfg.dot, t = cfg.trace
+    const colors = same(t.colors, HILL_COLORS) ? 'HILL_COLORS' : `[${t.colors.map(q).join(', ')}]`
+    return `export const CURSOR: CursorConfig = {
+  dot: { size: ${d.size}, hoverSize: ${d.hoverSize}, color: ${q(d.color)}, shape: ${q(d.shape)}, follow: ${d.follow}, hoverMs: ${d.hoverMs} },
+  trace: {
+    on: ${t.on},
+    colors: ${colors},
+    order: ${q(t.order)},
+    minSize: ${t.minSize},
+    maxSize: ${t.maxSize},
+    snap: ${t.snap},
+    step: ${t.step},
+    hold: ${t.hold},
+    fade: ${t.fade},
+    ending: ${q(t.ending)},
+    shrinkTo: ${t.shrinkTo},
+    opacity: ${t.opacity},
+    shape: ${q(t.shape)},
+    anchor: ${q(t.anchor)},
+    blend: ${q(t.blend)},
+  },
+}
+`
+  }
+  const note = document.getElementById('note')
+  document.getElementById('copy').addEventListener('click', async () => {
+    const text = asConfig()
+    try { await navigator.clipboard.writeText(text); note.textContent = 'Copied. Paste over CURSOR in cursorConfig.ts' }
+    catch (_) {
+      const out = document.getElementById('out'); out.value = text; out.select()
+      try { document.execCommand('copy'); note.textContent = 'Copied. Paste over CURSOR in cursorConfig.ts' }
+      catch (_) { note.textContent = 'Copy was blocked. Select the text and copy it yourself' }
+    }
+  })
+})()
+</script>

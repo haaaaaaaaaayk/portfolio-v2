@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "sync:foggy": "sh scripts/sync-foggy.sh",
     "sync:halftone": "sh scripts/sync-halftone.sh",
-    "sync:spin": "sh scripts/sync-spin.sh"
+    "sync:spin": "sh scripts/sync-spin.sh",
+    "build:tuner": "node scripts/build-tuner.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
